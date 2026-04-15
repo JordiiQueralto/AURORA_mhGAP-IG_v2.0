@@ -1,9 +1,15 @@
 from google import genai
 from google.genai import types
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+Gemini_API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # Configuración del cliente con tu API Key
 # Puedes pasar la llave directamente o usar la variable de entorno GOOGLE_API_KEY
-client = genai.Client(api_key="TU_API_KEY_AQUI")
+print(Gemini_API_KEY)
+client = genai.Client(api_key=Gemini_API_KEY)
 
 def enviar_mensaje_gemini(prompt: str) -> str:
     """
