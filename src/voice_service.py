@@ -1,4 +1,3 @@
-import os
 from elevenlabs.client import ElevenLabs
 from elevenlabs import save
 
@@ -6,7 +5,7 @@ from elevenlabs import save
 # Obtén tu API Key en elevenlabs.io
 client = ElevenLabs(api_key="TU_API_KEY_ELEVENLABS")
 
-def texto_a_voz(texto, nombre_archivo="respuesta_bot.mp3"):
+def TTS(texto, nombre_archivo="respuesta_bot.mp3"):
     """
     Convierte texto en un archivo de audio .mp3
     """
@@ -25,7 +24,7 @@ def texto_a_voz(texto, nombre_archivo="respuesta_bot.mp3"):
     except Exception as e:
         return f"Error en Texto a Voz: {e}"
 
-def voz_a_texto(ruta_audio):
+def STT(ruta_audio):
     """
     Convierte un archivo de audio en texto (Speech to Text)
     """

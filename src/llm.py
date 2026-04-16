@@ -1,67 +1,33 @@
 from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 Gemini_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# Configuración del cliente con tu API Key
-# Puedes pasar la llave directamente o usar la variable de entorno GOOGLE_API_KEY
-print(Gemini_API_KEY)
+# Configuration of the client with API Key
 client = genai.Client(api_key=Gemini_API_KEY)
 
-def enviar_mensaje_gemini(prompt: str) -> str:
+def send_prompt(prompt: str) -> str:
     """
-    Envía un mensaje usando el cliente moderno de Gemini y retorna el texto.
+    Sends a message using the modern Gemini client and returns the text.
+    Args:
+        - prompt (str): The message to send to the Gemini model.
+    Returns:
+        - response(str): The text response from the Gemini model.
     """
     try:
-        # Usamos el modelo solicitado o el más reciente disponible
+        # Generation of the response based on the provided prompt
         response = client.models.generate_content(
-            model="gemini-2.0-flash", # O gemini-1.5-flash según disponibilidad
+            model="gemini-2.0-flash",
             contents=prompt
         )
+
+        response = response.text
         
-        # Retornamos el texto de la respuesta
-        return response.text
+        # Returns only the text of the response
+        return response
 
     except Exception as e:
-        return f"Ocurrió un error en la solicitud: {str(e)}"
-
-
-####################################################################################
-# Ejemplo
-mi_prompt = """
-### ROL
-   Eres un asistente virtual avanzado con capacidad de memoria y síntesis.
-
-### RESTRICCIONES DE MEMORIA
-   {
-       'name': 'Juan', 
-       'edad': 30, 
-       'ultima_conversacion': 'Tristeza por la pérdida de su mascota'
-   }
-
-### CONTEXTO Y ESTILO
-   Debes seguir esta guía de estilo para la introducción: "Para poder entender 
-   mejor cómo te encuentras tengo que hacerte una pregunta."
-
-### NÚCLEO OBLIGATORIO (COPIAR TEXTUALMENTE)
-   "En este momento, o recientemente, ¿te has hecho daño físico de alguna forma, 
-   como heridas, haber tomado algo que te pudiera hacer mal, o algo similar?"
-
-### ENTRADA DEL USUARIO
-   "He estado teniendo malos pensamientos últimamente."
-       
-### TAREA
-   1. Redacta un INICIO empático que conecte la entrada del usuario con la guía 
-   de estilo y la memoria. Esta no debe tener mas de 40 palabras. La guia de estilo
-   no tiene porque ser mencionada literalmente, es solo para que el LLM sepa el tono 
-   y enfoque a usar.
-   2. Pega a continuación el NÚCLEO OBLIGATORIO sin modificar ni una sola palabra.
-   3. No añadas despedidas ni texto adicional después del núcleo."""
-   
-resultado = enviar_mensaje_gemini(mi_prompt)
-    
-print("Respuesta de Gemini:")
-print(resultado)
+        print(f"\n[Ocurrió un error en la solicitud hacia Gemini: {str(e)}]")
+        return 

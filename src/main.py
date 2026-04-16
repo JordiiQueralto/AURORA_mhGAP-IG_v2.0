@@ -1,72 +1,86 @@
 import voice_service
 import state_machine
-import promp_builder
-import llm
 import db
+import generate_responses
+import phrase_dictionary
+import session_summary
+import datetime
 
-def presentation(numero_telefono):
-    # 1. Consulta de Memoria en MongoDB
-    datos_usuario, is_new = db.obtener_historial_usuario(numero_telefono)
-    memory = datos_usuario.get("resumen_memoria", "")
+def main(telephone):
+    ### 1. Verificar si el usuario es nuevo o existente
+    print(f"\n[Procesando llamada de: {telephone}...]")
+
+    is_new = db.is_new(telephone)
+    memory = db.user_info(telephone)
+
+
+    ### 2. Presentación del asistente y aceptación de términos (primera vez)
+    ###    Retomar conversación (si no es la primera vez)
+    welcome = generate_responses.presentation(is_new, memory)
+    print(f"\nBOT: {welcome}")
+    voice_service.text_to_speech(welcome)
     
-    # 2. Crear prompt en caso de llamada recurrente
-    if is_new:
-        saludo = """Hola. Soy un asistente de apoyo en salud mental. Estoy aquí 
-        para escucharte y acompañarte, pero quiero que sepas desde el principio 
-        que no soy un profesional médico. No puedo darte diagnósticos ni recetarte 
-        nada. Lo que sí puedo hacer es estar contigo, ayudarte a entender cómo te 
-        sientes, y si lo necesitas, conectarte con alguien que pueda ayudarte mejor. 
-        Guardaré las cosas más importantes y si en algún momento creo que puedes 
-        estar en riesgo, te lo diré y buscaremos ayuda juntos. ¿Estás de acuerdo?"""
-    else:
-        # Generamos un prompt específico para que Gemini use la memoria de 
-        # forma natural
-        prompt = promp_builder.presentation_prompt_generation(memory)
-        saludo = llm.generar_saludo(prompt)
+    
+    ### 3. En caso de ser usuario nuevo, espera la respuesta del usuario para 
+    ### aceptar términos y condiciones 
+      
+    if is_new == True:
+        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+        user_input = voice_service.STT("user_input.mp3")
+        if user_input.strip().lower() not in ("sí, acepto", "si, acepto"):
+            print("\nBOT: Lo siento, no podemos continuar sin tu aceptación. Finalizando sesión.")
+            voice_service.TTS("Lo siento, no podemos continuar sin tu aceptación. Finalizando sesión.")
+            exit()
+        else:
+            print("\nBOT: Gracias por aceptar. Estoy aquí para ayudarte.")
+            voice_service.TTS("""Gracias por aceptar. Estoy aquí para ayudarte. 
+                              Qué te gustaría compartir conmigo hoy?""")
         
-    # 3. Salida: Texto a Voz
-    print(f"Bot (Saludo): {saludo}")
-    voice_service.text_to_speech(saludo)
-
-   
-def iniciar_conversacion(numero_telefono):
-    # 1. Consulta de Memoria en MongoDB
-    datos_usuario, es_nuevo = db.obtener_historial_usuario(numero_telefono)
-    memoria = datos_usuario.get("resumen_memoria", "")
-
-    # 2. Entrada: Voz a Texto
-    print(f"Procesando llamada de: {numero_telefono}...")
-    user_input = voice_service.speech_to_text("user_input.mp3")
-    print(f"Usuario: {user_input}")
-
-    # 3. Lógica: Determinar Estado
-    context_guide, nucleo = state_machine.determinar_estado(user_input)
+    ### 4. Bucle de conversación
+    while True:
+        
+        # Esperamos la respuesta del ususario
+        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+        user_input = voice_service.STT("user_input.mp3")
+        
+        if user_input.lower() in ["salir", "exit", "quit"]:
+            print("\n[Finalizando sesión de apoyo...]")
+            break
+        
+        # Lógica: Determinar estado y información para formar la pregunta
+        state = state_machine.determine_state(user_input)
+        context_guide, nucleo = phrase_dictionary.bot_output_info(state)
+        
+        # Generar respuesta con Gemini usando la memoria de la BD
+        bot_output = generate_responses.bot_output(user_input, context_guide, nucleo, memory)
+        
+        # Salida: Pregunta generada por Gemini
+        print(f"\nBOT: {bot_output}")
+        voice_service.text_to_speech(bot_output)
+        
+        # Actualizar memoria: Guardar la nueva información relevante en la BD
+        db.add_user_info(telephone, f"user_input_{i}", user_input)
+        db.add_user_info(telephone, f"bot_output_{i}", bot_output)
+        i += 1
+        
+    ### 5. Finalizar sesión:
+    # Despedida
+    farewell = generate_responses.farewell()
+    print(f"\nBOT: {farewell}")
+    voice_service.TTS(farewell)
     
-    # 4. Construcción: Crear el Prompt incluyendo la memoria de la BD
-    prompt = promp_builder.prompt_generation(
-        user_input, 
-        context_guide, 
-        nucleo, 
-        memoria, 
-        es_nuevo
-    )
+    # Toma la informacion guardada en la sesión y hace un resumen para el equipo de apoyo
+    # humano y para futuras interacciones con el usuario. Luego, borra el historial de 
+    # interacciones individuales.
+    datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    summary = session_summary.summarize(telephone)
+    db.add_user_info(telephone, f"{datetime}_session_summary", summary)
+    db.delete_interaction_history(telephone)
 
-    # 5. Inteligencia: Generar Respuesta con Gemini
-    respuesta_texto = llm.generar_respuesta(prompt)
-    print(f"IA: {respuesta_texto}")
 
-    # 6. Salida: Texto a Voz
-    voice_service.text_to_speech(respuesta_texto)
-    
-    # 7. Persistencia: Guardar la nueva interacción
-    db.guardar_interaccion(numero_telefono, user_input, respuesta_texto)
-    print("Conversación guardada en BD.")
 
 if __name__ == "__main__":
-    # Ejemplo con un número ficticio
-    NUMERO_ENTRANTE = "+34600000000"
+    # Example
+    NUMERO_ENTRANTE = "1234"
     
-    presentation(NUMERO_ENTRANTE)
-    
-    while True:
-        iniciar_conversacion(NUMERO_ENTRANTE) 
+    main(NUMERO_ENTRANTE)

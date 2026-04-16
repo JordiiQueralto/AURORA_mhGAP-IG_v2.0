@@ -1,0 +1,94 @@
+import prompt_builder
+import llm
+
+def presentation(is_new, memory):
+    """Generates the welcome message for the user, depending on whether they 
+    are new or existing, and using memory if available.
+    Args:        
+        - is_new (bool): Indicates if the user is new or existing.
+        - memory (dict): The user's memory retrieved from the database.
+    Returns:    
+        - welcome(str): The welcome message to be presented to the user."""
+    
+    # New user
+    if is_new:
+        welcome = """Hola. Soy un asistente de apoyo en salud mental. Estoy aquí 
+        para escucharte y acompañarte, pero quiero que sepas desde el principio 
+        que no soy un profesional médico. No puedo darte diagnósticos ni recetarte 
+        nada. Lo que sí puedo hacer es estar contigo, ayudarte a entender cómo te 
+        sientes, y si lo necesitas, conectarte con alguien que pueda ayudarte mejor. 
+        Guardaré las cosas más importantes y si en algún momento creo que puedes 
+        estar en riesgo, te lo diré y buscaremos ayuda juntos. ¿Estás de acuerdo?
+        En caso afirmativo, di: "Sí, acepto"."""
+    else:
+        # Existing user
+        # Generate a specific prompt for LLM to use the memory in the welcome message
+        prompt = prompt_builder.presentation_prompt_generation(memory)
+        welcome = llm.send_prompt(prompt)
+        
+    # Return the generated welcome message
+    return welcome
+
+   
+def bot_output(user_input, context_guide, nucleo, memory):
+    """
+    Generates a response based on the user's input and the conversation context.
+    Args:
+        - user_input (str): The user's message.
+        - context_guide (str): The context guide for the conversation.
+        - nucleo (str): The core question for the conversation.
+        - memory (dict): The user's memory retrieved from the database.
+    Returns:
+        - bot_output(str): The generated response."""
+        
+    # Create a prompt for the LLM including the memory from the DB
+    prompt = prompt_builder.prompt_generation(
+        user_input, 
+        context_guide, 
+        nucleo, 
+        memory,
+    )
+
+    # Generate the response using the LLM
+    bot_output = llm.send_prompt(prompt)
+    return bot_output
+
+
+def farewell():
+    """
+    Generates a farewell message for the user.
+    Returns:
+        - farewell(str): The farewell message.
+    """
+    farewell_message = """Gracias por confiar en mí hoy. Espero haber podido ayudarte. 
+    Recuerda que siempre puedes llamar cuando lo necesites. Cuídate mucho."""
+    return farewell_message
+
+
+def session_summary(memory):
+    """
+    Generates a summary of the session based on the conversation history.
+    Args:
+        - memory (dict): The user's memory with all interactions.
+    Returns:
+        - summary (str): The summary of the session.
+    """
+    # Create a prompt for the LLM to summarize the session
+    prompt = prompt_builder.summary_prompt_generation(memory)
+    summary = llm.send_prompt(prompt)
+    return summary
+
+def response_classification(question, response, triggers):
+    """
+    Generates a classification for the user's response based on predefined triggers.
+    Args:
+        - question (str): The original question (bot output).
+        - response (str): The user's response to classify (user input).
+        - triggers (dict): A dictionary of predefined triggers for classification.
+    Returns:
+        - classification (str): The classification result based on the triggers.
+    """
+    prompt = prompt_builder.prompt_response_classification(question, response, triggers)
+    classification = llm.send_prompt(prompt)
+    
+    return classification
