@@ -32,14 +32,15 @@ def presentation_prompt_generation(memory):
    return prompt
 
 
-
-def prompt_generation(user_input, context_guide, nucleo, memory):
+def prompt_generation(last_bot_output, last_user_input, nucleo, memory):
    """
-   Generates a prompt for the LLM by combining user input, a style guide, 
-   a fixed core question, and memory from MongoDB.
+   Generates a prompt for a LLM. This prompt takes into account the conversation 
+   context so that the generated `bot_output` fits naturally within the previous 
+   conversational flow. The `bot_output` must consist of an introductory connector 
+   (guided by the `context`) followed by a fixed `nucleo`.
    Args:
-      - user_input (str): The current user input.
-      - context_guide (str): The style guide for the introduction.
+      - last_bot_output (str): The previous output from the bot.
+      - last_user_input (str): The previous input from the user.
       - nucleo (str): The fixed core of the response.
       - memory (dict): The MongoDB memory.
    Returns:
@@ -55,24 +56,26 @@ def prompt_generation(user_input, context_guide, nucleo, memory):
    # RESTRICCIONES DE MEMORIA
    {memory}
 
-   # CONTEXTO Y ESTILO
-   Debes seguir esta guía de estilo para la introducción: "{context_guide}"
-
    # NÚCLEO OBLIGATORIO (COPIAR TEXTUALMENTE)
    "{nucleo}"
 
-   # ENTRADA DEL USUARIO
-   "{user_input}"
-       
+   # FLUJO DE CONVERSACIÓN PASADO
+   - "Última pregunta del bot: {last_bot_output}"
+   - "Última respuesta del usuario: {last_user_input}"
+   
    # TAREA
-   1. Redacta un INICIO empático que conecte la entrada del usuario con la guía 
-   de estilo y la memoria. Esta no debe tener mas de 40 palabras. La guia de estilo
-   no tiene porque ser mencionada literalmente, es solo para que el LLM sepa el tono 
-   y enfoque a usar.
-   2. Pega a continuación el NÚCLEO OBLIGATORIO sin modificar ni una sola palabra.
-   3. No añadas despedidas ni texto adicional después del núcleo.
-   4. Devuelve la respuesta en un solo bloque de texto.
-    """
+   1. Genera una pregunta que continúe de forma fluida la última intervención del usuario.
+      Comienza con una breve introducción que conecte de manera coherente y conversacional
+      con su mensaje anterior. Máximo 40 palabras.
+   2. La pregunta debe finalizar con el `nucleo` EXACTO, sin modificar ni una sola palabra.
+   3. Asegúrate de que la pregunta completa esté integrada de forma orgánica en el flujo
+      de la conversación, evitando que suene forzada o artificial.
+   4. No añadas ningún texto adicional antes ni después de la pregunta.
+   5. Devuelve la salida en un único bloque de texto.
+   6. No añadas ninguna pregunta dentro de la introducción, la pregunta debe ir al final 
+   después de la introducción.
+   7. No menciones nada sobre ser un asistente virtual o tener memoria.
+   """
    
    return prompt
 
@@ -86,6 +89,7 @@ def summary_prompt_generation(conversation_history):
    Returns:
       - prompt (str): The generated prompt for the LLM.
    """
+   
    prompt = f"""
    # ROL
    Eres un asistente analítico especializado en síntesis de conversaciones de apoyo 

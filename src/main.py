@@ -3,7 +3,7 @@ import state_machine
 import db
 import generate_responses
 import phrase_dictionary
-import session_summary
+import summarize
 import datetime
 
 def main(telephone):
@@ -11,7 +11,7 @@ def main(telephone):
     print(f"\n[Procesando llamada de: {telephone}...]")
 
     is_new = db.is_new(telephone)
-    memory = db.user_info(telephone)
+    memory = summarize.memory_summary(telephone)
 
 
     ### 2. Presentación del asistente y aceptación de términos (primera vez)
@@ -56,7 +56,7 @@ def main(telephone):
         
         # Salida: Pregunta generada por Gemini
         print(f"\nBOT: {bot_output}")
-        voice_service.text_to_speech(bot_output)
+        voice_service.TTS(bot_output)
         
         # Actualizar memoria: Guardar la nueva información relevante en la BD
         db.add_user_info(telephone, f"user_input_{i}", user_input)
@@ -73,7 +73,7 @@ def main(telephone):
     # humano y para futuras interacciones con el usuario. Luego, borra el historial de 
     # interacciones individuales.
     datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    summary = session_summary.summarize(telephone)
+    summary = summarize.session_summary(telephone)
     db.add_user_info(telephone, f"{datetime}_session_summary", summary)
     db.delete_interaction_history(telephone)
 

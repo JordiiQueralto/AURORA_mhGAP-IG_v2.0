@@ -18,15 +18,15 @@ def send_prompt(prompt: str) -> str:
     """
     try:
         # Generation of the response based on the provided prompt
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
+        bot_output = client.models.generate_content(
+            model="gemini-2.5-flash",
             contents=prompt
         )
 
-        response = response.text
+        bot_output = bot_output.text
         
         # Returns only the text of the response
-        return response
+        return bot_output
 
     except Exception as e:
         print(f"\n[Ocurrió un error en la solicitud hacia Gemini: {str(e)}]")

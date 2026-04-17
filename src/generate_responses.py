@@ -30,12 +30,12 @@ def presentation(is_new, memory):
     return welcome
 
    
-def bot_output(user_input, context_guide, nucleo, memory):
+def bot_output(last_bot_output, last_user_input, nucleo, memory):
     """
     Generates a response based on the user's input and the conversation context.
     Args:
-        - user_input (str): The user's message.
-        - context_guide (str): The context guide for the conversation.
+        - last_bot_output (str): The previous question from the bot.
+        - last_user_input (str): The previous response from the user.
         - nucleo (str): The core question for the conversation.
         - memory (dict): The user's memory retrieved from the database.
     Returns:
@@ -43,8 +43,8 @@ def bot_output(user_input, context_guide, nucleo, memory):
         
     # Create a prompt for the LLM including the memory from the DB
     prompt = prompt_builder.prompt_generation(
-        user_input, 
-        context_guide, 
+        last_bot_output,
+        last_user_input, 
         nucleo, 
         memory,
     )
@@ -77,6 +77,7 @@ def session_summary(memory):
     prompt = prompt_builder.summary_prompt_generation(memory)
     summary = llm.send_prompt(prompt)
     return summary
+
 
 def response_classification(question, response, triggers):
     """

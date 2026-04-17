@@ -1,41 +1,50 @@
-from elevenlabs.client import ElevenLabs
-from elevenlabs import save
+import speech_recognition as sr
+from gtts import gTTS
+import os
 
-# Configuración del cliente
-# Obtén tu API Key en elevenlabs.io
-client = ElevenLabs(api_key="TU_API_KEY_ELEVENLABS")
 
-def TTS(texto, nombre_archivo="respuesta_bot.mp3"):
+def STT():
     """
-    Convierte texto en un archivo de audio .mp3
+    Escucha desde el micrófono y devuelve el texto reconocido.
     """
-    try:
-        print("Generando audio...")
-        audio = client.generate(
-            text=texto,
-            voice="Rachel", # Puedes cambiar el nombre de la voz aquí
-            model="eleven_multilingual_v2"
-        )
-        
-        # Guardamos el flujo de audio en un archivo local
-        save(audio, nombre_archivo)
-        return f"Audio guardado con éxito como {nombre_archivo}"
     
-    except Exception as e:
-        return f"Error en Texto a Voz: {e}"
+    # Inicializar reconocedor una sola vez
+    recognizer = sr.Recognizer()
+    
+    try:
+        with sr.Microphone() as source:
+            print("\n[Habla ahora...]")
+            audio = recognizer.listen(source)
 
-def STT(ruta_audio):
+        texto = recognizer.recognize_google(audio, language="es-ES")
+        return texto
+
+    except sr.UnknownValueError:
+        print("BOT : No entendí el audio")
+        return None
+
+    except sr.RequestError as e:
+        print("Error con el servicio:", e)
+        return None
+
+
+def TTS(texto, archivo="respuesta.mp3"):
     """
-    Convierte un archivo de audio en texto (Speech to Text)
+    Convierte un texto en voz y reproduce el audio.
     """
     try:
-        print("Transcribiendo audio...")
-        with open(ruta_audio, "rb") as audio_file:
-            # Usamos el modelo de transcripción de ElevenLabs
-            transcripcion = client.speech_to_text.convert(
-                file=audio_file,
-                model_id="scribe_v1", # El modelo de alta precisión de Eleven
-            )
-        return transcripcion.text
+        carpeta = "audio"
+        ruta = os.path.join(carpeta, archivo)
+        tts = gTTS(text=texto, lang="es")
+        tts.save(ruta)
+        os.system(f"start {ruta}")
     except Exception as e:
-        return f"Error en Voz a Texto: {e}"
+        print("Error en TTS:", e)
+
+
+# Ejemplo de uso
+##texto_usuario = STT()
+
+##if texto_usuario:
+##    print("Has dicho:", texto_usuario)
+##    TTS(f"{texto_usuario}")

@@ -24,6 +24,7 @@ def is_new(telephone):
         print("\n[Usuario no encontrado. Es un nuevo usuario.]")
         return True
 
+
 def create_user(telephone):
     """
     Creates a new user in the database if they do not already exist.
@@ -42,13 +43,14 @@ def create_user(telephone):
         print("\n[Error: El usuario ya existe.]")
         return
 
+
 def add_user_info(telephone, key, value):
     """
     Adds information to an existing user in the database.
     Args:
         - telephone (int): The phone number of the user.
         - key (str): The field to update.
-        - value (str): The value to set for the field.
+        - value (Any): The value to set for the field.
     Returns:
         - None
     """
@@ -62,7 +64,7 @@ def user_info(telephone):
     Args:
         - telephone (int): The phone number of the user to retrieve.
     Returns:
-        - dict: The user information if found, None otherwise.
+        - user(dict): The user information if found, None otherwise.
     """
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     if user:
@@ -70,6 +72,7 @@ def user_info(telephone):
     else:
         print("\nUsuario no encontrado.")
         return None
+    
     
 def conversation_history(telephone):
     """

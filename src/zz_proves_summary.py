@@ -1,10 +1,10 @@
 import db
-import session_summary
+import summarize
 import datetime
 
 datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 telephone = 123456
 
-summary = session_summary.summarize(telephone)
+summary = summarize.session_summary(telephone)
 db.add_user_info(telephone, f"{datetime}_session_summary", summary)
 db.delete_interaction_history(telephone)
