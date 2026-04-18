@@ -3,7 +3,7 @@ import llm
 import phrase_dictionary
 import state_machine
 import summarize
-import generate_responses
+import generate_output
 
 
 def flujo(telephone, phase, state, last_bot_output, last_user_input, i, j):
@@ -15,7 +15,7 @@ def flujo(telephone, phase, state, last_bot_output, last_user_input, i, j):
     triggers = phrase_dictionary.trigger_dict(phase, state)
     
     # Classify the user's response based on the last bot output and the triggers
-    classification = generate_responses.response_classification(
+    classification = generate_output.response_classification(
         last_bot_output, last_user_input, triggers)
     
     # Update the state machine based on the classification 

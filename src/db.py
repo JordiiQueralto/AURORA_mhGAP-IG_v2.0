@@ -58,7 +58,6 @@ def add_user_info(telephone, key, value):
         - None
     """
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
-    print("\n[Información del usuario actualizada correctamente.]")
 
 
 def user_status(telephone):

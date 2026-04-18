@@ -1,6 +1,6 @@
 import db
 import summarize
-import generate_responses
+import generate_output
 import datetime
 
 def Init(telephone):
@@ -18,9 +18,10 @@ def Init(telephone):
     else:
         status = db.user_status(telephone)
 
-    bot_output = generate_responses.welcome(status, memory)
+    bot_output = generate_output.welcome(status, memory)
     print(f"\nBOT: {bot_output}")
 
+    # Si había rechazado les términos préviamente o es nuevo
     if status == "rejected":
         
         user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
@@ -36,9 +37,18 @@ def Init(telephone):
             
             bot_output = "Lo siento, no podemos continuar sin tu aceptación."
             print(f"\nBOT: {bot_output}")
-            print("\n[Finalizando sesión.]")
+        
+            phase = "FAREWELL"
+            state = "exit"
 
-            return (bot_output, "EXIT", phase, state, memory)
+            return (bot_output, user_input, phase, state, memory)
+        
+        elif user_input.lower() in ["salir", "Salir", "SALIR"]:
+            
+            phase = "FAREWELL"
+            state = "exit"
+            
+            return (bot_output, user_input, phase, state, memory)
 
         else:
             value = {
@@ -52,6 +62,7 @@ def Init(telephone):
             print(f"\nBOT: {bot_output}")
 
             user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+           
             phase = "PROFILE"
             state = "name"
 
@@ -61,8 +72,3 @@ def Init(telephone):
         memory = summarize.memory_summary(telephone)
         user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
         return (bot_output, user_input, phase, state, memory)
-    
-    
-# Example
-##telephone = 12345
-##bot_output, user_input, phase, memory = Init(telephone)

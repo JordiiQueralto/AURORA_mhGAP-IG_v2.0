@@ -1,80 +1,78 @@
-import voice_service
+import generate_output
+import PRESENTATION
 import state_machine
-import db
-import generate_responses
 import phrase_dictionary
 import summarize
-import datetime
+import db
 
 def main(telephone):
-    ### 1. Verificar si el usuario es nuevo o existente
-    print(f"\n[Procesando llamada de: {telephone}...]")
-
-    is_new = db.is_new(telephone)
-    memory = summarize.memory_summary(telephone)
-
-
-    ### 2. Presentación del asistente y aceptación de términos (primera vez)
-    ###    Retomar conversación (si no es la primera vez)
-    welcome = generate_responses.presentation(is_new, memory)
-    print(f"\nBOT: {welcome}")
-    voice_service.text_to_speech(welcome)
     
+    ### 1. PRESENTATION
+    last_bot_output, last_user_input, phase, state, memory = PRESENTATION.Init(telephone)
     
-    ### 3. En caso de ser usuario nuevo, espera la respuesta del usuario para 
-    ### aceptar términos y condiciones 
-      
-    if is_new == True:
-        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
-        user_input = voice_service.STT("user_input.mp3")
-        if user_input.strip().lower() not in ("sí, acepto", "si, acepto"):
-            print("\nBOT: Lo siento, no podemos continuar sin tu aceptación. Finalizando sesión.")
-            voice_service.TTS("Lo siento, no podemos continuar sin tu aceptación. Finalizando sesión.")
-            exit()
-        else:
-            print("\nBOT: Gracias por aceptar. Estoy aquí para ayudarte.")
-            voice_service.TTS("""Gracias por aceptar. Estoy aquí para ayudarte. 
-                              Qué te gustaría compartir conmigo hoy?""")
-        
-    ### 4. Bucle de conversación
+    if last_user_input == "EXIT":
+        return
+    
+    #### 2. PROFILE
+    i = 0
+    j = 0   
     while True:
         
-        # Esperamos la respuesta del ususario
-        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
-        user_input = voice_service.STT("user_input.mp3")
-        
-        if user_input.lower() in ["salir", "exit", "quit"]:
-            print("\n[Finalizando sesión de apoyo...]")
-            break
-        
-        # Lógica: Determinar estado y información para formar la pregunta
-        state = state_machine.determine_state(user_input)
-        context_guide, nucleo = phrase_dictionary.bot_output_info(state)
-        
-        # Generar respuesta con Gemini usando la memoria de la BD
-        bot_output = generate_responses.bot_output(user_input, context_guide, nucleo, memory)
-        
-        # Salida: Pregunta generada por Gemini
+        # Creamos `bot_output` dpeendiendo de la `phase` y `state` actuales
+        nucleo = phrase_dictionary.bot_output_info(phase, state)      
+        bot_output = generate_output.bot_output(last_bot_output, last_user_input, nucleo, memory)
         print(f"\nBOT: {bot_output}")
-        voice_service.TTS(bot_output)
         
-        # Actualizar memoria: Guardar la nueva información relevante en la BD
-        db.add_user_info(telephone, f"user_input_{i}", user_input)
-        db.add_user_info(telephone, f"bot_output_{i}", bot_output)
-        i += 1
+        # Esperamos la respuesta del usuario
+        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
         
-    ### 5. Finalizar sesión:
+        # Salimos del bucle en caso de que el usuario lo desee
+        if user_input.lower() in ["salir", "Salir", "SALIR"]:
+            phase = "FAREWELL"
+            state = "normal"
+            break 
+        
+        else:
+            # En caso contrario, actualizamos `phase` i `state`
+            phase, state, i = state_machine.StateMachine(telephone, phase, state, user_input, i)
+            
+            # Actualizar variables
+            last_bot_output = bot_output
+            last_user_input = user_input
+            
+            # Actualizar memoria: Guardar la nueva información relevante en la BD
+            db.add_user_info(telephone, f"user_input_{j}", user_input)
+            db.add_user_info(telephone, f"bot_output_{j}", bot_output)
+            j += 1
+            memory = summarize.memory_summary(telephone)
+            
+            # Rompemos el bucle si llegamos a phase `DEP` o `SUI`    
+            if phase == ("DEP" or "SUI"):
+                break
+        
+    #### 3. CONTENTION
+
+
+    #### 4. DEP
+   
+   
+    #### 5. SUI
+
+
+    ### 6. FAREWELL
     # Despedida
-    farewell = generate_responses.farewell()
+    farewell = generate_output.farewell(state)
     print(f"\nBOT: {farewell}")
-    voice_service.TTS(farewell)
+    print("\n[Finalizando sesión de apoyo...]")
     
-    # Toma la informacion guardada en la sesión y hace un resumen para el equipo de apoyo
-    # humano y para futuras interacciones con el usuario. Luego, borra el historial de 
-    # interacciones individuales.
+    # Obtenemos fecha y hora actuales
     datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Obtenemos un resumen de la sessión y la añadimos a la BD
     summary = summarize.session_summary(telephone)
     db.add_user_info(telephone, f"{datetime}_session_summary", summary)
+    
+    # Eliminamos historial de interacciones de la sessión
     db.delete_interaction_history(telephone)
 
 
