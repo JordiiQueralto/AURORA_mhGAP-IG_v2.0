@@ -24,10 +24,6 @@ def session_summary(telephone):
 
 
 def memory_summary(telephone):
-    """
-    
-    """
-    
     memory = db.user_info(telephone)
     
     if not memory:
@@ -36,31 +32,31 @@ def memory_summary(telephone):
     # Filter keys that contain "_session_summary"
     summary_keys = [k for k in memory if "_session_summary" in k]
     
-    if not summary_keys:
-        return memory
-
     # Find the latest summary key based on the timestamp in the key
-    latest_key = max(
-    summary_keys,
-    key=lambda k: datetime.strptime(
-        k.split("_session_summary")[0],
-        "%Y-%m-%d %H:%M:%S"))
+    latest_key = None
+    if summary_keys:
+        latest_key = max(
+            summary_keys,
+            key=lambda k: datetime.strptime(
+                k.split("_session_summary")[0],
+                "%Y-%m-%d %H:%M:%S"))
 
-    # Remove all summary keys except the latest one from the memory
-    for key in summary_keys:
-        if key != latest_key:
-            del memory[key]
+    # Build filtered memory with only the desired keys
+    filtered_memory = {k: memory[k] for k in ("name", "age", "call_reason") if k in memory}
+    
+    if latest_key:
+        filtered_memory[latest_key] = memory[latest_key]
 
-    return memory
+    return filtered_memory
 
-####################################################################
+
 # Example
 
-##telephone = 123456
+##telephone = 1234
 
 ##memory = db.user_info(telephone)
 ##print(memory)
 ##print()
 
-#memory = memory_summary(telephone)
+##memory = memory_summary(telephone)
 ##print(memory)

@@ -1,18 +1,21 @@
 import prompt_builder
 import llm
+import textwrap
 
-def presentation(is_new, memory):
+def welcome(status, memory):
     """Generates the welcome message for the user, depending on whether they 
-    are new or existing, and using memory if available.
+    are new (new users or have not accepted the terms of usage previously) or 
+    existing, and using memory if available.
     Args:        
-        - is_new (bool): Indicates if the user is new or existing.
+        - status (str): Indicates if the user has accepted the terms of use.
         - memory (dict): The user's memory retrieved from the database.
     Returns:    
-        - welcome(str): The welcome message to be presented to the user."""
+        - welcome(str): The welcome message to be presented to the user.
+    """
     
-    # New user
-    if is_new:
-        welcome = """Hola. Soy un asistente de apoyo en salud mental. Estoy aquí 
+    if status == "rejected":
+        bot_output = """
+        Hola. Soy un asistente de apoyo en salud mental. Estoy aquí 
         para escucharte y acompañarte, pero quiero que sepas desde el principio 
         que no soy un profesional médico. No puedo darte diagnósticos ni recetarte 
         nada. Lo que sí puedo hacer es estar contigo, ayudarte a entender cómo te 
@@ -20,16 +23,20 @@ def presentation(is_new, memory):
         Guardaré las cosas más importantes y si en algún momento creo que puedes 
         estar en riesgo, te lo diré y buscaremos ayuda juntos. ¿Estás de acuerdo?
         En caso afirmativo, di: "Sí, acepto"."""
+        
+        # Fix the format
+        bot_output = " ".join(bot_output.split())
+        
     else:
         # Existing user
         # Generate a specific prompt for LLM to use the memory in the welcome message
         prompt = prompt_builder.presentation_prompt_generation(memory)
-        welcome = llm.send_prompt(prompt)
+        bot_output = llm.send_prompt(prompt)
         
     # Return the generated welcome message
-    return welcome
-
-   
+    return bot_output
+        
+     
 def bot_output(last_bot_output, last_user_input, nucleo, memory):
     """
     Generates a response based on the user's input and the conversation context.

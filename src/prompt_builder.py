@@ -10,13 +10,13 @@ def presentation_prompt_generation(memory):
    prompt = f"""
    Eres un asistente telefónico con memoria. Tu tarea es generar un SALUDO INICIAL 
    breve para una linea de prevención del suicidio, teniendo en cuenta la información 
-   que tienes sobre el usuario
+   que tienes sobre el usuario. 
 
-   # REGLA DE MEMORIA: 
+   # MEMORIA: 
    {memory}
 
    # TAREA:
-   1. Saluda al usuario dándole la bienvenida de nuevo.
+   1. Saluda al usuario dándole la bienvenida de nuevo, nombrando su nombre.
    2. Haz una referencia sutil a lo que hablaron la última vez 
    (según la memoria) para demostrar que te acuerdas de él.
    3. Mantén el saludo por debajo de las 40 palabras.
@@ -114,6 +114,7 @@ def summary_prompt_generation(conversation_history):
    - Usa lenguaje claro y profesional.
    - Prioriza la información sobre seguridad.
    - No incluyas detalles personales innecesarios.
+   - No añadas título, empieza directamente con el "Punto de entrada".
    """
    
    return prompt

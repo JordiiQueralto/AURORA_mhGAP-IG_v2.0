@@ -1,85 +1,101 @@
 def bot_output_info(phase, state):
     
     dict = {
-        "DEP" : {
-            "1A.1" : {
-                "nucleo" : """Durante mínimo un periodo de dos semanas, ¿te has sentido triste, 
+        
+        "PROFILE": {
+            "name": {
+                "nucleo": """¿Cómo te llamas?"""
+                },
+            "age": {
+                "nucleo": """¿Qué edad tienes?"""
+                },
+            "reason": {
+                "nucleo": """¿Cuál es el motivo de la llamada?"""
+                },
+            "expectation": {
+                "nucleo": """¿Qué aspectativas tienes sobre mis capacidades?"""
+                },
+            },
+        
+        "DEP": {
+            "1A.1": {
+                "nucleo": """Durante mínimo un periodo de dos semanas, ¿te has sentido triste, 
                 vacío o sin ánimo la mayor parte del día, casi todos los días?”"""
             },
-            "1A.2" : {
-                "nucleo" : """Durante ese mismo periodo, ¿has perdido el interés o el placer en 
+            "1A.2": {
+                "nucleo": """Durante ese mismo periodo, ¿has perdido el interés o el placer en 
                 actividades que antes disfrutaba, como hobbies, relaciones o trabajo?"""
             },
-            "1B.1" : {
-                "nucleo" : """¿Has notado cambios persistentes durante al menos dos semanas en aspectos 
+            "1B.1": {
+                "nucleo": """¿Has notado cambios persistentes durante al menos dos semanas en aspectos 
                 como pueden ser la dificultad para conciliar el sueño o por el contrario dormir demasiado?"""
             },
-            "1B.2" : {
-                "nucleo" : """¿Qué me dices pero sobre cambios significativos del apetito o del peso?"""
+            "1B.2": {
+                "nucleo": """¿Qué me dices pero sobre cambios significativos del apetito o del peso?"""
             },
-            "1B.3" : {
-                "nucleo" : """¿Has notado fatiga o pérdida de energía durante al menos dos semanas?"""
+            "1B.3": {
+                "nucleo": """¿Has notado fatiga o pérdida de energía durante al menos dos semanas?"""
             },
-            "1B.4" : {
-                "nucleo" : """¿Has notado  problemas para concentrarte o tomar decisiones?"""
+            "1B.4": {
+                "nucleo": """¿Has notado  problemas para concentrarte o tomar decisiones?"""
             },
-            "1B.5" : {
-                "nucleo" : """¿En este tiempo has sentido que no estás a la altura de las cosas 
+            "1B.5": {
+                "nucleo": """¿En este tiempo has sentido que no estás a la altura de las cosas 
                 o que a veces te cuesta ver tus propios méritos?"""
             },
-            "1B.6" : {
-                "nucleo" : """"En estas últimas semanas, ¿has sentido que ya no hay salida o que la 
+            "1B.6": {
+                "nucleo": """"En estas últimas semanas, ¿has sentido que ya no hay salida o que la 
                 vida se te hace demasiado pesada como para seguir adelante?" """
             },
-            "1C" : {
-                "nucleo" : """¿Hay algo de esto que está afectando tu capacidad de llevar tu vida 
+            "1C": {
+                "nucleo": """¿Hay algo de esto que está afectando tu capacidad de llevar tu vida 
                 del día a día, como trabajar, estudiar, relacionarte con otros o cuidarte?"""
             },
-            "2A.1" : {
-                "nucleo" : """"""
+            "2A.1": {
+                "nucleo": """"""
             },
-            "2A.2" : {
-                "nucleo" : """"""
+            "2A.2": {
+                "nucleo": """"""
             },
-            "2B.1" : {
-                "nucleo" : """"""
+            "2B.1": {
+                "nucleo": """"""
             },
-            "2B.2" : {
-                "nucleo" : """"""
+            "2B.2": {
+                "nucleo": """"""
             },
-            "2B.3" : {
-                "nucleo" : """"""
+            "2B.3": {
+                "nucleo": """"""
             },
-            "2B.4" : {
-                "nucleo" : """"""
+            "2B.4": {
+                "nucleo": """"""
             },
-            "2B.5" : {
-                "nucleo" : """"""
+            "2B.5": {
+                "nucleo": """"""
             },
-            "2C" : {
-                "nucleo" : """"""
+            "2C": {
+                "nucleo": """"""
             },
-            "2D.1" : {
-                "nucleo" : """"""
+            "2D.1": {
+                "nucleo": """"""
             },
-            "2D.2" : {
-                "nucleo" : """"""
+            "2D.2": {
+                "nucleo": """"""
             },
-            "2D.3" : {
-                "nucleo" : """"""
+            "2D.3": {
+                "nucleo": """"""
             },
-            "2D.3.1" : {
-                "nucleo" : """"""
+            "2D.3.1": {
+                "nucleo": """"""
             },
-            "3" : {
-                "nucleo" : """"""
+            "3": {
+                "nucleo": """"""
             },
         },
         
-        "SUI" : {
-            "1" : {},
-            "2A" : {},
-            "2B" : {},
+        "SUI": {
+            "1": {},
+            "2A": {},
+            "2B": {},
         }
         
     }
@@ -100,8 +116,8 @@ def bot_output_info(phase, state):
 def trigger_dict(phase, state):
     trigger_phase_state = {
         "DEP": {
-            "1A" : {
-                "trigger_yes" :  [ # Afirmaciones directa
+            "1A": {
+                "trigger_yes":  [ # Afirmaciones directa
                                   "sí", "sí he notado", "claro", "exacto", "por supuesto", 
                                   "definitivamente", "cierto",
                                   
@@ -118,7 +134,7 @@ def trigger_dict(phase, state):
                                   "sin interés", "pérdida de interés", "no tengo ganas de nada", 
                                   "cosas que antes disfrutaba", "ya no disfruto", "no me apetece nada"],
 
-                "trigger_no" : [ # Negaciones directa
+                "trigger_no": [ # Negaciones directa
                                 "no", "no he notado", "nunca", "jamás", "nada de eso", "para nada", 
                                 "en absoluto", "de ninguna manera",
 
@@ -130,32 +146,32 @@ def trigger_dict(phase, state):
                                 "sigo disfrutando", "me gusta lo mismo", "tengo interés", "disfruto las cosas", 
                                 "me motivan", "tengo ganas", "estoy motivado", "sigo con ganas"]
                 },
-            "1B.1" : {
-                "trigger_yes" : [],
-                "trigger_no" : []
+            "1B.1": {
+                "trigger_yes": [],
+                "trigger_no": []
                 },
         },
         
-        "SUI" : {
+        "SUI": {
         }
     }
     
     triggers = {
-        "trigger_ambiguity" : [ "no sé", "no se", "no estoy seguro", "no estoy segura", 
+        "trigger_ambiguity": [ "no sé", "no se", "no estoy seguro", "no estoy segura", 
                                "no tengo claro", "no recuerdo", "depende", "quizás", 
                                "tal vez", "podría ser", "no lo sé exactamente", "no entiendo", 
                                "qué quieres decir", "explica mejor", "repite porfa", 
                                "repite por favor", "repite", "aclárame", "no capté" ],
-        "trigger_evasion" : [  "cuéntame un chiste", "que tiempo hace", 
+        "trigger_evasion": [  "cuéntame un chiste", "que tiempo hace", 
                              "dime la hora", "qué tal tú", "pasemos página", "olvídalo", "olvídate", 
                              "no es nada", "no es grave", "son tonterías", "no pasa nada", 
                              "no vale la pena", "poca cosa", "es poco", "tengo miedo de decirlo",
                              "es complicado", "me duele hablar de eso", "muy difícil explicarlo" ],
-        "trigger_negation" : [ "cambia de tema", "canvia de tema", "otro tema", "habla de otra cosa", 
+        "trigger_negation": [ "cambia de tema", "canvia de tema", "otro tema", "habla de otra cosa", 
                              "hablemos de otra cosa", "no quiero hablar de eso", "prefiero no contestar", 
                              "no voy a responder", "eso no te importa", "no es asunto tuyo", 
                             "déjame en paz", "no insistas", "pasa de eso", "no me apetece" ],
-        "trigger_hostility" : [ "eres inútil", "robot inútil", "qué pregunta tonta", "no me jodas", 
+        "trigger_hostility": [ "eres inútil", "robot inútil", "qué pregunta tonta", "no me jodas", 
                                "esto es ridículo", "para de preguntar", "no me fío de ti", 
                                "pregunta estúpida", "qué tontería", "no confío en ti", "cállate"]
         

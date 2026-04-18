@@ -4,7 +4,7 @@ from pymongo.errors import DuplicateKeyError
 # Connection to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["CHATBOT_mhGAP"]
-users = db["users"]
+users = db["users"]  # collection
 
 
 def is_new(telephone):
@@ -25,7 +25,7 @@ def is_new(telephone):
         return True
 
 
-def create_user(telephone):
+def create_user(telephone, is_new):
     """
     Creates a new user in the database if they do not already exist.
     Args:
@@ -36,9 +36,12 @@ def create_user(telephone):
     users.create_index("telephone", unique=True)
 
     try:
-        users.insert_one({"telephone": telephone})
-        print("\n[Usuario creado correctamente.]")
-        return
+        if is_new == True:
+            users.insert_one({"telephone": telephone})
+            print("\n[Usuario creado correctamente.]")
+            return
+        else:
+            return
     except DuplicateKeyError:
         print("\n[Error: El usuario ya existe.]")
         return
@@ -56,6 +59,12 @@ def add_user_info(telephone, key, value):
     """
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
     print("\n[Información del usuario actualizada correctamente.]")
+
+
+def user_status(telephone):
+    doc = users.find_one({"telephone": telephone})
+    status = doc["USER_TERMS"].get("status")
+    return status
 
 
 def user_info(telephone):

@@ -19,7 +19,7 @@ def flujo(telephone, phase, state, last_bot_output, last_user_input, i, j):
         last_bot_output, last_user_input, triggers)
     
     # Update the state machine based on the classification 
-    new_state, i, j = state_machine.StateMachine_DEP(telephone, state, classification, i, j)
+    new_state, i, j = state_machine.StateMachine(telephone, state, classification, i, j)
     
     # Obtain a variant output (we remain at same state)
     if new_state == state:

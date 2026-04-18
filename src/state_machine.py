@@ -1,8 +1,92 @@
 import db
+import re
 
 def StateMachine(telephone, phase, state, classification, i):
     
-    if phase == "DEP":
+    if phase == "PRESENTATION":
+        return
+    
+    elif phase == "PROFILE":
+        if state == "name":
+            name_match = re.search(
+                r'(?:me llamo|soy|mi nombre es)\s+'
+                r'([a-záéíóúñ]+(?:\s+(?:de|del|la|las|los|y|e)?\s*[a-záéíóúñ]+){0,2})',
+                classification,
+                re.IGNORECASE
+            )
+            if name_match:
+                raw_name = name_match.group(1).strip().lower()
+
+                connectors = {"de", "del", "la", "las", "los", "y", "e"}
+
+                words = raw_name.split()
+                formatted_name = " ".join(
+                    p if p in connectors else p.capitalize()
+                    for p in words
+                )
+
+                key = "name"
+                value = formatted_name
+                db.add_user_info(telephone, key, value)
+                
+                phase = "PROFILE"
+                state = "age"
+                return(phase, state, i)
+            
+            else:
+                phase = "PROFILE"
+                state = "name"
+                return(phase, state, i)
+
+        elif state == "age":
+            age_match = re.search(r'\b(\d{1,3})\s*años\b', classification, re.IGNORECASE)
+            if age_match:
+                key = "age (years)"
+                value = int(age_match.group(1))
+                if 18 <= value < 120:  # Range of validation
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase = "PROFILE"
+                    state = "reason"
+                    return(phase, state, i)
+                
+                elif value < 18:
+                    phase = "PROFILE"
+                    state = "reason"
+                    return(phase, state, i)
+                
+                else:
+                    phase = "PROFILE"
+                    state = "reason"
+                    return(phase, state, i)
+                
+            else:
+                phase = "PROFILE"
+                state = "age"
+                return(phase, state, i)
+            
+        elif state == "reason":
+            key = "call_reason"
+            value = classification
+            db.add_user_info(telephone, key, value)
+            
+            phase == "PROFILE"
+            state = "expectation"
+            return(phase, state, i)
+        
+        elif state == "expectation":
+            key = "expectation"
+            value = classification
+            db.add_user_info(telephone, key, value)
+            
+            phase = "DEP"
+            state = "1A.1"
+            return(phase, state, i)
+            
+    elif phase == "CONTENTION":
+        return
+    
+    elif phase == "DEP":
         if state == "1A.1":
             if classification == "yes":
                 key = "DEP.1a_depressed_mood"
@@ -446,3 +530,9 @@ def StateMachine(telephone, phase, state, classification, i):
     elif phase == "SUI":
         if state == "1":
             return
+    
+    elif phase == "FAREWELL":
+        return
+    
+    else:
+        return
