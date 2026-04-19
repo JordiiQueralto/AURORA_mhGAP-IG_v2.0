@@ -11,8 +11,8 @@ def main_prova(telephone):
     last_bot_output, last_user_input, phase, state, memory = PRESENTATION.Init(telephone)
     
     
-    ### 2. PROFILE
-    if phase == "PROFILE":
+    ### 2. STATES CONTROLED BY STATE MACHINE
+    if phase == ("PROFILE" or "DEP_EVAL" or "SUI_EVAL"):
         j = 0   
         while True:
             
@@ -24,9 +24,10 @@ def main_prova(telephone):
             
             # Esperamos la respuesta del usuario
             user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+            n_user_input = state_machine.normalize_text(user_input)
             
             # Salimos del bucle en caso de que el usuario lo desee
-            if user_input.lower() in ["salir", "Salir", "SALIR"]:
+            if n_user_input == "salir":
                 phase = "FAREWELL"
                 state = "normal"
                 break 
@@ -44,27 +45,16 @@ def main_prova(telephone):
                 db.add_user_info(telephone, f"user_input_{j}", user_input)
                 db.add_user_info(telephone, f"bot_output_{j}", bot_output)
                 j += 1
-                memory = summarize.memory_summary(telephone)
                 
                 # Rompemos el bucle si llegamos a phase `DEP` o `SUI`    
-                if phase == ("DEP" or "SUI"):
+                if phase == "FAREWELL":
                     break
         
         
     ### 3. CONTENTION
     elif phase == "CONTENTION":
         return
-
-
-    ### 4. DEP
-    elif phase == "DEP":
-        return
     
-   
-    ### 5. SUI
-    elif phase == "SUI":
-        return
-
 
     ### 6. FAREWELL
     # Despedida
@@ -74,14 +64,14 @@ def main_prova(telephone):
         print("\n[Finalizando sesión de apoyo...]")
         
         # Obtenemos fecha y hora actuales
-        #.datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # Obtenemos un resumen de la sessión y la añadimos a la BD
-        #.summary = summarize.session_summary(telephone)
-        #.db.add_user_info(telephone, f"{datetime}_session_summary", summary)
+        summary = summarize.session_summary(telephone)
+        db.add_user_info(telephone, f"{datetime}_session_summary", summary)
         
         # Eliminamos historial de interacciones de la sessión
-        #.db.delete_interaction_history(telephone)
+        db.delete_interaction_history(telephone)
         
         return
     
@@ -93,6 +83,6 @@ def main_prova(telephone):
 
 #######################################################################################################
 # Example
-telephone = 1234
+telephone = 123
 
 main_prova(telephone)

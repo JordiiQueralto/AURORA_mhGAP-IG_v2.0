@@ -42,7 +42,7 @@ def memory_summary(telephone):
                 "%Y-%m-%d %H:%M:%S"))
 
     # Build filtered memory with only the desired keys
-    filtered_memory = {k: memory[k] for k in ("name", "age", "call_reason") if k in memory}
+    filtered_memory = {k: memory[k] for k in ("name", "call_reason") if k in memory}
     
     if latest_key:
         filtered_memory[latest_key] = memory[latest_key]

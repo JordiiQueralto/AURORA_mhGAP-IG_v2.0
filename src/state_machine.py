@@ -92,7 +92,7 @@ def StateMachine(telephone, phase, state, user_input):
             
         elif state == "reason":
             key = "call_reason"
-            value = n_user_input
+            value = user_input
             db.add_user_info(telephone, key, value)
             
             phase == "PROFILE"
@@ -101,7 +101,7 @@ def StateMachine(telephone, phase, state, user_input):
         
         elif state == "expectation":
             key = "expectation"
-            value = n_user_input
+            value = user_input
             db.add_user_info(telephone, key, value)
             
             phase = "SUI_EVAL"
@@ -818,7 +818,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_PROTOCOLS"
+                    phase = "SUI_PROTOCOL"
                     state = "2"
                     return (phase, state) 
                 
@@ -960,7 +960,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_PROTOCOLS"
+                    phase = "SUI_PROTOCOL"
                     state = "3"
                     return (phase, state) 
                 
@@ -1068,7 +1068,7 @@ def StateMachine(telephone, phase, state, user_input):
                 r"\bno ha pasado nada (este ano|fisico)\b",
                 r"\b(en este ultimo ano|dentro de este ano|en los ultimos doce meses) no\b",
                 r"\bno he llegado a (hacer nada|pasar de pensarlo a hacerlo)\b",
-                r"\bno he hecho nada (fisico|contra mi cuerpo)\b",
+                r"\bno he hecho nada(?: (fisico|contra mi cuerpo))?\b",
                 r"\bno ha habido actos[,.]?\s*solo pensamientos\b",
 
                 # AUTOLESIÓN MUY ANTIGUA
@@ -1115,7 +1115,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase = "SUI_EVAL"
-                state = "2A"
+                state = "3"
                 return (phase, state)
             
             else:
@@ -1127,7 +1127,7 @@ def StateMachine(telephone, phase, state, user_input):
                     db.add_user_info(telephone, key, value)
                     
                     phase = "SUI_PROTOCOL"
-                    state = "1"
+                    state = "3"
                     return (phase, state)
                 
                 else:

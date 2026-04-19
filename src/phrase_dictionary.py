@@ -17,7 +17,7 @@ def bot_output_info(phase, state):
                 },
             },
         
-        "DEP": {
+        "DEP_EVAL": {
             "1A.1": {
                 "nucleo": """Durante mínimo un periodo de dos semanas, ¿te has sentido triste, 
                 vacío o sin ánimo la mayor parte del día, casi todos los días?”"""
@@ -92,7 +92,7 @@ def bot_output_info(phase, state):
             },
         },
         
-        "SUI": {
+        "SUI_EVAL": {
             "1": {
                 "nucleo": """En este momento, o recientemente, ¿te has hecho daño físico de alguna 
                 forma, como heridas, haber tomado algo que te pudiera hacer mal, o algo similar?"""},
