@@ -93,11 +93,33 @@ def bot_output_info(phase, state):
         },
         
         "SUI": {
-            "1": {},
-            "2A": {},
-            "2B": {},
-        }
-        
+            "1": {
+                "nucleo": """En este momento, o recientemente, ¿te has hecho daño físico de alguna 
+                forma, como heridas, haber tomado algo que te pudiera hacer mal, o algo similar?"""},
+            "2A": {
+                "nucleo": """¿Tienes planes o pensamientos de hacerte daño o de quitarte la 
+                vida actualmente?"""},
+            "2B.1": {
+                "nucleo": """¿Has tenido pensamientos o un plan de autolesión el último mes?
+                """},
+            "2B.2": {
+                "nucleo": """En el último año, ¿has llegado a autolesionarte físicamente con la 
+                intención de hacerte daño o de quitarte la vida?"""},
+            "3": {
+                "nucleo": """“¿Has estado recibiendo tratamiento o atención por algún problema 
+                de salud mental, como depresión, ansiedad, o algo relacionado con el consumo de 
+                alcohol u otras sustancias?
+                """},
+            "4": {
+                "nucleo": """¿Tienes algún dolor físico que lleve semanas o meses sin 
+                mejorar y que afecte tu día a día?
+                """},
+            "5": {
+                "nucleo": """¿Sientes que tus emociones o tu estado de ánimo están afectando tu 
+                capacidad de hacer las cosas del día a día, como trabajar, estudiar, 
+                relacionarte con otros, o cuidarte?”
+                """}
+        }    
     }
     
     # First we get the data for the phase and state 

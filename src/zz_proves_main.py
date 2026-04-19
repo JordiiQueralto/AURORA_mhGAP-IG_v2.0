@@ -10,16 +10,13 @@ def main_prova(telephone):
     ### 1. PRESENTATION
     last_bot_output, last_user_input, phase, state, memory = PRESENTATION.Init(telephone)
     
-    if last_user_input == "EXIT":
-        return
     
     ### 2. PROFILE
     if phase == "PROFILE":
-        i = 0
         j = 0   
         while True:
             
-            # Creamos `bot_output` dpeendiendo de la `phase` y `state` actuales
+            # Creamos `bot_output` dependiendo de la `phase` y `state` actuales
             nucleo = phrase_dictionary.bot_output_info(phase, state)      
             bot_output = generate_output.bot_output(last_bot_output, 
                                                     last_user_input, nucleo, memory)
@@ -36,8 +33,8 @@ def main_prova(telephone):
             
             else:
                 # En caso contrario, actualizamos `phase` i `state`
-                phase, state, i = state_machine.StateMachine(telephone, phase, 
-                                                             state, user_input, i)
+                phase, state = state_machine.StateMachine(telephone, phase, 
+                                                          state, user_input)
                 
                 # Actualizar variables
                 last_bot_output = bot_output
@@ -53,13 +50,20 @@ def main_prova(telephone):
                 if phase == ("DEP" or "SUI"):
                     break
         
+        
     ### 3. CONTENTION
+    elif phase == "CONTENTION":
+        return
 
 
     ### 4. DEP
-   
+    elif phase == "DEP":
+        return
+    
    
     ### 5. SUI
+    elif phase == "SUI":
+        return
 
 
     ### 6. FAREWELL
@@ -79,6 +83,11 @@ def main_prova(telephone):
         # Eliminamos historial de interacciones de la sessión
         #.db.delete_interaction_history(telephone)
         
+        return
+    
+    
+    ### ERROR OR OTR
+    else:
         return
     
 

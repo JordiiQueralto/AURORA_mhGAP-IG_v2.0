@@ -1,11 +1,11 @@
 import state_machine
 
 telephone = 1234
-phase = "PROFILE"
-state = "reason"
-classification = "Desde que murió mi perro estoy mu triste."
-i = 0
+phase = "SUI_EVAL"
+state = "3"
+user_input = "ultimamente he estado tomando"
+n_user_input = state_machine.normalize_text(user_input)
 
-phase, state, i = state_machine.StateMachine(telephone, phase, state, classification, i)
+phase, state = state_machine.StateMachine(telephone, phase, state, user_input)
 
-print(f"\nEstat: {state}\ni: {i}")
+print(f"\n\nUser input: {n_user_input}\nFase: {phase}\nEstat: {state}")
