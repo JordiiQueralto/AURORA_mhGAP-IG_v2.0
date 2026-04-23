@@ -49,7 +49,7 @@ def bot_output(last_bot_output, last_user_input, nucleo, memory):
         - bot_output(str): The generated response."""
         
     # Create a prompt for the LLM including the memory from the DB
-    prompt = prompt_builder.prompt_generation(
+    prompt = prompt_builder.prompt_bot_output_generation(
         last_bot_output,
         last_user_input, 
         nucleo, 
@@ -76,6 +76,10 @@ def farewell(state):
         farewell_message = """Si cambias de opinión aquí estaré. Recuerda que siempre puedes 
         llamar cuando lo necesites. Cuídate mucho."""
         
+    elif state == "age":
+        farewell_message = """Lo siento, para poder continuar debes tener al menos 18 años. 
+        Cuídate mucho."""
+        
     # Fix the format
     farewell_message = " ".join(farewell_message.split())
     
@@ -90,23 +94,22 @@ def session_summary(memory):
     Returns:
         - summary (str): The summary of the session.
     """
+    
     # Create a prompt for the LLM to summarize the session
     prompt = prompt_builder.summary_prompt_generation(memory)
     summary = llm.send_prompt(prompt)
     return summary
 
 
-def response_classification(question, response, triggers):
-    """
-    Generates a classification for the user's response based on predefined triggers.
-    Args:
-        - question (str): The original question (bot output).
-        - response (str): The user's response to classify (user input).
-        - triggers (dict): A dictionary of predefined triggers for classification.
-    Returns:
-        - classification (str): The classification result based on the triggers.
-    """
-    prompt = prompt_builder.prompt_response_classification(question, response, triggers)
-    classification = llm.send_prompt(prompt)
+def use_case_class(conversation_history):
     
-    return classification
+    prompt = prompt_builder.summary_prompt_generation(conversation_history)
+    use_case = llm.send_prompt(prompt, 0.0)
+    
+    if use_case in ["EMERGENCY", "ASSISTANCE", "TALK", "MISENSE"]:
+        return use_case 
+    
+    else:
+        use_case = "ASSISTANCE"
+        return use_case
+    

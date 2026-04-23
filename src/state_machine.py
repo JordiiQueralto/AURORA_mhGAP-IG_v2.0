@@ -1,12 +1,14 @@
 import db
 import re
 import unicodedata
+import generate_output
 
 def strip_accents(user_input: str) -> str:
     return ''.join(
         c for c in unicodedata.normalize('NFD', user_input)
         if unicodedata.category(c) != 'Mn'
     )
+
 
 def normalize_text(user_input: str) -> str:
     user_input = user_input.lower().strip()
@@ -16,6 +18,7 @@ def normalize_text(user_input: str) -> str:
     n_user_input = re.sub(r'\s+', ' ', user_input).strip()
     return n_user_input
     
+    
 def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
     """"""
     match = []
@@ -24,14 +27,120 @@ def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
             match.append(pattern)
     return match
 
+
+def variant_search(n_user_input: str) -> str:
+    
+    PATTERNS_AMBIGUITY: list[str] = [
+        r"\bno se\b",
+        r"\bno estoy segur[ao]\b",
+        r"\bno tengo claro\b",
+        r"\bno recuerdo\b",
+        r"\bdepende\b",
+        r"\bquizas\b",
+        r"\btal vez\b",
+        r"\bpodria ser\b",
+        r"\bno lo se (exactamente)?\b",
+        r"\bno entiendo\b",
+        r"\bque quieres decir\b",
+        r"\bexplica (mejor|mas)\b",
+        r"\brepite( porfa| por favor)?\b",
+        r"\baclarame\b",
+        r"\bno capte\b",
+    ]
+
+    PATTERNS_EVASION: list[str] = [
+        r"\bcambi[ao] de tema\b",
+        r"\bcanvi[ao] de tema\b",
+        r"\botro tema\b",
+        r"\bhabla de otra cosa\b",
+        r"\bhablemos de otra cosa\b",
+        r"\bcuentame un chiste\b",
+        r"\bque tiempo hace\b",
+        r"\bdime la hora\b",
+        r"\bque tal tu\b",
+        r"\bpasemos pagina\b",
+        r"\bolvida(lo|te)?\b",
+        r"\bno es nada\b",
+        r"\bno es grave\b",
+        r"\bson tonteria(s)?\b",
+        r"\bexageras\b",
+        r"\bno pasa nada\b",
+        r"\bno vale la pena\b",
+        r"\bpoca cosa\b",
+        r"\bes poco\b",
+    ]
+
+    PATTERNS_DIRECT_REFUSAL: list[str] = [
+        r"\bno quiero hablar de (eso|esto)\b",
+        r"\bprefiero no contestar\b",
+        r"\bno voy a responder\b",
+        r"\beso no te importa\b",
+        r"\bno es asunto tuyo\b",
+        r"\bcallate\b",
+        r"\bdejame en paz\b",
+        r"\bno insistas\b",
+        r"\bpasa de eso\b",
+        r"\bno me apetece\b",
+    ]
+
+    PATTERNS_HOSTILITY: list[str] = [
+        r"\beres inutil\b",
+        r"\brobot inutil\b",
+        r"\brobot de\b"
+        r"\bque pregunta tonta\b",
+        r"\bno me jodas\b",
+        r"\besto es ridiculo\b",
+        r"\bpara de preguntar\b",
+        r"\bno me fio de ti\b",
+        r"\bpregunta estupida\b",
+        r"\bque tonteria\b",
+        r"\bno confio en ti\b",
+    ]
+    
+    # 1 - Ambiguity
+    match_ambiguity = pattern_search(n_user_input, PATTERNS_AMBIGUITY)
+    if match_ambiguity:
+        variant = "ambiguity"
+        
+        return variant
+    
+    else:
+        # 2 - Evasion
+        match_evasion = pattern_search(n_user_input, PATTERNS_EVASION)
+        if match_evasion:
+            variant = "evasion"
+            
+            return variant
+        
+        else:
+            # 3 - Direct refusal
+            match_refusal = pattern_search(n_user_input, PATTERNS_DIRECT_REFUSAL)
+            if match_refusal:
+                variant = "refusal"
+                
+                return variant
+            
+            else:
+                # 4 - Hostility
+                match_hostility = pattern_search(n_user_input, PATTERNS_HOSTILITY)
+                if match_hostility:
+                    variant = "hostility"
+                    
+                    return variant
+                
+                else:
+                    # Non classificable
+                    variant = "non_class"
+                        
+                    return variant
+    
+
 def StateMachine(telephone, phase, state, user_input):
     
     n_user_input = normalize_text(user_input)
+    variant = 0
     
-    if phase == "PRESENTATION":
-        return
-    
-    elif phase == "PROFILE":
+    if phase == "PROFILE":
         if state == "name":
             name_match = re.search(
                 r'(?:me llamo|soy|mi nombre es)\s+'
@@ -56,12 +165,14 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 phase = "PROFILE"
                 state = "age"
-                return(phase, state)
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
             
             else:
+                variant = "repeat"
                 phase = "PROFILE"
                 state = "name"
-                return(phase, state)
+                return (phase, state, variant)
 
         elif state == "age":
             age_match = re.search(r'\b(\d{1,3})\s*años\b', user_input, re.IGNORECASE)
@@ -73,64 +184,289 @@ def StateMachine(telephone, phase, state, user_input):
                     
                     phase = "PROFILE"
                     state = "reason"
-                    return(phase, state)
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
                 
                 elif value < 18:
-                    phase = "PROFILE"
-                    state = "reason"
-                    return(phase, state)
+                    
+                    phase = "FAREWELL"
+                    state = "age"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
                 
                 else:
+                    
                     phase = "PROFILE"
-                    state = "reason"
-                    return(phase, state)
+                    state = "age"
+                    return (phase, state, variant)
                 
             else:
+                variant = "repeat"
                 phase = "PROFILE"
                 state = "age"
-                return(phase, state)
+                return (phase, state, variant)
             
         elif state == "reason":
-            key = "call_reason"
+            key = "PROFILE.call_reason"
             value = user_input
             db.add_user_info(telephone, key, value)
             
             phase == "PROFILE"
             state = "expectation"
-            return(phase, state)
+            db.save_flow(telephone, phase, state)
+            return (phase, state, variant)
         
         elif state == "expectation":
-            key = "expectation"
+            key = "PROFILE.expectation"
             value = user_input
             db.add_user_info(telephone, key, value)
             
-            phase = "SUI_EVAL"
-            state = "1"
-            return(phase, state)
+            phase = "PROFILE"
+            state = "commitment"
+            db.save_flow(telephone, phase, state)
+            return (phase, state, variant)
+        
+        elif state == "commitment":
+            # Regex patterns definition
+            PATTERNS_YES = [
+                r'\b(s[ií]|si+)\b',
+                r'\b(claro|claro que s[ií])\b',
+                r'\b(por supuesto)\b',
+                r'\b(desde luego)\b',
+                r'\b(vale|venga|va)\b',
+                r'\b(ok|okay|okey)\b',
+                r'\b(de acuerdo)\b',
+                r'\b(trato hecho)\b',
+                r'\b(perfecto|genial|estupendo|fenomenal)\b',
+                r'\b(adelante|dale)\b',
+                r'\b(me comprometo)\b',
+                r'\b(obvio|obviam\w*)\b',
+                r'\b(afirmativo)\b',
+            ]
             
-    elif phase == "CONTENTION":
-        return
+            PATTERNS_NO = [
+                r'\b(nel|nop+e?|nah)\b',
+                r'\b(para nada)\b',
+                r'\b(en absoluto)\b',
+                r'\b(ni hablar)\b',
+                r'\b(negativo)\b',
+                r'\b(no (quiero|me apetece|puedo))\b',
+                r'\b(prefiero no)\b',
+                r'\b(no\s+gracias)\b',
+                r'\b(imposible)\b',
+                r'\b(jamas)\b',
+                r'\b(nunca)\b',
+            ]
+            
+            PATTERNS_AMBIGUOUS = [
+                # Incertidumbre
+                r'\bno(?:\s+lo)?\s+se\b',                    
+                r'\b(no\s+estoy\s+segur[oa])\b',             # no estoy seguro/a
+                r'\b(tal vez|talvez)\b',                     # tal vez
+                r'\b(quizas?)\b',                            # quizá, quizás, quiza
+                r'\b(a lo mejor)\b',                         # a lo mejor
+                r'\b(depende)\b',                            # depende
+                r'\b(puede\s+(ser|que))\b',                  # puede ser, puede que
+                r'\b(no\s+tengo\s+(claro|ni idea))\b',       # no tengo claro / ni idea
+
+                # Aplazamiento / evasión
+                r'\b(vamos\s+viendo)\b',                     # vamos viendo
+                r'\b(ya\s+vere?mos)\b',                      # ya veremos, ya veré
+                r'\b(lo\s+pienso)\b',                        # lo pienso
+                r'\b(dejame\s+pensar)\b',                    # déjame pensar
+                r'\b(ahora\s+mismo\s+no)\b',                 # ahora mismo no
+                r'\b(mas\s+adelante)\b',                     # más adelante
+                r'\b(en\s+otro\s+momento)\b',                # en otro momento
+                r'\b(luego\s+te\s+digo)\b',                  # luego te digo
+                r'\b(ya\s+te\s+(digo|dire))\b',              # ya te digo / diré
+
+                # Condición / negociación
+                r'\b(depende\s+de)\b',                       # depende de
+                r'\b(segun)\b',                              # según
+                r'\b(si\s+(me|puedo|puedes))\b',             # si me..., si puedo...
+                r'\b(con\s+una\s+condicion)\b',              # con una condición
+
+                # Respuestas vagas
+                r'\b(bueno+)\b',                             # bueno, bueeno
+                r'\b(eeh+|mmm+|hmm+|eh+)\b',                 # vacilaciones
+                r'\b(supongo)\b',                            # supongo
+                r'\b(imagino)\b',                            # imagino
+                r'\b(espero\s+que\s+si)\b',                  # espero que sí
+            ]
+                     
+            # 1 - Reject
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "PROFILE.commitment"
+                value = "Non commited"
+                db.add_user_info(telephone, key, value)
+                
+                raw_bot_output = """Te escucho igualmente, pero ten en cuenta que cuanto más te guardes, 
+                más difícil será para mí darte herramientas que realmente te ayuden."""
+                bot_output = " ".join(raw_bot_output.split())
+                print(f"\BOT: {bot_output}")
+                
+                phase == "USE_CASE_EVAL"
+                state == ""
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+                
+            else:
+                # 2 - Accept
+                match_yes = pattern_search(n_user_input, PATTERNS_YES)
+                if match_yes:
+                    key = "PROFILE.commitment"
+                    value = "Fully commited"
+                    db.add_user_info(telephone, key, value)
+                    
+                    raw_bot_output = """Perfecto. Tu sinceridad es la base para que este espacio te 
+                    sirva de verdad."""
+                    bot_output = " ".join(raw_bot_output.split())
+                    print(f"\BOT: {bot_output}")
+                    
+                    phase == "USE_CASE_EVAL"
+                    state == ""
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                    
+                else:
+                    # 3 - Ambiguous
+                    match_ambiguous = pattern_search(n_user_input, PATTERNS_AMBIGUOUS) 
+                    if match_ambiguous:
+                        key = "PROFILE.commitment"
+                        value = "Partially commited"
+                        db.add_user_info(telephone, key, value)
+                        
+                        raw_bot_output = """No pasa nada, vamos poco a poco. Solo recuerda que mis 
+                        consejos serán mucho más útiles si compartes lo que de verdad sientes."""
+                        bot_output = " ".join(raw_bot_output.split())
+                        print(f"\BOT: {bot_output}")
+                        
+                        phase == "USE_CASE_EVAL"
+                        state == ""
+                        db.save_flow(telephone, phase, state)
+                        return (phase, state, variant)
+                        
+                    else:
+                        variant = "repeat"
+                        phase = "PROFILE"
+                        state = "commitment"
+                        return (phase, state, variant) 
     
+    
+    elif phase == "CHAT":
+        return                    
+    
+                            
     elif phase == "DEP_EVAL":
         if state == "1A.1":
-            if n_user_input == "yes":
-                key = "DEP_EVAL.1a_depressed_mood"
-                value = True
-                db.add_user_info(telephone, key, value)
-                i = 0
-                state = "1B.1"
-                return (phase, state)
-            elif n_user_input == "no":
-                key = "DEP_EVAL.1a_depressed_mood"
+            
+            PATTERNS_YES = [
+
+                # Afirmaciones directas
+                r"\bsí\b",
+                r"\bsí[,\s]+he\s+notado\b",
+                r"\bclaro\b",
+                r"\bexacto\b",
+                r"\bpor\s+supuesto\b",
+                r"\bdefinitivamente\b",
+                r"\bcierto\b",
+
+                # Estado de ánimo bajo / triste / vacío
+                r"\btriste\b",
+                r"\bme\s+siento\s+triste\b",
+                r"\bmuy\s+triste\b",
+                r"\btriste\s+todo\s+el\s+tiempo\b",
+                r"\bestado\s+de\s+ánimo\s+bajo\b",
+                r"\bbajo\s+de\s+ánimo\b",
+                r"\bvacío\b",
+                r"\bme\s+siento\s+vac[ií]o\b",
+                r"\bsiento\s+un\s+vacío\b",
+                r"\bdeprimid[oa]\b",
+                r"\bdepresión\b",
+                r"\bme\s+siento\s+deprimid[oa]\b",
+                r"\bpersistentemente\s+triste\b",
+                r"\bno\s+estoy\s+content[oa]\b",
+                r"\bno\s+estoy\s+feliz\b",
+
+                # Pérdida de interés / placer
+                r"\bperdí\s+el\s+interés\b",
+                r"\bsin\s+ganas\b",
+                r"\bdesganad[oa]\b",
+                r"\bnada\s+me\s+gusta\b",
+                r"\bno\s+disfruto\s+nada\b",
+                r"\bperdí\s+el\s+placer\b",
+                r"\bno\s+me\s+motiva\s+nada\b",
+                r"\bsin\s+interés\b",
+                r"\bpérdida\s+de\s+interés\b",
+                r"\bno\s+tengo\s+ganas\s+de\s+nada\b",
+                r"\bcosas\s+que\s+antes\s+disfrutaba\b",
+                r"\bya\s+no\s+disfruto\b",
+                r"\bno\s+me\s+apetece\s+nada\b",
+            ]
+            
+            PATTERNS_NO = [
+
+                # Negaciones directas
+                r"\bno\b",
+                r"\bno\s+he\s+notado\b",
+                r"\bnunca\b",
+                r"\bjamás\b",
+                r"\bnada\s+de\s+eso\b",
+                r"\bpara\s+nada\b",
+                r"\ben\s+absoluto\b",
+                r"\bde\s+ninguna\s+manera\b",
+
+                # Ausencia de síntomas de ánimo bajo
+                r"\bno\s+estoy\s+triste\b",
+                r"\bno\s+me\s+siento\s+vac[ií]o\b",
+                r"\bno\s+estoy\s+deprimid[oa]\b",
+                r"\bno\s+tengo\s+depresión\b",
+                r"\bmi\s+ánimo\s+está\s+bien\b",
+                r"\bestado\s+de\s+ánimo\s+normal\b",
+
+                # Interés / placer intacto
+                r"\bsigo\s+disfrutando\b",
+                r"\bme\s+gusta\s+lo\s+mismo\b",
+                r"\btengo\s+interés\b",
+                r"\bdisfruto\s+las\s+cosas\b",
+                r"\bme\s+motivan\b",
+                r"\btengo\s+ganas\b",
+                r"\bestoy\s+motivad[oa]\b",
+                r"\bsigo\s+con\s+ganas\b",
+            ]
+                        
+            # 1 - Negation
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.1_A1_depressed_mood"
                 value = False
                 db.add_user_info(telephone, key, value)
-                i = 0
+                
+                
+                phase = "DEP_EVAL"
                 state = "1A.2"
-                return (phase, state)   
+                return (phase, state, variant)
+            
             else:
-                i = 0
-                state = "1A.1"
-                return (phase, state)
+                # 2 - Confirmation
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.1_A1_depressed_mood"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    
+                    phase = "SUI_PROTOCOL"
+                    state = "1"
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - Variant activation
+                    variant = variant_search(n_user_input)
+                    phase = "DEP_EVAL"
+                    state = "1A.1"
+                    return (phase, state, variant)
             
         elif state == "1A.2":
             if n_user_input == "yes":
@@ -139,18 +475,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "1B.1"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1a_anhedonia"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "OTR"
-                return (phase, state)   
+                return (phase, state, variant)   
             else:
                 i = 0
                 state = "1A.2"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "1B.1":
             if n_user_input == "yes":
@@ -159,18 +495,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 1
                 state = "1B.2"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_sleep_disturbance"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "1B.2"
-                return (phase, state)
+                return (phase, state, variant)
             else:
                 i = 0
                 state = "1B.1"
-                return (phase, state)
+                return (phase, state, variant)
 
         elif state == "1B.2":
             if n_user_input == "yes":
@@ -180,21 +516,21 @@ def StateMachine(telephone, phase, state, user_input):
                 i += 1
                 if i == 2:
                     state = "1C"
-                    return (phase, state)
+                    return (phase, state, variant)
                 else:
                     state = "1B.3"
-                    return (phase, state)
+                    return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_appetite_weight"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "1B.3"
-                return (phase, state)
+                return (phase, state, variant)
             else:
                 i = i
                 state = "1B.2"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "1B.3":
             if n_user_input == "yes":
@@ -204,21 +540,21 @@ def StateMachine(telephone, phase, state, user_input):
                 i += 1
                 if i == 2:  
                     state = "1C"
-                    return (phase, state)
+                    return (phase, state, variant)
                 else:
                     state = "1B.4"
-                    return (phase, state)
+                    return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_fatigue"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "1B.4"
-                return (phase, state)
+                return (phase, state, variant)
             else:
                 i = i
                 state = "1B.3"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "1B.4":
             if n_user_input == "yes":
@@ -228,21 +564,21 @@ def StateMachine(telephone, phase, state, user_input):
                 i += 1
                 if i == 2:  
                     state = "1C"
-                    return (phase, state)
+                    return (phase, state, variant)
                 else:
                     state = "1B.5"
-                    return (phase, state)
+                    return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_concentration"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "1B.5"
-                return (phase, state)
+                return (phase, state, variant)
             else:
                 i = i
                 state = "1B.4"
-                return (phase, state)
+                return (phase, state, variant)
         
         elif state == "1B.5":
             if n_user_input == "yes":
@@ -252,21 +588,21 @@ def StateMachine(telephone, phase, state, user_input):
                 i += 1
                 if i == 2:  
                     state = "1C"
-                    return (phase, state)
+                    return (phase, state, variant)
                 else:
                     state = "1B.6"
-                    return (phase, state)
+                    return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_low_self_worth"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "1B.6"
-                return (phase, state)
+                return (phase, state, variant)
             else:
                 i = i
                 state = "1B.5"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "1B.6":
             if n_user_input == "yes":
@@ -276,21 +612,21 @@ def StateMachine(telephone, phase, state, user_input):
                 i += 1
                 if i == 2:  
                     state = "1C"
-                    return (phase, state)
+                    return (phase, state, variant)
                 else:
                     state = "OTR"
-                    return (phase, state)
+                    return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1b_hopelessness"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "OTR"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = i
                 state = "1B.5"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "1C":
             if n_user_input == "yes":
@@ -299,18 +635,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2A.1"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.1c_functional_impairment"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "OTR"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "1C"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2A.1":
             if n_user_input == "yes":
@@ -319,18 +655,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2A.2"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2a_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2A.2"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2A.1"
-                return (phase, state) 
+                return (phase, state, variant) 
         
         elif state == "2A.2":
             if n_user_input == "yes":
@@ -339,18 +675,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2B.1"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2a_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2B.1"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2A.2"
-                return (phase, state)
+                return (phase, state, variant)
         
         elif state == "2B.1":
             if n_user_input == "yes":
@@ -359,18 +695,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 1
                 state = "2B.2"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2b_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2B.2"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2B.1"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2B.2":
             if n_user_input == "yes":
@@ -379,18 +715,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i += 1
                 state = "2B.3"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2b_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "2B.3"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = i
                 state = "2B.2"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2B.3":
             if n_user_input == "yes":
@@ -399,18 +735,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i += 1
                 state = "2B.4"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2b_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "2B.4"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = i
                 state = "2B.3"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2B.4":
             if n_user_input == "yes":
@@ -419,18 +755,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i += 1
                 state = "2B.5"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2b_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "2B.5"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = i
                 state = "2B.4"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2B.5":
             if n_user_input == "yes":
@@ -439,18 +775,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i += 1
                 state = "2C"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2b_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = i
                 state = "2C"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = i
                 state = "2B.5"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2C":
             if n_user_input == "yes":
@@ -459,18 +795,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2D.1"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2c_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "3"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2C"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2D.1":
             if n_user_input == "yes":
@@ -479,18 +815,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "3"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2d_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2D.2"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2D.1"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2D.2":
             if n_user_input == "yes":
@@ -499,18 +835,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "3"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2d_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2D.3"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2D.2"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2D.3":
             if n_user_input == "yes":
@@ -519,18 +855,18 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "3"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2d_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "2D.3.1"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2D.3"
-                return (phase, state)
+                return (phase, state, variant)
             
         elif state == "2D.3.1":
             if n_user_input == "yes":
@@ -539,18 +875,19 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "3"
-                return (phase, state)
+                return (phase, state, variant)
             elif n_user_input == "no":
                 key = "DEP_EVAL.2d_"
                 value = False
                 db.add_user_info(telephone, key, value)
                 i = 0
                 state = "OTR"
-                return (phase, state)    
+                return (phase, state, variant)    
             else:
                 i = 0
                 state = "2D.3.1"
-                return (phase, state)
+                return (phase, state, variant)
+            
             
     elif phase == "SUI_EVAL":
         if state == "1":
@@ -603,6 +940,7 @@ def StateMachine(telephone, phase, state, user_input):
                 r"\bno me he hecho (dano( todavia| aun)?|nada( fisico)?|danado|lastimado|lesionado)\b",
                 r"\bno me he danado\b",
                 r"\bno ha pasado nada( fisico)?\b",
+                r"\bno se me\b"
 
                 # Estado físico correcto
                 r"\bestoy (bien fisicamente|fisicamente bien)\b",
@@ -633,9 +971,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
+                
                 phase = "SUI_EVAL"
                 state = "2A"
-                return (phase, state)
+                return (phase, state, variant)
             
             else:
                 # 2 - Self harm detected
@@ -645,15 +984,17 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
+                    
                     phase = "SUI_PROTOCOL"
                     state = "1"
-                    return (phase, state)
+                    return (phase, state, variant)
                 
                 else:
-                    # 3 - Ambiguous
+                    # 3 - Variant activation
+                    variant = variant_search(n_user_input)
                     phase = "SUI_EVAL"
                     state = "1"
-                    return (phase, state)
+                    return (phase, state, variant)
         
         elif state == "2A":
             
@@ -682,7 +1023,6 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             PATTERNS_IDEATION: list[str] = [
-                # Afirmaciones directas
                 r"\bsi[,.]?\s*(he tenido|he pensado en ello|en los ultimos dias|ahora mismo)\b",
                 r"\b(he tenido|he pensado en ello|en los ultimos dias|ahora mismo)\b",
                 r"\bpienso en (quitarme la vida|suicidarme|hacerme dano|ello|(?:acabar|terminar) con todo)\b",
@@ -806,9 +1146,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "no"
                 db.add_user_info(telephone, key, value)
                 
+                
                 phase = "SUI_EVAL"
                 state = "2B.1"
-                return (phase, state)
+                return (phase, state, variant)
         
             else:
                 # 2 - Concrete plans
@@ -818,9 +1159,10 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
                     
+                    
                     phase = "SUI_PROTOCOL"
                     state = "2"
-                    return (phase, state) 
+                    return (phase, state, variant) 
                 
                 else:
                     # 3 - Ideation
@@ -830,15 +1172,17 @@ def StateMachine(telephone, phase, state, user_input):
                         value = "ideation"
                         db.add_user_info(telephone, key, value)
                         
+                        
                         phase = "SUI_PROTOCOLS"
                         state = "2"
-                        return (phase, state)
+                        return (phase, state, variant)
                     
-                    # 4 - Ambiguous
+                    # 4 - Variant activation
                     else:
+                        variant = variant_search(n_user_input)
                         phase = "SUI_EVAL"
                         state = "2A"
-                        return (phase, state)
+                        return (phase, state, variant)
                 
         elif state == "2B.1":
             
@@ -948,21 +1292,23 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "no"
                 db.add_user_info(telephone, key, value)
                 
+                
                 phase = "SUI_EVAL"
                 state = "2B.2"
-                return (phase, state)
+                return (phase, state, variant)
         
             else:
                 # 2 - Concrete plans
-                match_plan = pattern_search(n_user_input, PATTERNS_CONCRETE_PLANS)
+                match_plan = pattern_search(n_user_input, PATTERNS_PLAN)
                 if match_plan:
                     key = "SUI_EVAL.2_B1_last_month_ideation"
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
                     
+                    
                     phase = "SUI_PROTOCOL"
                     state = "3"
-                    return (phase, state) 
+                    return (phase, state, variant) 
                 
                 else:
                     # 3 - Ideation
@@ -972,15 +1318,17 @@ def StateMachine(telephone, phase, state, user_input):
                         value = "ideation"
                         db.add_user_info(telephone, key, value)
                         
+                        
                         phase = "SUI_PROTOCOLS"
                         state = "3"
-                        return (phase, state)
+                        return (phase, state, variant)
                     
-                    # 4 - Ambiguous
+                    # 4 - Variant activation
                     else:
+                        variant = variant_search(n_user_input)
                         phase = "SUI_EVAL"
                         state = "2B.1"
-                        return (phase, state)
+                        return (phase, state, variant)
         
         elif state == "2B.2":
             
@@ -1114,9 +1462,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
+                
                 phase = "SUI_EVAL"
                 state = "3"
-                return (phase, state)
+                return (phase, state, variant)
             
             else:
                 # 2 - Self harm detected
@@ -1126,15 +1475,17 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
+                    
                     phase = "SUI_PROTOCOL"
                     state = "3"
-                    return (phase, state)
+                    return (phase, state, variant)
                 
                 else:
-                    # 3 - Ambiguous
+                    # 3 - Variant activation
+                    variant = variant_search(n_user_input)
                     phase = "SUI_EVAL"
                     state = "2B.2"
-                    return (phase, state)
+                    return (phase, state, variant)
     
         elif state == "3":
             PATTERNS_MENTAL_HEALTH_DEPRESSION: list[str] = [
@@ -1290,9 +1641,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
+                
                 phase = "SUI_EVAL"
                 state = "4"
-                return (phase, state)
+                return (phase, state, variant)
 
             else:
                 # 2 - YES + extraer categorías
@@ -1312,19 +1664,139 @@ def StateMachine(telephone, phase, state, user_input):
                             value = True
                             db.add_user_info(telephone, key, value)
                     
+                    
                     phase = "SUI_EVAL"
                     state = "4"
-                    return (phase, state)
+                    return (phase, state, variant)
                 
-                # 3 - Ambiguous
+                # 3 - Variant activation
                 else:
+                    variant = variant_search(n_user_input)
                     phase = "SUI_EVAL"
                     state = "3"
-                    return (phase, state)
+                    return (phase, state, variant)
             
             
-    elif phase == "FAREWELL":
-        return
-    
     else:
         return
+    
+
+def security_control(phase, state, user_input):
+    
+    PATTERNS_EMERGENCY: list[str] = [
+                # PASTILLAS / SOBREDOSIS
+                r"\btome (muchas )?pastillas\b",
+                r"\btome (el bote( entero)?|toda la caja|todo el frasco)\b",
+                r"\bme tome todo el frasco\b",
+                r"\bpastillas de mas\b",
+                r"\bmedicacion de mas\b",
+                r"\btome demasiado\b",
+                r"\bsobredosis\b",
+                r"\bme pase con (las )?pastillas\b",
+                r"\bacabo de tomar\b",
+                r"\bhace un rato tome\b",
+
+                # CORTES / HERIDAS
+                r"\bme (he )?cort[eo]\b",
+                r"\bme (he )?cortado\b",
+                r"\bme cort[eo] (las )?venas\b",
+                r"\bme hice cortes\b",
+                r"\btengo cortes\b",
+                r"\bvenas cortadas\b",
+                r"\bme hice un corte\b",
+                r"\bcorte profundo\b",
+                r"\bsangro por cortes\b",
+                r"\bme (he )?(herido?|lastimado?)\b",
+                r"\bheridas?\b",
+                r"\bme hice dano\b",
+                r"\bhoy me cort[eo]\b",
+
+                # SANGRADO
+                r"\bestoy sangrando\b",
+                r"\bsangro mucho\b",
+                r"\bno para de sangrar\b",
+                r"\bsangre por todos lados\b",
+                r"\bestoy perdiendo sangre\b",
+                r"\bsangro\b",
+
+                # QUEMADURAS / VENENO
+                r"\bme (he )?quem[eo]\b",
+                r"\bquemaduras?\b",
+                r"\bme puse fuego\b",
+                r"\b(ingeri|trague|tome) (lejia|veneno|algo toxico|una sustancia quimica|producto (de )?limpieza|matarratas)\b",
+                r"\btome algo (toxico|peligroso|que hace dano)\b",
+                
+                # CONCRETE PLAN
+                r"\btengo un plan\b",
+                r"\bse como lo voy a hacer\b",
+                r"\btengo todo planeado\b",
+                r"\bya tengo mi plan\b",
+                r"\bvoy a tomar (todas las |el bote entero de )?pastillas\b",
+                r"\btengo pastillas guardadas\b",
+                r"\bbote entero\b",
+                r"\bvoy a saltar\b",
+                r"\bvoy a tirarme del (puente|balcon|ventana)\b",
+                r"\btengo una cuerda\b",
+                r"\bvoy a colgarme\b",
+                r"\bvoy a cortarme las venas\b",
+                r"\btengo un cuchillo preparado\b",
+                r"\bvoy a ingerir (veneno|lejia|algo toxico)\b",
+                r"\btengo el método listo\b",
+                r"\bvoy a hacerlo con pastillas y alcohol\b",
+                r"\bmi plan es\b",
+                r"\blo voy a hacer (este fin de semana|manana|hoy)\b",
+                r"\bme voy a matar ahora\b",
+                
+                # SUICIDE IDEATION
+                r"\bsi[,.]?\s*(he tenido|he pensado en ello|en los ultimos dias|ahora mismo)\b",
+                r"\b(he tenido|he pensado en ello|en los ultimos dias|ahora mismo)\b",
+                r"\bpienso en (quitarme la vida|suicidarme|hacerme dano|ello|(?:acabar|terminar) con todo)\b",
+                r"\bestoy pensando en matarme\b",
+                r"\bquiero morir\b",
+                r"\btengo ganas de morir\b",
+                r"\bno quiero seguir viviendo\b",
+                r"\bojala me muriera?\b",
+                r"\bmejor me muero\b",
+                r"\bquiero desaparecer\b",
+                r"\bno aguanto más esta vida\b",
+                r"\btengo pensamientos suicidas\b",
+                r"\bideacion suicida\b",
+                r"\bpensamientos de (muerte|autolesion)\b",
+                r"\bhe pensado en acabar con todo\b",
+                r"\bno quiero vivir mas\b",
+                r"\bla vida no vale la pena\b",
+                r"\bestoy cansado de vivir\b",
+                r"\bsolo pienso en morir\b",
+                r"\bme paso el dia pensando en morirme\b",
+                r"\b(si[,.]?\s*)?(ultimamente|en los ultimos dias|hace poco|recientemente)\s*si\b",
+                r"\bvoy a hacerlo ahora\b",
+                r"\blo voy a hacer hoy\b",
+                r"\bya no puedo mas[,.]?\s*lo hago ya\b",
+                r"\bestoy a punto de hacerlo\b",
+                r"\ben este momento lo estoy pensando seriamente\b",
+                r"\btengo la intención de hacerlo\b",
+                r"\bestoy decidida?[,.]?\b",
+                r"\bno voy a esperar mas\b",
+                r"\besto se acaba hoy\b",
+                r"\bya no aguanto[,.]?\s*me despido\b",
+                r"\bojalsa (me durmiera? y no despertara?|no hubiera nacido|no existiera)\b",
+                r"\bno le importaria a nadie (si me muriera?|que desapareciera?)\b",
+                r"\btodo seria mejor sin mi\b",
+                r"\bseria mejor desaparecer\b",
+                r"\bno tiene sentido seguir (viviendo|adelante)\b",
+            ]
+    
+             # 1 - Negation
+    
+    n_user_input = normalize_text(user_input)
+    
+    match_emergency = pattern_search(n_user_input, PATTERNS_EMERGENCY) 
+    if match_emergency:
+                new_phase = "SUI_EVAL"
+                new_state = "1A"
+                return (new_phase, new_state)
+            
+    else:
+        new_phase = phase
+        new_state = state
+        return (new_phase, new_state)

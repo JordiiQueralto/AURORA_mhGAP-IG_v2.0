@@ -1,77 +1,301 @@
 import generate_output
-import PRESENTATION
 import state_machine
 import phrase_dictionary
 import summarize
 import db
+import datetime
+import time
+
 
 def main_prova(telephone):
     
+    #---------------------------------------------------------------------------------------------------#
     ### 1. PRESENTATION
-    last_bot_output, last_user_input, phase, state, memory = PRESENTATION.Init(telephone)
+    #---------------------------------------------------------------------------------------------------#
+    phase = "PRESENTATION"
+    state = ""
+    j = 0
+    memory = ""
+    status = "rejected"
+    
+    print(f"\n[Procesando llamada de: {telephone}...]")
+    
+    # Miramos si el paciente está registrado en la BD y en caso de que no lo esté lo añadimos
+    is_new = db.is_new(telephone)
+    db.create_user(telephone, is_new)
+    
+    if is_new:
+        # si el usuario es nuevo, creamos objetos y variables para guardar datos del perfil, aceptación 
+        # o rechazo de los términos de uso, evaluación DEP, evaluación SUI y checkpoint de la última 
+        # `phase` y `state` para llamadas futuras
+        db.add_user_info(telephone, "name", "")
+        db.add_user_info(telephone, "age (years)", "")
+        db.add_user_info(telephone, "USER_TERMS.status", status)    # inicializamos el estado de 
+                                                                    # aceptación de términos de uso
+                                                                    # en "rejected" provisionalmente
+        db.add_user_info(telephone, "PROFILE", {})
+        db.add_user_info(telephone, "DEP_EVAL", {})
+        db.add_user_info(telephone, "SUI_EVAL", {})
+        db.add_user_info(telephone, "checkpoint.phase", "")
+        db.add_user_info(telephone, "checkpoint.state", "")
+        
+    else:
+        # en caso de no ser nuevo, obtenemos un resumen del registro 
+        # de la BD del usuario y el estado de aceptación de términos
+        memory = summarize.memory_summary(telephone)
+        status = db.user_status(telephone)
     
     
-    ### 2. STATES CONTROLED BY STATE MACHINE
-    if phase == ("PROFILE" or "DEP_EVAL" or "SUI_EVAL"):
-        j = 0   
-        while True:
+    # Obtenemos fecha y hora actuales
+    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Creamos un objeto, que empieza con la fecha y hora del inicio de la llamada, para guardar el historial 
+    # de la conversación, un resumen y una valoración de la conversación (éxito/regular/fracaso)
+    summary_path = f"{current_time}_session.summary"
+    valoration_path = f"{current_time}_session.valoration"
+    conversation_hystory_path = f"{current_time}_session.conversation_history"
+    db.add_user_info(telephone, summary_path, "")
+    db.add_user_info(telephone, valoration_path, "")
+    db.add_user_info(telephone, conversation_hystory_path, {})
+
+    
+    # Saludo del bot según el `status` y el historial del usuario registrados
+    bot_output = generate_output.welcome(status, memory)
+    print(f"\nBOT: {bot_output}")
+    time.sleep(1)
+    
+    # Si había rechazado les términos préviamente o es nuevo
+    if status == "rejected":
+        
+        # Guardamos saludo del bot y respuesta del usuario en la BD
+        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+        db.add_user_info(telephone, f"{conversation_hystory_path}.bot_output_{j}", bot_output)
+        db.add_user_info(telephone, f"{conversation_hystory_path}.user_input_{j}", user_input)
+        j += 1
+        time.sleep(2)   # añadimos un sleep para simular que el bot piensa antes de responder
+        
+        # Creamos el objeto `USER_TERMS` para guardar estado de aceptación de términos por parte del usuario
+        key = "USER_TERMS"
+        n_user_input = state_machine.normalize_text(user_input)
+
+        if n_user_input != "si acepto":     # si no acepta términos
+            value = {
+                "status": "rejected",
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+
+            db.add_user_info(telephone, key, value)
             
-            # Creamos `bot_output` dependiendo de la `phase` y `state` actuales
-            nucleo = phrase_dictionary.bot_output_info(phase, state)      
-            bot_output = generate_output.bot_output(last_bot_output, 
-                                                    last_user_input, nucleo, memory)
+            bot_output = "Lo siento, no podemos continuar sin tu aceptación."
+            time.sleep(1.5)
             print(f"\nBOT: {bot_output}")
             
-            # Esperamos la respuesta del usuario
+            db.add_user_info(telephone, f"{conversation_hystory_path}.bot_output_{j}", bot_output)
+            j += 1
+        
+            # terminamos llamada
+            phase = "FAREWELL"
+            state = "exit"
+
+
+        else:       # si acepta términos
+            value = {
+                "status": "accepted",
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+
+            db.add_user_info(telephone, key, value)
+            
+            bot_output = "Gracias por aceptar. ¿Cómo podria ayudarte a explorar como te has sentido?"
+            print(f"\nBOT: {bot_output}")
+            time.sleep(1) 
+
             user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
             n_user_input = state_machine.normalize_text(user_input)
             
+            db.add_user_info(telephone, f"{conversation_hystory_path}.bot_output_{j}", bot_output)
+            db.add_user_info(telephone, f"{conversation_hystory_path}.user_input_{j}", user_input)
+            last_bot_output = bot_output
+            last_user_input = user_input
+            j += 1
+            
+            
+            if n_user_input == "salir":     # si el usuario quiere terminar la llamada
+                phase = "FAREWELL"
+                state = "normal"
+                
+                 
+            else:   # en caso contrario continuamos con la obtención de su PERFIL
+                phase = "PROFILE"
+                state = "name"
+                db.save_flow(telephone, phase, state)   # guardamos `phase` y `state` actuales en la BD
+                                                        # es una especie de checkpoint para si el usuario
+                                                        # termina la llamada
+    
+                
+    # Si ya habia aceptado los términos anteriormente
+    else:
+        
+        # Guardamos saludo del bot y respuesta del usuario en la BD
+        user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+        db.add_user_info(telephone, f"{conversation_hystory_path}.bot_output_{j}", bot_output)
+        db.add_user_info(telephone, f"{conversation_hystory_path}.user_input_{j}", user_input)
+        last_bot_output = bot_output
+        last_user_input = user_input
+        j += 1
+        
+        n_user_input = state_machine.normalize_text(user_input)
+        
+        if n_user_input != "salir":     # si la respuesta del usuario no es terminar la llamada 
+            
+            # Obtenemos el punto donde nos quedamos en la anterior conversación
+            phase, state = db.resume_conversation(telephone)
+        
+        else:   # usuario quiere terminar la llamada
+            
+            phase = "FAREWELL"
+            state = "normal"
+     
+     
+    #---------------------------------------------------------------------------------------------------# 
+    ### 2. PROFILE
+    #---------------------------------------------------------------------------------------------------#
+    if phase == "PROFILE":  
+        variant = 0
+        while True:
+            
+            # Obtenemos el nucleo de la `bot_output` dependiendo de la `phase` y `state` actuales
+            if variant != 0:    # si en el loop anterior se activo alguna variante
+                nucleo = phrase_dictionary.variant_dict(phase, state, variant)
+            
+            else:
+                nucleo = phrase_dictionary.bot_output_info(phase, state)      
+            
+            # Creamos la `bot_output`   
+            bot_output = generate_output.bot_output(last_bot_output, 
+                                                    last_user_input, nucleo, memory)
+            print(f"\nBOT: {bot_output}")
+                
+            # Esperamos la respuesta del usuario
+            user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+            n_user_input = state_machine.normalize_text(user_input)
+                
             # Salimos del bucle en caso de que el usuario lo desee
             if n_user_input == "salir":
                 phase = "FAREWELL"
                 state = "normal"
                 break 
-            
+                
             else:
                 # En caso contrario, actualizamos `phase` i `state`
-                phase, state = state_machine.StateMachine(telephone, phase, 
-                                                          state, user_input)
-                
+                phase, state, variant = state_machine.StateMachine(telephone, phase, 
+                                                                    state, user_input)
+                    
                 # Actualizar variables
                 last_bot_output = bot_output
                 last_user_input = user_input
-                
+                    
                 # Actualizar memoria: Guardar la nueva información relevante en la BD
                 db.add_user_info(telephone, f"user_input_{j}", user_input)
                 db.add_user_info(telephone, f"bot_output_{j}", bot_output)
                 j += 1
+                    
+                # Rompemos el bucle si llegamos a phase `USE_CASE_EVAL`
+                if phase == "USE_CASE_EVAL":
+                    break
+     
                 
-                # Rompemos el bucle si llegamos a phase `DEP` o `SUI`    
+    #---------------------------------------------------------------------------------------------------#            
+    ### 3. USE CASE DETERMINATION
+    #---------------------------------------------------------------------------------------------------#
+    elif state == "USE_CASE_EVAL":
+        
+        conversation_hystory = db.conversation_history(telephone)
+        use_case = generate_output.use_case_class(conversation_hystory)
+            
+        # Potencial caso de emergencia (riesgo imminente)
+        if use_case == "EMERGENCY":
+            phase = "SUI_EVAL"
+            state = "1"
+            db.save_flow(telephone, phase, state)
+        # Potencial caso de depresion (MAIN CASE)
+        elif use_case == "ASSISTANCE":
+            phase = "DEP_EVAL"
+            state = "1A"
+            db.save_flow(telephone, phase, state)
+        # El usuario solo quiere charlar  
+        elif use_case == "TALK":
+            phase = "CHAT"
+            state = "error"
+            db.save_flow(telephone, phase, state)
+        # Llamada por equivocacion / intento de engaño
+        else:   # use_case == "MISUSE"
+            phase = "FAREWELL"
+            state = "misuse"
+   
+        
+    #---------------------------------------------------------------------------------------------------#            
+    ### 4. DEP-SUI EVALUATION
+    #---------------------------------------------------------------------------------------------------#
+    elif phase == ("DEP_EVAL" or "SUI_EVAL"): 
+        variant = 0
+        while True:
+            
+            # Obtenemos el nucleo de la `bot_output` dependiendo de la `phase` y `state` actuales
+            if variant != 0:    # si en el loop anterior se activo alguna variante
+                nucleo = phrase_dictionary.variant_dict(phase, state, variant)
+            
+            else:
+                nucleo = phrase_dictionary.bot_output_info(phase, state)      
+            
+            # Creamos la `bot_output`   
+            bot_output = generate_output.bot_output(last_bot_output, 
+                                                    last_user_input, nucleo, memory)
+            print(f"\nBOT: {bot_output}")
+                
+            # Esperamos la respuesta del usuario
+            user_input = input("\nEscribe tu mensaje (o 'salir' para terminar): ")
+            n_user_input = state_machine.normalize_text(user_input)
+                
+            # Salimos del bucle en caso de que el usuario lo desee
+            if n_user_input == "salir":
+                phase = "FAREWELL"
+                state = "normal"
+                break 
+                
+            else:
+                # En caso contrario, actualizamos `phase` i `state`
+                phase, state, variant = state_machine.StateMachine(telephone, phase, 
+                                                                    state, user_input)
+                    
+                # Actualizar variables
+                last_bot_output = bot_output
+                last_user_input = user_input
+                    
+                # Actualizar memoria: Guardar la nueva información relevante en la BD
+                db.add_user_info(telephone, f"user_input_{j}", user_input)
+                db.add_user_info(telephone, f"bot_output_{j}", bot_output)
+                j += 1
+                    
+                # Rompemos el bucle si llegamos a phase `FAREWELL`    
                 if phase == "FAREWELL":
                     break
-        
-        
-    ### 3. CONTENTION
-    elif phase == "CONTENTION":
-        return
     
-
-    ### 6. FAREWELL
-    # Despedida
+                
+    #---------------------------------------------------------------------------------------------------#        
+    ### 5. FAREWELL
+    #---------------------------------------------------------------------------------------------------#
     elif phase == "FAREWELL":
         farewell = generate_output.farewell(state)
+        time.sleep(1.5)
         print(f"\nBOT: {farewell}")
         print("\n[Finalizando sesión de apoyo...]")
         
-        # Obtenemos fecha y hora actuales
-        datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
         # Obtenemos un resumen de la sessión y la añadimos a la BD
+        conversation_hystory = db.conversation_history(telephone)
         summary = summarize.session_summary(telephone)
-        db.add_user_info(telephone, f"{datetime}_session_summary", summary)
-        
-        # Eliminamos historial de interacciones de la sessión
-        db.delete_interaction_history(telephone)
+        db.add_user_info(telephone, f"{current_time}_session.summary", summary)
+        db.add_user_info(telephone, "conversation_hystory", conversation_hystory)
         
         return
     
@@ -83,6 +307,6 @@ def main_prova(telephone):
 
 #######################################################################################################
 # Example
-telephone = 123
+telephone = 1234
 
 main_prova(telephone)

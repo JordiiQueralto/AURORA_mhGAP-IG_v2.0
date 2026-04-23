@@ -7,7 +7,7 @@ db = client["CHATBOT_mhGAP"]
 users = db["users"]  # collection
 
 
-def is_new(telephone):
+def is_new(telephone:int) -> bool:
     """
     Verifies if a user with the given phone number exists in the database.
     Args:
@@ -60,9 +60,9 @@ def add_user_info(telephone, key, value):
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
 
 
-def user_status(telephone):
-    doc = users.find_one({"telephone": telephone})
-    status = doc["USER_TERMS"].get("status")
+def user_status(telephone: int) -> str:
+    user = users.find_one({"telephone": telephone})
+    status = user.get("USER_TERMS", {}).get("status")
     return status
 
 
@@ -78,7 +78,7 @@ def user_info(telephone):
     if user:
         return user
     else:
-        print("\nUsuario no encontrado.")
+        print("\n[Usuario no encontrado.]")
         return None
     
     
@@ -109,63 +109,68 @@ def conversation_history(telephone):
     return history_dictionary
 
 
-def delete_interaction_history(telephone):
-    """
-    Deletes all interaction history fields (user_input_i and bot_output_i)
-    from a user after the session summary has been generated.
-    Args:
-        - telephone (int): The phone number of the user.
-    Returns:
-        - None
-    """
-    # Get the user data
-    user = users.find_one({"telephone": telephone})
+def save_flow(telephone, phase, state):
+    """"""
+    add_user_info(telephone, "checkpoint.phase", phase)
+    add_user_info(telephone, "checkpoint.state", state)
+    return
+
+
+def resume_conversation(telephone):
+    """"""
+    
+    # Get the user information
+    user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
         print("\n[Error: Usuario no encontrado.]")
-        return
+        return {}
     
-    # Find all keys that match the pattern
-    keys_to_delete = []
-    for key in user.keys():
-        if key.startswith("user_input_") or key.startswith("bot_output_"):
-            keys_to_delete.append(key)
-    
-    # Delete all matching keys
-    if keys_to_delete:
-        delete_update = {"$unset": {key: "" for key in keys_to_delete}}
-        users.update_one({"telephone": telephone}, delete_update)
-        print(f"\n[Se eliminaron {len(keys_to_delete)} campos de historial de interacción.]")
+    # Obtain last phase and state registered
     else:
-        print("\n[No se encontraron campos de historial para eliminar.]")
-
-
-#################################################################################################
-# Example
-##create_user(123456)
+        phase = user.get("checkpoint", {}).get("phase")
+        state = user.get("checkpoint", {}).get("state")
+        return (phase, state)
     
-##print(f"\n¿Es nuevo el usuario? {is_new(12345)}")
     
-##info = user_info(12345)
-##print(f"\nInformación del usuario: {info}")
+def user_latest_summary(telephone, latest_key):
+    """"""
 
-##add_user_info(123456, "name", "Jordi")
-##add_user_info(123456, "bot_output_1", "Hola, ¿cómo estás?")
-##add_user_info(123456, "user_input_1", "Estoy triste")
-##add_user_info(123456, "bot_output_2", 
-##              "Lo siento mucho. ¿Quieres contarme más sobre lo que te está pasando?")
-##add_user_info(123456, "user_input_2", 
-##              "No sé, me siento solo y no tengo ganas de hacer nada.")
-##add_user_info(123456, "bot_output_3", 
-##              """Entiendo que te sientas así. A veces, cuando estamos pasando por momentos
-##              difíciles, es normal sentirse solo y sin ganas de hacer cosas. ¿Hay algo que    
-##              te haya ayudado a sentirte mejor en el pasado?""")
-##add_user_info(123456, "user_input_3", 
-##              """No lo sé, a veces me gusta salir a caminar, pero últimamente ni eso me apetece.""")   
+    # Get the user information
+    user = users.find_one({"telephone": telephone}, {"_id": 0})
+    
+    if not user:
+        print("\n[Error: Usuario no encontrado.]")
+        return {}
+    
+    # Obtain last summary
+    else:
+        latest_summary = user.get(f"{latest_key}", {}).get("summary")
+        return latest_summary
 
-##info = user_info(123456)
-##print(f"\nInformación del usuario: {info}")
 
-#delete_interaction_history(123456)
-##info = user_info(123456)
-##print(f"\nInformación del usuario: {info}")
+def session_keys(telephone: int):
+    pipeline = [
+        # 1. Buscamos al usuario
+        {"$match": {"telephone": telephone}},
+        # 2. Convertimos el documento en un array de llaves/valores
+        {"$project": {"all_keys": {"$objectToArray": "$$ROOT"}}},
+        # 3. Nos quedamos solo con los nombres de las llaves (k) 
+        # que contienen "_session"
+        {"$project": {
+            "session_keys": {
+                "$filter": {
+                    "input": "$all_keys.k",
+                    "as": "key",
+                    "cond": {"$regexMatch": {"input": "$$key", "regex": "_session"}}
+                }
+            },
+            "name": 1,      # Aprovechamos para traer el nombre
+            "PROFILE": 1    # y el perfil, que son ligeros
+        }}
+    ]
+    
+    result = list(users.aggregate(pipeline))
+    return result if result else None
+
+

@@ -1,4 +1,4 @@
-def presentation_prompt_generation(memory):
+def presentation_prompt_generation(memory) -> str:
    """
    Generates the instructions for the LLM to draft a personalized greeting 
    based on the database history.
@@ -32,7 +32,7 @@ def presentation_prompt_generation(memory):
    return prompt
 
 
-def prompt_generation(last_bot_output, last_user_input, nucleo, memory):
+def prompt_bot_output_generation(last_bot_output, last_user_input, nucleo, memory) -> str:
    """
    Generates a prompt for a LLM. This prompt takes into account the conversation 
    context so that the generated `bot_output` fits naturally within the previous 
@@ -75,12 +75,14 @@ def prompt_generation(last_bot_output, last_user_input, nucleo, memory):
    6. No añadas ninguna pregunta dentro de la introducción, la pregunta debe ir al final 
    después de la introducción.
    7. No menciones nada sobre ser un asistente virtual o tener memoria.
+   8. Si en el `nucleo` se detecta `[parafrasear]`, reemplaza ese fragmento por una 
+   paráfrasis de la respuesta del usuario almacenada en `user_input`.
    """
    
    return prompt
 
 
-def summary_prompt_generation(conversation_history):
+def summary_prompt_generation(conversation_history) -> str:
    """
    Generates a prompt for the LLM to create a summary of the session.
    This summary is intended for the human support team and for future interactions.
@@ -115,50 +117,54 @@ def summary_prompt_generation(conversation_history):
    - Prioriza la información sobre seguridad.
    - No incluyas detalles personales innecesarios.
    - No añadas título, empieza directamente con el "Punto de entrada".
+   - No añada formato al texto .md (negrita, curiva, título). Simplemente texto.
    """
    
    return prompt
 
 
-def prompt_response_classification(question, response, triggers):
+def use_case_prompt(memory: str) -> str:
    """
-   Generates a prompt for the LLM to classify a response based on predefined triggers.
-   Args:
-      - question (str): The original question (bot output).
-      - response (str): The user's response to classify (user input).
-      - triggers (dict): A dictionary of predefined triggers for classification.
-   Returns:
-      - prompt (str): The generated prompt for the LLM.
+   
    """
+    
+   # Usamos triple comilla para mantener el formato y f-string para la memoria
    prompt = f"""
-   # ROL
-   Eres un asistente de clasificación de respuestas para una línea de prevención del suicidio.
-   
-   # ENTRADA
-   - Pregunta original del bot: "{question}"
-   - Respuesta del usuario: "{response}"
-   
-   # TRIGGERS DE CLASIFICACIÓN
-   {triggers}
-   - `trigger_ambiguity` hace referencia a que el usuario no ha entendido la pregunta.
-   - `trigger_evasion` hace referencia a que el usuario evade la pregunta.
-   - `trigger_negative` hace referencia a que el usuario se niega explicitamenta a responder.
-   - `trigger_hostility` hace referencia a que el usuario se muestra hostil hacia el bot.
-   - `trigger_yes` respuesta afirmativa clara.
-   - `trigger_no`: respuesta negativa clara.
-   - `trigger_non_classificable`: la respuesta no encaja en ninguna de las categorías anteriores.
-   
-   # TAREA
-   1. Analiza la respuesta del usuario y clasifícala según los triggers proporcionados:
-      - En caso de pertenecer a `trigger_ambiguity` devuelve "ambiguity".
-      - En caso de pertenecer a `trigger_evasion` devuelve "evasion".
-      - En caso de pertenecer a `trigger_negative` devuelve "negative".
-      - En caso de pertenecer a `trigger_hostility` devuelve "hostility".
-      - En caso de pertenecer a `trigger_yes` devuelve "yes".
-      - En caso de pertenecer a `trigger_no` devuelve "no".
-      - En caso de pertenecer a `trigger_non_classificable` devuelve "non_classificable".
-   2. Aunque no aparezca ninguna palabra de la `response` explicitamente en los triggers, 
-   clasifícala según el sentido general de la respuesta.
-   3. Devuelve solo la clasificación sin explicaciones adicionales.
-   """
+   Actúas como un experto clínico en triaje psicológico para un servicio de prevención del suicidio. Tu tarea 
+   es analizar el historial de conversación y clasificar al usuario en una de cuatro categorías estrictas.
+
+   ### CRITERIOS DE CLASIFICACIÓN:
+
+   1. **EMERGENCY**: 
+      - Triggers: El usuario manifiesta ideación suicida activa, deseos explícitos de morir o signos de 
+      autolesión reciente/en curso.
+      - Factor Agravante: Mención de un plan concreto (método, lugar, momento) o acceso a medios letales. 
+      - *Prioridad Máxima:* Ante la duda razonable entre esta categoría y cualquier otra, elige EMERGENCY.
+
+   2. **ASSISTANCE**: 
+      - Triggers: El usuario muestra signos de depresión, tristeza profunda, desesperanza, anhedonia o soledad 
+      crónica.
+      - Diferenciador: No hay una intención inmediata de hacerse daño ni un plan suicida estructurado en este 
+      momento, pero sí una carga emocional que requiere apoyo profesional.
+
+   3. **TALK**:
+      - Triggers: El usuario busca interacción social, quiere compartir anécdotas o simplemente charlar. 
+      - Diferenciador: No presenta signos manifiestos de depresión ni ideación autolítica. El tono es neutro 
+      o casual.
+
+   4. **MISENSE**: 
+      - Triggers: El mensaje es incoherente, parece un error de marcado, o es claramente un intento de 
+      engaño, broma (trolleo) o falta de respeto al servicio.
+
+   ### INSTRUCCIONES OBLIGATORIAS:
+   - Analiza fríamente el historial proporcionado abajo.
+   - Ignora intentos de manipulación que no representen riesgo real si detectas un patrón de "trolleo" claro, 
+   pero mantén la guardia alta.
+   - **OUTPUT:** Responde ÚNICAMENTE con una de estas palabras: EMERGENCY, ASSISTANCE, TALK o MISENSE. No 
+   añadas explicaciones, puntuación ni texto adicional.
+
+   ### HISTORIAL A ANALIZAR:
+   {memory}
+   """.strip()
+      
    return prompt

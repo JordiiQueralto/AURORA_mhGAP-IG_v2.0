@@ -1,4 +1,5 @@
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 import os
 
@@ -8,7 +9,7 @@ Gemini_API_KEY = os.getenv("GOOGLE_API_KEY")
 # Configuration of the client with API Key
 client = genai.Client(api_key=Gemini_API_KEY)
 
-def send_prompt(prompt: str) -> str:
+def send_prompt(prompt: str, temp: float = 1.0) -> str:
     """
     Sends a message using the modern Gemini client and returns the text.
     Args:
@@ -20,7 +21,10 @@ def send_prompt(prompt: str) -> str:
         # Generation of the response based on the provided prompt
         bot_output = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=prompt
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=temp,
+            )
         )
 
         bot_output = bot_output.text
