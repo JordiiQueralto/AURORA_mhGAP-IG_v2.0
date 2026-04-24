@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
+import llm
+import prompt_builder
 
 # Connection to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
@@ -64,47 +66,38 @@ def user_status(telephone: int) -> str:
     user = users.find_one({"telephone": telephone})
     status = user.get("USER_TERMS", {}).get("status")
     return status
-
-
-def user_info(telephone):
-    """
-    Retrieves user information (excluding the ID) based on the provided phone number.
-    Args:
-        - telephone (int): The phone number of the user to retrieve.
-    Returns:
-        - user(dict): The user information if found, None otherwise.
-    """
-    user = users.find_one({"telephone": telephone}, {"_id": 0})
-    if user:
-        return user
-    else:
-        print("\n[Usuario no encontrado.]")
-        return None
     
     
 def conversation_history(telephone):
     """
-    Creates a dictionary with all interaction history fields (user_input_i and bot_output_i)
-    existing in the conversation history of the user with the given phone number.
-    Args:
-        - telephone (int): The phone number of the user.
-    Returns:
-        - history_dictionary (dict): A dictionary containing all interaction history fields.
+    Devuelve un diccionario donde cada clave es una sesión y su valor es 
+    el historial de inputs/outputs de esa sesión.
     """
-    # Get the user information
+    # 1. Buscamos el usuario
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
         print("\n[Error: Usuario no encontrado.]")
         return {}
     
-    # Create a dictionary to store the history
     history_dictionary = {}
     
-    # Search for all interaction keys
-    for key in sorted(user.keys()):
-        if key.startswith("user_input_") or key.startswith("bot_output_"):
-            history_dictionary[key] = user[key]
+    # 2. Iteramos por las claves que terminan en '_session'
+    for key, session_data in user.items():
+        if key.endswith("_session") and isinstance(session_data, dict):
+            
+            # Accedemos al sub-objeto donde están los mensajes
+            conv_inner = session_data.get("conversation_history", {})
+            
+            # Filtramos solo las claves de mensajes (user_input y bot_output)
+            session_messages = {
+                k: v for k, v in conv_inner.items() 
+                if k.startswith("user_input_") or k.startswith("bot_output_")
+            }
+            
+            # Si la sesión tiene mensajes, la añadimos al resultado final
+            if session_messages:
+                history_dictionary[key] = session_messages
     
     return history_dictionary
 
@@ -149,28 +142,85 @@ def user_latest_summary(telephone, latest_key):
         return latest_summary
 
 
-def session_keys(telephone: int):
-    pipeline = [
-        # 1. Buscamos al usuario
-        {"$match": {"telephone": telephone}},
-        # 2. Convertimos el documento en un array de llaves/valores
-        {"$project": {"all_keys": {"$objectToArray": "$$ROOT"}}},
-        # 3. Nos quedamos solo con los nombres de las llaves (k) 
-        # que contienen "_session"
-        {"$project": {
-            "session_keys": {
-                "$filter": {
-                    "input": "$all_keys.k",
-                    "as": "key",
-                    "cond": {"$regexMatch": {"input": "$$key", "regex": "_session"}}
-                }
-            },
-            "name": 1,      # Aprovechamos para traer el nombre
-            "PROFILE": 1    # y el perfil, que son ligeros
-        }}
-    ]
+def user_keys(telefono):
+    """
+    Busca un usuario por su teléfono y devuelve una lista con los nombres
+    de todos sus campos registrados.
+    """
+    # Buscamos el documento que coincida con el teléfono
+    # Nota: Si en tu BD el teléfono es un número, pásalo como int. 
+    # Si es texto, asegúrate de pasarlo como string.
+    user = users.find_one({"telephone": telefono})
+
+    if user:
+        # Convertimos las llaves del diccionario a una lista
+        key_list = list(user.keys())
+        return key_list
+    else:
+        return f"No se encontró ningún usuario con el teléfono: {telefono}"
+
+
+def last_session_key(telephone):
+    """
+    Filtra las llaves que corresponden a sesiones y devuelve la más reciente.
+    """
+    # Obtain key list of the user
+    key_list = user_keys(telephone)
     
-    result = list(users.aggregate(pipeline))
-    return result if result else None
+    # Filter keys the end swith: '_session'
+    sesiones = [k for k in key_list if k.endswith("_session")]
+    
+    if not sesiones:
+        return None
+    
+    # Obtain the latest registered key session
+    last_session = max(sesiones)
+    
+    return last_session
 
 
+def user_info(telephone, keys_list=["name", "age", "PROFILE"]):
+    """
+    Retrieves specific fields for a user identified by their telephone number.
+    
+    :param telephone: The user's phone number (int or str depending on your DB).
+    :param keys_list: A list of strings representing the keys to retrieve.
+    :return: A dictionary with the requested data or None if the user is not found.
+    """
+    # Create the projection dictionary: { "key_name": 1 }
+    # This tells MongoDB to only return these specific fields.
+    projection = {key: 1 for key in keys_list}
+    
+    # Obtain last session key and add it to the projection dict
+    last_session = last_session_key(telephone)
+    projection[f"{last_session}.summary"] = 1
+    
+    # We usually exclude the '_id' unless it's explicitly requested in keys_list
+    if "_id" not in keys_list:
+        projection["_id"] = 0
+
+    # Perform the query
+    user_data = users.find_one({"telephone": telephone}, projection)
+    
+    return user_data
+
+
+def session_summary(telephone, current_time) -> str:
+    
+    # Get the user information
+    user = users.find_one({"telephone": telephone}, {"_id": 0})
+    
+    if not user:
+        print("\n[Error: Usuario no encontrado.]")
+        return {}
+    
+    # Obtain last summary
+    else:
+        
+        path = f"{current_time}_session"
+        conversation_history = user.get(path, {}).get("conversation_history")
+        prompt = prompt_builder.summary_prompt_generation(conversation_history)
+        summary = str(llm.send_prompt(prompt))
+        
+        return summary
+    

@@ -1,7 +1,7 @@
 import db
 import re
 import unicodedata
-import generate_output
+import time
 
 def strip_accents(user_input: str) -> str:
     return ''.join(
@@ -301,13 +301,14 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "Non commited"
                 db.add_user_info(telephone, key, value)
                 
+                time.sleep(2)
                 raw_bot_output = """Te escucho igualmente, pero ten en cuenta que cuanto más te guardes, 
                 más difícil será para mí darte herramientas que realmente te ayuden."""
                 bot_output = " ".join(raw_bot_output.split())
-                print(f"\BOT: {bot_output}")
+                print(f"\nBOT: {bot_output}")
                 
-                phase == "USE_CASE_EVAL"
-                state == ""
+                phase = "USE_CASE_EVAL"
+                state = ""
                 db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
                 
@@ -319,13 +320,14 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "Fully commited"
                     db.add_user_info(telephone, key, value)
                     
+                    time.sleep(2)
                     raw_bot_output = """Perfecto. Tu sinceridad es la base para que este espacio te 
                     sirva de verdad."""
                     bot_output = " ".join(raw_bot_output.split())
-                    print(f"\BOT: {bot_output}")
+                    print(f"\nBOT: {bot_output}")
                     
-                    phase == "USE_CASE_EVAL"
-                    state == ""
+                    phase = "USE_CASE_EVAL"
+                    state = ""
                     db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                     
@@ -337,13 +339,14 @@ def StateMachine(telephone, phase, state, user_input):
                         value = "Partially commited"
                         db.add_user_info(telephone, key, value)
                         
+                        time.sleep(2)
                         raw_bot_output = """No pasa nada, vamos poco a poco. Solo recuerda que mis 
                         consejos serán mucho más útiles si compartes lo que de verdad sientes."""
                         bot_output = " ".join(raw_bot_output.split())
-                        print(f"\BOT: {bot_output}")
+                        print(f"\nBOT: {bot_output}")
                         
-                        phase == "USE_CASE_EVAL"
-                        state == ""
+                        phase = "USE_CASE_EVAL"
+                        state = ""
                         db.save_flow(telephone, phase, state)
                         return (phase, state, variant)
                         
@@ -1681,7 +1684,7 @@ def StateMachine(telephone, phase, state, user_input):
         return
     
 
-def security_control(phase, state, user_input):
+def security_control(phase, state, variant, user_input):
     
     PATTERNS_EMERGENCY: list[str] = [
                 # PASTILLAS / SOBREDOSIS
@@ -1792,11 +1795,13 @@ def security_control(phase, state, user_input):
     
     match_emergency = pattern_search(n_user_input, PATTERNS_EMERGENCY) 
     if match_emergency:
-                new_phase = "SUI_EVAL"
-                new_state = "1A"
-                return (new_phase, new_state)
+        new_phase = "SUI_EVAL"
+        new_state = "1"
+        new_variant = 0
+        return (new_phase, new_state, new_variant)
             
     else:
         new_phase = phase
         new_state = state
-        return (new_phase, new_state)
+        new_variant = variant
+        return (new_phase, new_state, new_variant)
