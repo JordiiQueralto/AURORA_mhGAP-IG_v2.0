@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apoyo en Salud Mental</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ── Variables ── */
+  :root {
+    --bg-outer:       #0d1117;
+    --bg-chat:        #111b21;
+    --bg-header:      #202c33;
+    --bg-input:       #2a3942;
+    --bg-bot:         #202c33;
+    --bg-user:        #005c4b;
+    --text-primary:   #e9edef;
+    --text-secondary: #8696a0;
+    --text-timestamp: #667781;
+    --accent:         #00a884;
+    --accent-soft:    #02735e;
+    --tick:           #53bdeb;
+    --danger:         #f15c6d;
+    --radius-bubble:  8px;
+    --font-body:      'DM Sans', sans-serif;
+    --font-display:   'Instrument Serif', serif;
+    --transition:     0.18s ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg-outer);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+  }
+
+  /* ── Phone shell ── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg-chat);
+    border-radius: 40px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+      0 0 0 1px #ffffff08,
+      0 30px 80px #00000088,
+      0 0 120px #00a88410;
+    position: relative;
+  }
+
+  /* ── Status bar ── */
+  .statusbar {
+    height: 44px;
+    background: var(--bg-header);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+  .statusbar-icons { display: flex; gap: 6px; align-items: center; }
+  .statusbar-icons svg { opacity: 0.9; }
+
+  /* ── Header ── */
+  .header {
+    background: var(--bg-header);
+    padding: 8px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #ffffff06;
+  }
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent); display: flex; align-items: center; gap: 4px;
+    font-family: var(--font-body); font-size: 16px; padding: 4px 0;
+  }
+  .avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-soft) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+    box-shadow: 0 0 0 2px #00a88430;
+  }
+  .contact-info { flex: 1; min-width: 0; }
+  .contact-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-style: italic;
+    color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .contact-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+  }
+  .contact-status.online { color: var(--accent); }
+  .header-actions { display: flex; gap: 14px; }
+  .header-actions button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); padding: 4px;
+    border-radius: 50%; transition: color var(--transition);
+  }
+  .header-actions button:hover { color: var(--text-primary); }
+
+  /* ── Chat area ── */
+  .chat-bg {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 12px 8px;
+    background:
+      radial-gradient(ellipse at 20% 80%, #00a88408 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, #02735e08 0%, transparent 60%),
+      var(--bg-chat);
+    scroll-behavior: smooth;
+  }
+  .chat-bg::-webkit-scrollbar { width: 4px; }
+  .chat-bg::-webkit-scrollbar-track { background: transparent; }
+  .chat-bg::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 2px; }
+
+  /* ── Date separator ── */
+  .date-sep {
+    display: flex; align-items: center; justify-content: center;
+    margin: 12px 0 8px;
+  }
+  .date-sep span {
+    background: #1f2c34;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid #ffffff08;
+  }
+
+  /* ── Bubbles ── */
+  .message-row {
+    display: flex;
+    margin-bottom: 2px;
+    animation: fadeUp 0.22s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .message-row.bot  { justify-content: flex-start; }
+  .message-row.user { justify-content: flex-end; }
+
+  .bubble {
+    max-width: 78%;
+    padding: 8px 10px 6px;
+    border-radius: var(--radius-bubble);
+    font-size: 14.5px;
+    line-height: 1.45;
+    position: relative;
+    word-break: break-word;
+  }
+  .message-row.bot  .bubble {
+    background: var(--bg-bot);
+    border-top-left-radius: 2px;
+    color: var(--text-primary);
+  }
+  .message-row.user .bubble {
+    background: var(--bg-user);
+    border-top-right-radius: 2px;
+    color: var(--text-primary);
+  }
+
+  .bubble-meta {
+    display: flex; align-items: center; gap: 4px;
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
+  .bubble-time {
+    font-size: 11px;
+    color: var(--text-timestamp);
+    white-space: nowrap;
+  }
+  .bubble-ticks { display: flex; gap: 1px; }
+  .bubble-ticks svg { color: var(--tick); }
+
+  /* ── Typing indicator ── */
+  .typing-row {
+    display: flex; justify-content: flex-start;
+    margin-bottom: 4px;
+    animation: fadeUp 0.2s ease both;
+  }
+  .typing-bubble {
+    background: var(--bg-bot);
+    border-radius: var(--radius-bubble);
+    border-top-left-radius: 2px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── System notice ── */
+  .system-notice {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-timestamp);
+    background: #1f2c34;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 8px auto;
+    max-width: 80%;
+    border: 1px solid #ffffff06;
+  }
+
+  /* ── Input area ── */
+  .input-area {
+    background: var(--bg-header);
+    padding: 8px 10px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+    border-top: 1px solid #ffffff06;
+  }
+  .input-wrap {
+    flex: 1;
+    background: var(--bg-input);
+    border-radius: 22px;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px 14px;
+    gap: 10px;
+    min-height: 44px;
+    transition: box-shadow var(--transition);
+  }
+  .input-wrap:focus-within {
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+  .chat-input {
+    flex: 1;
+    background: none; border: none; outline: none;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    resize: none;
+    line-height: 1.4;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 0;
+  }
+  .chat-input::placeholder { color: var(--text-secondary); }
+  .chat-input::-webkit-scrollbar { display: none; }
+
+  .emoji-btn, .attach-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); padding: 0;
+    display: flex; align-items: center;
+    transition: color var(--transition);
+  }
+  .emoji-btn:hover, .attach-btn:hover { color: var(--text-primary); }
+
+  .send-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background var(--transition), transform 0.1s;
+    box-shadow: 0 2px 8px #00a88440;
+  }
+  .send-btn:hover { background: #00c49a; }
+  .send-btn:active { transform: scale(0.93); }
+  .send-btn:disabled { background: #3a4a54; cursor: not-allowed; box-shadow: none; }
+
+  /* ── Setup overlay ── */
+  .overlay {
+    position: absolute; inset: 0;
+    background: var(--bg-chat);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px 24px;
+    gap: 20px;
+    z-index: 10;
+    animation: fadeUp 0.3s ease both;
+  }
+  .overlay-logo {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    box-shadow: 0 0 40px #00a88430;
+  }
+  .overlay h1 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-style: italic;
+    text-align: center;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+  .overlay p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .overlay input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid #ffffff10;
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 14px;
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  .overlay input:focus { border-color: var(--accent); }
+  .overlay input::placeholder { color: var(--text-secondary); }
+  .start-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none; border-radius: 12px;
+    padding: 13px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition);
+    box-shadow: 0 4px 16px #00a88440;
+  }
+  .start-btn:hover { background: #00c49a; }
+  .disclaimer {
+    font-size: 11.5px;
+    color: var(--text-timestamp);
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* ── Ended banner ── */
+  .ended-banner {
+    text-align: center;
+    background: #1a2028;
+    border: 1px solid var(--danger);
+    border-radius: 10px;
+    padding: 10px 16px;
+    margin: 8px 0;
+    color: var(--danger);
+    font-size: 13px;
+    animation: fadeUp 0.3s ease both;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ── Setup overlay ── -->
+  <div class="overlay" id="overlay">
+    <div class="overlay-logo">🤍</div>
+    <h1>Línea de Apoyo<br/>en Salud Mental</h1>
+    <p>Este es un espacio seguro y confidencial.<br/>
+       Introduce tu número para comenzar la sesión.</p>
+    <input type="tel" id="phone-input" placeholder="Número de teléfono (ej. 1234)"
+           maxlength="20" />
+    <button class="start-btn" id="start-btn" onclick="startChat()">Comenzar sesión</button>
+    <p class="disclaimer">
+      No soy un profesional médico. Si estás en peligro inmediato,<br/>
+      llama al <strong>024</strong> (línea de atención a la conducta suicida).
+    </p>
+  </div>
+
+  <!-- ── Status bar ── -->
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <div class="statusbar-icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor">
+        <rect x="0" y="3" width="3" height="9" rx="1"/>
+        <rect x="4.5" y="2" width="3" height="10" rx="1"/>
+        <rect x="9" y="0" width="3" height="12" rx="1"/>
+        <rect x="13.5" y="0" width="2.5" height="12" rx="1" opacity="0.3"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 20 14" fill="currentColor">
+        <path d="M10 3C6.5 3 3.4 4.5 1.3 7L0 5.5C2.5 2.6 6.1 1 10 1s7.5 1.6 10 4.5L18.7 7C16.6 4.5 13.5 3 10 3z"/>
+        <path d="M10 6.5c-2.2 0-4.2.9-5.7 2.4L3 7.5C4.9 5.6 7.3 4.5 10 4.5s5.1 1.1 7 3l-1.3 1.4C14.2 7.4 12.2 6.5 10 6.5z"/>
+        <circle cx="10" cy="13" r="2"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="currentColor">
+        <rect x="0" y="1" width="21" height="10" rx="2" stroke="currentColor" stroke-width="1" fill="none" opacity="0.5"/>
+        <rect x="1.5" y="2.5" width="15" height="7" rx="1.5" fill="var(--accent)"/>
+        <path d="M22.5 4.5v3a2 2 0 000-3z" opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Header ── -->
+  <div class="header">
+    <button class="back-btn" onclick="resetChat()">
+      <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+        <path d="M8.5 1L1.5 8l7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </button>
+    <div class="avatar">🤍</div>
+    <div class="contact-info">
+      <div class="contact-name">Apoyo Salud Mental</div>
+      <div class="contact-status online" id="status-label">en línea</div>
+    </div>
+    <div class="header-actions">
+      <button title="Videollamada">
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="2" width="13" height="12" rx="2"/>
+          <path d="M14 6l7-4v12l-7-4V6z"/>
+        </svg>
+      </button>
+      <button title="Llamada">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16.7 13l-3-2.1c-.4-.3-.9-.2-1.2.1l-1.4 1.4a11 11 0 01-5.5-5.5l1.4-1.4c.3-.3.4-.8.1-1.2L5 1.3C4.7.9 4.1.8 3.7 1L1.2 2.5C.8 2.7.6 3.2.7 3.6 1.9 10 8 16.1 14.4 17.3c.4.1.9-.1 1.1-.5l1.5-2.5c.2-.4.1-1-.3-1.3z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Chat messages ── -->
+  <div class="chat-bg" id="chat-box">
+    <div class="date-sep"><span id="today-label">Hoy</span></div>
+    <div class="system-notice">
+      🔒 Los mensajes son confidenciales y están protegidos por cifrado de extremo a extremo.
+    </div>
+  </div>
+
+  <!-- ── Input ── -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <button class="emoji-btn" title="Emoji">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+          <line x1="9" y1="9" x2="9.01" y2="9"/>
+          <line x1="15" y1="9" x2="15.01" y2="9"/>
+        </svg>
+      </button>
+      <textarea class="chat-input" id="chat-input" rows="1"
+        placeholder="Escribe un mensaje..."
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"></textarea>
+      <button class="attach-btn" title="Adjuntar">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+        </svg>
+      </button>
+    </div>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  // ── State ────────────────────────────────────────────────────────────────
+  let telephone = null;
+  let sessionEnded = false;
+  const API = "http://localhost:5000";
+
+  // ── Clock ────────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById("clock").textContent =
+      now.getHours().toString().padStart(2,"0") + ":" +
+      now.getMinutes().toString().padStart(2,"0");
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // Set today label
+  (function(){
+    const days = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+    const now = new Date();
+    document.getElementById("today-label").textContent = days[now.getDay()] + " " +
+      now.getDate() + "/" + (now.getMonth()+1);
+  })();
+
+  // ── Start chat ───────────────────────────────────────────────────────────
+  async function startChat() {
+    const input = document.getElementById("phone-input");
+    const val = input.value.trim();
+    if (!val) { input.focus(); input.style.borderColor="var(--danger)"; return; }
+    input.style.borderColor = "";
+
+    telephone = val;
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("send-btn").disabled = false;
+
+    setStatus("escribiendo...", false);
+
+    try {
+      const res = await fetch(API + "/api/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telephone })
+      });
+      const data = await res.json();
+      removeTyping();
+      addBubble("bot", data.bot_message);
+      setStatus("en línea", true);
+    } catch(e) {
+      removeTyping();
+      addBubble("bot", "⚠️ No se pudo conectar con el servidor. Asegúrate de que app.py está ejecutándose en localhost:5000.");
+      setStatus("desconectado", false);
+    }
+  }
+
+  // ── Send message ─────────────────────────────────────────────────────────
+  async function sendMessage() {
+    if (sessionEnded) return;
+    const input = document.getElementById("chat-input");
+    const text = input.value.trim();
+    if (!text || !telephone) return;
+
+    input.value = "";
+    autoResize(input);
+    addBubble("user", text);
+    setStatus("escribiendo...", false);
+    showTyping();
+
+    try {
+      const res = await fetch(API + "/api/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telephone, message: text })
+      });
+      const data = await res.json();
+      removeTyping();
+      addBubble("bot", data.bot_message);
+
+      if (data.ended) {
+        sessionEnded = true;
+        setStatus("sesión cerrada", false);
+        document.getElementById("send-btn").disabled = true;
+        document.getElementById("chat-input").disabled = true;
+        const banner = document.createElement("div");
+        banner.className = "ended-banner";
+        banner.textContent = "La sesión ha finalizado. Recuerda que puedes llamar al 024.";
+        document.getElementById("chat-box").appendChild(banner);
+        scrollBottom();
+      } else {
+        setStatus("en línea", true);
+      }
+    } catch(e) {
+      removeTyping();
+      addBubble("bot", "⚠️ Error de conexión. Comprueba que app.py está en marcha.");
+      setStatus("desconectado", false);
+    }
+  }
+
+  // ── Reset ────────────────────────────────────────────────────────────────
+  async function resetChat() {
+    if (telephone) {
+      try {
+        await fetch(API + "/api/reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telephone })
+        });
+      } catch(e) {}
+    }
+    telephone = null;
+    sessionEnded = false;
+    document.getElementById("chat-box").innerHTML = `
+      <div class="date-sep"><span id="today-label">Hoy</span></div>
+      <div class="system-notice">🔒 Los mensajes son confidenciales y están protegidos por cifrado de extremo a extremo.</div>`;
+    document.getElementById("overlay").style.display = "flex";
+    document.getElementById("phone-input").value = "";
+    document.getElementById("send-btn").disabled = true;
+    document.getElementById("chat-input").disabled = false;
+    setStatus("en línea", true);
+  }
+
+  // ── UI helpers ───────────────────────────────────────────────────────────
+  function addBubble(who, text) {
+    const row = document.createElement("div");
+    row.className = `message-row ${who}`;
+
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,"0") + ":" +
+                 now.getMinutes().toString().padStart(2,"0");
+
+    const ticks = who === "user"
+      ? `<div class="bubble-ticks">
+           <svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor">
+             <path d="M1 5.5L4.5 9 9 1M7 5.5L10.5 9 15 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+           </svg>
+         </div>` : "";
+
+    row.innerHTML = `
+      <div class="bubble">
+        ${escapeHtml(text).replace(/\n/g,"<br/>")}
+        <div class="bubble-meta">
+          <span class="bubble-time">${time}</span>
+          ${ticks}
+        </div>
+      </div>`;
+    document.getElementById("chat-box").appendChild(row);
+    scrollBottom();
+  }
+
+  function showTyping() {
+    removeTyping();
+    const row = document.createElement("div");
+    row.className = "typing-row";
+    row.id = "typing-indicator";
+    row.innerHTML = `<div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+    document.getElementById("chat-box").appendChild(row);
+    scrollBottom();
+  }
+
+  function removeTyping() {
+    const el = document.getElementById("typing-indicator");
+    if (el) el.remove();
+  }
+
+  function setStatus(text, online) {
+    const el = document.getElementById("status-label");
+    el.textContent = text;
+    el.className = "contact-status" + (online ? " online" : "");
+  }
+
+  function scrollBottom() {
+    const box = document.getElementById("chat-box");
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // ── Enable send button when typing ────────────────────────────────────────
+  document.getElementById("chat-input").addEventListener("input", function() {
+    const btn = document.getElementById("send-btn");
+    if (telephone && !sessionEnded) {
+      btn.disabled = this.value.trim() === "";
+    }
+  });
+
+  // ── Allow Enter in setup ──────────────────────────────────────────────────
+  document.getElementById("phone-input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") startChat();
+  });
+</script>
+</body>
+</html>

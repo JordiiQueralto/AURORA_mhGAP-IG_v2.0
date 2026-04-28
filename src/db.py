@@ -60,6 +60,21 @@ def add_user_info(telephone, key, value):
         - None
     """
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
+    
+    
+def get_user_info(telephone, key_part_1, key_part_2):
+    
+    # Get the user information
+    user = users.find_one({"telephone": telephone}, {"_id": 0})
+    
+    if not user:
+        print("\n[Error: Usuario no encontrado.]")
+        return {}
+    
+    # Obtain last phase and state registered
+    else:
+        result = user.get(f"{key_part_1}", {}).get(f"{key_part_2}")
+        return result
 
 
 def user_status(telephone: int) -> str:
@@ -179,7 +194,7 @@ def last_session_key(telephone):
     return last_session
 
 
-def user_info(telephone, keys_list=["name", "age", "PROFILE"]):
+def user_memory(telephone, keys_list=["name", "age", "PROFILE"]):
     """
     Retrieves specific fields for a user identified by their telephone number.
     

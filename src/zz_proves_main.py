@@ -41,7 +41,7 @@ def main_prova(telephone):
     else:
         # en caso de no ser nuevo, obtenemos un resumen del registro 
         # de la BD del usuario y el estado de aceptación de términos
-        memory = db.user_info(telephone)
+        memory = db.user_memory(telephone)
         status = db.user_status(telephone)
     
     

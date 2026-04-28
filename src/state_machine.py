@@ -1679,7 +1679,18 @@ def StateMachine(telephone, phase, state, user_input):
                     state = "3"
                     return (phase, state, variant)
             
+    elif phase == "SUI_PROTOCOLS":
+        
+        if state == "1":
             
+            return 
+            
+        elif state == "2":
+            return
+        
+        else:
+            return
+          
     else:
         return
     
