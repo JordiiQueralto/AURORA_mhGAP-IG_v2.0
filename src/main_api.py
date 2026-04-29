@@ -30,7 +30,7 @@ def _ctx_set(telephone, key, value):
 # start_conversation  –  llamado UNA vez al abrir el chat
 # ─────────────────────────────────────────────────────────────────────────────
 def start_conversation(telephone):
-    telephone = int(telephone)  # Castear a int para consistencia con BD
+    telephone = telephone
     is_new = db.is_new(telephone)
     db.create_user(telephone, is_new)
 
@@ -81,7 +81,7 @@ def start_conversation(telephone):
 # process_message  –  llamado en cada mensaje del usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def process_message(telephone, user_input):
-    telephone = int(telephone)
+    telephone = telephone
     n_user_input = state_machine.normalize_text(user_input)
 
     # 1. Salida rápida global
@@ -227,7 +227,7 @@ def save_circle_data(telephone, circle_data):
     """
     Guarda la información de 'Mi círculo' en el perfil del usuario en la BD.
     """
-    telephone = int(telephone)
+    telephone = telephone
     # Guardamos todo el objeto bajo la clave 'CIRCLE' en el perfil del usuario
     db.add_user_info(telephone, "CIRCLE", circle_data)
 

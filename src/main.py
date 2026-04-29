@@ -358,6 +358,6 @@ def main(telephone):
 
 if __name__ == "__main__":
     # Example
-    NUMERO_ENTRANTE = "1234"
+    NUMERO_ENTRANTE = "1234555"
     
     main(NUMERO_ENTRANTE)

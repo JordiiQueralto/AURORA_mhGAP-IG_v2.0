@@ -9,7 +9,7 @@ db = client["CHATBOT_mhGAP"]
 users = db["users"]  # collection
 
 
-def is_new(telephone:int) -> bool:
+def is_new(telephone:str) -> bool:
     """
     Verifies if a user with the given phone number exists in the database.
     Args:
@@ -77,7 +77,7 @@ def get_user_info(telephone, key_part_1, key_part_2):
         return result
 
 
-def user_status(telephone: int) -> str:
+def user_status(telephone: str) -> str:
     user = users.find_one({"telephone": telephone})
     status = user.get("USER_TERMS", {}).get("status")
     return status
