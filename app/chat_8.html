@@ -1332,9 +1332,20 @@ async function loadCircleFromBackend(){
     const data=await r.json();
     if(data.circle_data){
       const cd=data.circle_data;
-      circleContacts = cd.contacts||[];
-      circleHealth   = cd.medicalCenter||{center:'',city:''};
-      circlePrivacy  = cd.privacy||{hospital:false,family:false};
+      // contacts — puede venir como array o como objeto {0:{...}, 1:{...}} desde MongoDB
+      circleContacts = Array.isArray(cd.contacts)
+        ? cd.contacts
+        : Object.values(cd.contacts || {});
+      // medicalCenter.name → circleHealth.center
+      circleHealth = {
+        center: cd.medicalCenter?.name || '',
+        city:   cd.medicalCenter?.city || ''
+      };
+      // privacy keys → circlePrivacy keys
+      circlePrivacy = {
+        hospital: cd.privacy?.shareWithHospital  || false,
+        family:   cd.privacy?.allowContactFamily || false
+      };
     }
   }catch(e){
     console.warn("No se pudo cargar el círculo desde el servidor:", e);

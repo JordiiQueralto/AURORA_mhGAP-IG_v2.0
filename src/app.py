@@ -22,6 +22,15 @@ def verify_user():
     is_new = main_api.init_user(telephone)
     return jsonify({"status": "ok", "is_new": is_new})
 
+@app.route('/api/circle', methods=['GET'])
+def get_circle():
+    telephone = request.args.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    circle_data = main_api.get_circle_data(telephone)
+    return jsonify({"circle_data": circle_data})
+
 @app.route('/api/start', methods=['POST'])
 def start_chat():
     data = request.json
@@ -50,15 +59,6 @@ def handle_message():
         "bot_message": bot_message,
         "ended": is_ended
     })
-    
-@app.route('/api/circle', methods=['GET'])
-def get_circle():
-    telephone = request.args.get('telephone')
-    if not telephone:
-        return jsonify({"error": "telephone requerido"}), 400
-
-    circle_data = main_api.get_circle_data(telephone)
-    return jsonify({"circle_data": circle_data})
 
 @app.route('/api/circle', methods=['POST'])
 def save_circle():

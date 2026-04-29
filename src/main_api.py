@@ -249,7 +249,17 @@ def get_circle_data(telephone):
     Recupera la información de 'Mi círculo' del perfil del usuario en la BD.
     """
     telephone = str(telephone).replace(" ", "")
-    return db.get_user_info(telephone, "CIRCLE") or {}
+    contacts = db.get_user_info(telephone, "CIRCLE", "contacts") or {}
+    medicalCenter = db.get_user_info(telephone, "CIRCLE", "medicalCenter") or {}
+    privacy = db.get_user_info(telephone, "CIRCLE", "privacy") or {}
+    
+    circle_data = {
+            "contacts": contacts,
+            "medicalCenter": medicalCenter,
+            "privacy": privacy
+            }
+    
+    return circle_data
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _run_farewell  –  Tareas de cierre de sesión
@@ -281,3 +291,8 @@ def reset_session(telephone):
             _ctx_set(telephone, key, None)
         except Exception:
             pass
+        
+        
+# Example
+data = get_circle_data('+341234')
+print(data)
