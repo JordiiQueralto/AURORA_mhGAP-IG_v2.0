@@ -45,7 +45,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 
 .hdr{background:var(--bg-header);padding:8px 16px 10px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-bottom:1px solid #ffffff06}
 .back{background:none;border:none;cursor:pointer;color:var(--accent);display:flex;align-items:center;gap:4px;font-family:var(--f0);font-size:16px;padding:4px 0}
-.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 0 2px #00a88430}
+.avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 0 2px #00a88430}
 .av-sm{width:36px;height:36px;font-size:15px}
 .contact-name{font-family:var(--f1);font-size:16px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .contact-sub{font-size:12px;color:var(--c1);margin-top:1px}
@@ -55,7 +55,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 .hdr-btn:hover{color:var(--c0)}
 
 /* Screen 1 — Phone */
-#s-phone{background:var(--bg-app);align-items:center;justify-content:center;gap:20px;padding:32px 28px;flex-direction:column}
+#s-phone{background:var(--bg-app);align-items:center;justify-content:center;gap:20px;padding:32px 28px;flex-direction:column;overflow:hidden}
 .logo{width:250px;height:250px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 0 0 12px #00a88412,0 0 40px #00a88428;animation:pulse 3s infinite}
 .logo img {
   width: 255px;    
@@ -286,7 +286,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 .phone-inp-inner::placeholder{color:var(--c2)}
 
 /* Country dropdown shared */
-.country-dropdown{position:absolute;z-index:100;background:#1a2a38;border:1px solid #4da6dc30;border-radius:12px;box-shadow:0 8px 32px #00000060;max-height:220px;overflow-y:auto;width:320px;left:50%;transform:translateX(-50%);animation:fadeUp .18s ease both}
+.country-dropdown{position:fixed;z-index:999;background:#1a2a38;border:1px solid #4da6dc30;border-radius:12px;box-shadow:0 8px 32px #00000060;max-height:220px;overflow-y:auto;width:300px;animation:fadeUp .18s ease both}
 .country-dropdown::-webkit-scrollbar{width:4px}
 .country-dropdown::-webkit-scrollbar-thumb{background:#ffffff20;border-radius:2px}
 .country-search{width:100%;background:#0d1e2e;border:none;border-bottom:1px solid #ffffff10;padding:10px 14px;color:var(--c0);font-family:var(--f0);font-size:13.5px;outline:none;border-radius:12px 12px 0 0}
@@ -304,6 +304,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 .dropdown-wrap{position:relative}
 </style>
 </head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
 <body>
 <div class="phone">
 
@@ -322,10 +323,10 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
         <span class="prefix-code" id="prefix-code">+?</span>
         <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="var(--c2)" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l4 4 4-4"/></svg>
       </button>
-      <input class="phone-inp-inner" id="phone-inp" type="tel" placeholder="645 80 94 22" maxlength="17"
+      <input class="phone-inp-inner" id="phone-inp" type="tel" placeholder="624 75 32 44" maxlength="17"
              onkeydown="if(event.key==='Enter')sendSms()"/>
     </div>
-    <div class="country-dropdown" id="phone-dropdown" style="display:none;top:56px">
+    <div class="country-dropdown" id="phone-dropdown" style="display:none">
       <input class="country-search" id="phone-search" placeholder="Buscar país…" oninput="filterPhoneCountries(this.value)"/>
       <div id="phone-country-list"></div>
     </div>
@@ -374,21 +375,29 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
     </div>
   </div>
   <div class="hdr">
-    <div class="avatar">🤍</div>
+    <div class="avatar">
+      <img src="../images/logo.png" alt="Perfil" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+    </div>
     <div style="flex:1">
-      <div class="contact-name">Apoyo Salud Mental</div>
+      <div class="contact-name" style="font-size: 18px; font-weight: bold;">Apoyo Salud Mental</div>
       <div class="contact-sub on">en línea · <span id="menu-user-label"></span></div>
     </div>
     <button class="hdr-btn" title="Cerrar sesión" onclick="logout()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
     </button>
   </div>
+
   <div class="menu-body">
-    <div class="menu-hero">
-      <div style="font-size:36px">🤍</div>
+    <div class="menu-hero" style="background: transparent; box-shadow: none; text-align: center; padding: 30px 20px;">
       <div class="menu-hero-txt">
-        <h2>Bienvenido/a de nuevo</h2>
-        <p>¿En qué podemos ayudarte hoy?<br/>Selecciona una de las opciones.</p>
+        <! Title !>
+        <h2 style="font-size: 32px; font-weight: 800; font-family: 'Poppins', sans-serif; margin-bottom: 5px; letter-spacing: -0.5px;">
+          Bienvenido/a de nuevo
+        </h2>
+        <! Subtitle !>
+        <p style="font-size: 18px; color: #a0a0a0; font-family: 'Inter', sans-serif;">
+          ¿En qué podemos ayudarte hoy?
+        </p>
       </div>
     </div>
 
@@ -397,6 +406,15 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
       <div class="card-body">
         <div class="card-title">Hablar con el asistente</div>
         <div class="card-desc">Conversación privada de apoyo emocional con nuestro asistente de IA.</div>
+      </div>
+      <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <button class="menu-card mc-circle" onclick="goTo('s-circle')">
+      <div class="card-icon">👨‍👩‍👧</div>
+      <div class="card-body">
+        <div class="card-title">Mi círculo</div>
+        <div class="card-desc">Contactos de confianza, centro de salud y preferencias de privacidad.</div>
       </div>
       <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -415,15 +433,6 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
       <div class="card-body">
         <div class="card-title">Línea de crisis</div>
         <div class="card-desc">Contacta ahora con servicios de prevención del suicidio de tu país.</div>
-      </div>
-      <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
-
-    <button class="menu-card mc-circle" onclick="goTo('s-circle')">
-      <div class="card-icon">👨‍👩‍👧</div>
-      <div class="card-body">
-        <div class="card-title">Mi círculo</div>
-        <div class="card-desc">Contactos de confianza, centro de salud y preferencias de privacidad.</div>
       </div>
       <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -692,7 +701,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
           <svg width="9" height="5" viewBox="0 0 10 6" fill="none" stroke="var(--c2)" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l4 4 4-4"/></svg>
         </button>
         <input class="circle-inp" id="new-contact-phone" placeholder="Número sin prefijo" type="tel" style="flex:1"/>
-        <div class="country-dropdown" id="contact-dropdown" style="display:none;top:44px">
+        <div class="country-dropdown" id="contact-dropdown" style="display:none">
           <input class="country-search" id="contact-search" placeholder="Buscar país…" oninput="filterContactCountries(this.value)"/>
           <div id="contact-country-list"></div>
         </div>
@@ -815,8 +824,8 @@ function verifyCode(){
   if(entered===demoCode){
     errEl.textContent="";
     document.getElementById("menu-user-label").textContent=telephone;
-    goTo("s-menu");
     detectCountry();
+    loadCircleFromBackend().finally(()=>goTo("s-menu"));
   } else {
     errEl.textContent="Código incorrecto. Inténtalo de nuevo.";
     for(let i=0;i<6;i++){
@@ -846,6 +855,8 @@ function logout(){
       body:JSON.stringify({telephone})}).catch(()=>{});
   }
   telephone=null; chatStarted=false; sessionEnded=false;
+  // Clear circle data from memory on logout
+  circleContacts=[]; circleHealth={center:'',city:''}; circlePrivacy={hospital:false,family:false};
   document.getElementById("chat-box").innerHTML=`
     <div class="date-sep"><span id="today-lbl">Hoy</span></div>
     <div class="sys-notice">🔒 Los mensajes están protegidos. No compartimos tus datos.</div>`;
@@ -1001,9 +1012,10 @@ function applyCountry(d){
 }
 
 // Screen 7 — Mi Círculo
-let circleContacts = JSON.parse(localStorage.getItem('circleContacts')||'[]');
-let circleHealth = JSON.parse(localStorage.getItem('circleHealth')||'{"center":"","city":""}');
-let circlePrivacy = JSON.parse(localStorage.getItem('circlePrivacy')||'{"hospital":false,"family":false}');
+// Circle data — kept in memory per-session, NOT persisted in localStorage
+let circleContacts = [];
+let circleHealth   = {center:'',city:''};
+let circlePrivacy  = {hospital:false,family:false};
 
 const RELATION_EMOJI = {
   madre:'👩',mamá:'👩',padre:'👨',papá:'👨',hermano:'🧑',hermana:'👧',
@@ -1080,12 +1092,7 @@ function saveCircle(){
   circleHealth.city=document.getElementById('health-city').value.trim();
   circlePrivacy.hospital=document.getElementById('toggle-hospital').checked;
   circlePrivacy.family=document.getElementById('toggle-family').checked;
-  // 2. Persistir localmente
-  try{
-    localStorage.setItem('circleContacts',JSON.stringify(circleContacts));
-    localStorage.setItem('circleHealth',JSON.stringify(circleHealth));
-    localStorage.setItem('circlePrivacy',JSON.stringify(circlePrivacy));
-  }catch(e){}
+  // 2. (datos sólo en memoria — se sincronizan con backend al guardar)
   // 3. Enviar al backend (sin bloquear la UI)
   saveCircleToBackend();
 }
@@ -1225,11 +1232,17 @@ function togglePhoneDropdown(e){
   e.stopPropagation();
   const dd=document.getElementById('phone-dropdown');
   phoneDropdownOpen=!phoneDropdownOpen;
-  dd.style.display=phoneDropdownOpen?'block':'none';
   if(phoneDropdownOpen){
+    const btn=document.getElementById('prefix-btn');
+    const r=btn.getBoundingClientRect();
+    dd.style.left=r.left+'px';
+    dd.style.top=(r.bottom+6)+'px';
+    dd.style.display='block';
     buildCountryList('phone-country-list', selectPhoneCountry);
     document.getElementById('phone-search').value='';
     document.getElementById('phone-search').focus();
+  } else {
+    dd.style.display='none';
   }
 }
 function selectPhoneCountry(c){
@@ -1254,11 +1267,17 @@ function toggleContactDropdown(e){
   e.stopPropagation();
   const dd=document.getElementById('contact-dropdown');
   contactDropdownOpen=!contactDropdownOpen;
-  dd.style.display=contactDropdownOpen?'block':'none';
   if(contactDropdownOpen){
+    const btn=document.getElementById('contact-country-btn');
+    const r=btn.getBoundingClientRect();
+    dd.style.left=r.left+'px';
+    dd.style.top=(r.bottom+6)+'px';
+    dd.style.display='block';
     buildCountryList('contact-country-list', selectContactCountry);
     document.getElementById('contact-search').value='';
     document.getElementById('contact-search').focus();
+  } else {
+    dd.style.display='none';
   }
 }
 function selectContactCountry(c){
@@ -1293,6 +1312,27 @@ function applyDetectedCountry(countryCode){
 
 // Auto-detect
 fetch("https://ipapi.co/json/").then(r=>r.json()).then(d=>applyDetectedCountry(d.country_code)).catch(()=>applyDetectedCountry("ES"));
+
+// ── Load circle data from backend on login ───────────────
+async function loadCircleFromBackend(){
+  if(!telephone) return;
+  try{
+    const r=await fetch(API+"/api/circle?telephone="+encodeURIComponent(telephone),{
+      method:"GET",
+      headers:{"Content-Type":"application/json"}
+    });
+    if(!r.ok) return;
+    const data=await r.json();
+    if(data.circle_data){
+      const cd=data.circle_data;
+      circleContacts = cd.contacts||[];
+      circleHealth   = cd.medicalCenter||{center:'',city:''};
+      circlePrivacy  = cd.privacy||{hospital:false,family:false};
+    }
+  }catch(e){
+    console.warn("No se pudo cargar el círculo desde el servidor:", e);
+  }
+}
 </script>
 </body>
 </html>

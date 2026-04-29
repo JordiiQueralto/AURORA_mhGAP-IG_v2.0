@@ -30,7 +30,7 @@ def _ctx_set(telephone, key, value):
 # start_conversation  –  llamado UNA vez al abrir el chat
 # ─────────────────────────────────────────────────────────────────────────────
 def start_conversation(telephone):
-    telephone = telephone
+    telephone = str(telephone).replace(" ", "")
     is_new = db.is_new(telephone)
     db.create_user(telephone, is_new)
 
@@ -48,7 +48,7 @@ def start_conversation(telephone):
         status = "rejected"
     else:
         memory = db.user_memory(telephone)
-        status = db.user_status(telephone) or "rejected"
+        status = db.user_status(telephone)
 
     # Preparar sesión
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -81,7 +81,7 @@ def start_conversation(telephone):
 # process_message  –  llamado en cada mensaje del usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def process_message(telephone, user_input):
-    telephone = telephone
+    telephone = str(telephone).replace(" ", "")
     n_user_input = state_machine.normalize_text(user_input)
 
     # 1. Salida rápida global
@@ -91,19 +91,19 @@ def process_message(telephone, user_input):
 
     # 2. Recuperar el contexto íntegro de la BD
     memory = db.user_memory(telephone)
-    status = db.user_status(telephone) or "rejected"
+    status = db.user_status(telephone)
 
-    session_path = _ctx_get(telephone, _CTX_SESSION_PATH, "")
-    j            = int(_ctx_get(telephone, _CTX_J, 0))
-    bot_output_prev = _ctx_get(telephone, _CTX_BOT_OUT, "")
-    phase        = _ctx_get(telephone, _CTX_PHASE, "")
-    state        = _ctx_get(telephone, _CTX_STATE, "")
-    variant      = _ctx_get(telephone, _CTX_VARIANT, 0)
+    session_path    = _ctx_get(telephone, _CTX_SESSION_PATH, "")
+    j               = int(_ctx_get(telephone, _CTX_J, 0))
+    last_bot_output = _ctx_get(telephone, _CTX_BOT_OUT, "")
+    phase           = _ctx_get(telephone, _CTX_PHASE, "")
+    state           = _ctx_get(telephone, _CTX_STATE, "")
+    variant         = _ctx_get(telephone, _CTX_VARIANT, 0)
 
     conv_path = f"{session_path}.conversation_history"
 
     # 3. Guardar el input del usuario emparejado con la salida previa del bot
-    db.add_user_info(telephone, f"{conv_path}.bot_output_{j}", bot_output_prev)
+    db.add_user_info(telephone, f"{conv_path}.bot_output_{j}", last_bot_output)
     db.add_user_info(telephone, f"{conv_path}.user_input_{j}", user_input)
     j += 1
 
@@ -140,7 +140,7 @@ def process_message(telephone, user_input):
         new_phase, new_state = "PROFILE", "name"
         new_variant = 0
         bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, bot_output_prev, memory
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
     elif phase == "RESUMING":
@@ -148,7 +148,7 @@ def process_message(telephone, user_input):
         new_phase, new_state = db.resume_conversation(telephone)
         new_variant = 0
         bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, bot_output_prev, memory
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
     # ── B. FLUJO NORMAL Y MÁQUINA DE ESTADOS ─────────────────────────────────
@@ -166,7 +166,7 @@ def process_message(telephone, user_input):
 
         # Generar la pregunta del BOT para el NUEVO estado
         bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, bot_output_prev, memory
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
     # 4. Actualizar estado de vuelta a la BD
@@ -227,7 +227,7 @@ def save_circle_data(telephone, circle_data):
     """
     Guarda la información de 'Mi círculo' en el perfil del usuario en la BD.
     """
-    telephone = telephone
+    telephone = str(telephone).replace(" ", "")
     # Guardamos todo el objeto bajo la clave 'CIRCLE' en el perfil del usuario
     db.add_user_info(telephone, "CIRCLE", circle_data)
 
