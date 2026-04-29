@@ -405,7 +405,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
       <div class="card-icon">💬</div>
       <div class="card-body">
         <div class="card-title">Hablar con el asistente</div>
-        <div class="card-desc">Conversación privada de apoyo emocional con nuestro asistente de IA.</div>
+        <div class="card-desc">Conversación privada de apoyo emocional con nuestro asistente.</div>
       </div>
       <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -825,7 +825,14 @@ function verifyCode(){
     errEl.textContent="";
     document.getElementById("menu-user-label").textContent=telephone;
     detectCountry();
-    loadCircleFromBackend().finally(()=>goTo("s-menu"));
+    // 1. Registrar en BD → 2. Cargar círculo → 3. Ir al menú
+    fetch(API+"/api/verify",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({telephone})
+    })
+    .then(()=>loadCircleFromBackend())
+    .finally(()=>goTo("s-menu"));
   } else {
     errEl.textContent="Código incorrecto. Inténtalo de nuevo.";
     for(let i=0;i<6;i++){

@@ -27,9 +27,14 @@ def _ctx_set(telephone, key, value):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# start_conversation  –  llamado UNA vez al abrir el chat
+# init_user  –  llamado al verificar el código SMS, antes de start_conversation
 # ─────────────────────────────────────────────────────────────────────────────
-def start_conversation(telephone):
+def init_user(telephone):
+    """
+    Registra o verifica al usuario en la BD en el momento del login.
+    Garantiza que el documento existe antes de cualquier otra operación.
+    Devuelve True si es usuario nuevo, False si ya existía.
+    """
     telephone = str(telephone).replace(" ", "")
     is_new = db.is_new(telephone)
     db.create_user(telephone, is_new)
@@ -44,11 +49,16 @@ def start_conversation(telephone):
         db.add_user_info(telephone, "SUI_EVAL", {})
         db.add_user_info(telephone, "checkpoint.phase", "")
         db.add_user_info(telephone, "checkpoint.state", "")
-        memory = ""
-        status = "rejected"
-    else:
-        memory = db.user_memory(telephone)
-        status = db.user_status(telephone)
+
+    return is_new
+
+# ─────────────────────────────────────────────────────────────────────────────
+# start_conversation  –  llamado UNA vez al abrir el chat
+# ─────────────────────────────────────────────────────────────────────────────
+def start_conversation(telephone):
+    telephone = str(telephone).replace(" ", "")
+    memory = db.user_memory(telephone)
+    status = db.user_status(telephone)
 
     # Preparar sesión
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -230,7 +240,16 @@ def save_circle_data(telephone, circle_data):
     telephone = str(telephone).replace(" ", "")
     # Guardamos todo el objeto bajo la clave 'CIRCLE' en el perfil del usuario
     db.add_user_info(telephone, "CIRCLE", circle_data)
-
+    
+# ─────────────────────────────────────────────────────────────────────────────
+# get_circle_data  –  Recuperar la info de contactos guardada en la DB
+# ─────────────────────────────────────────────────────────────────────────────
+def get_circle_data(telephone):
+    """
+    Recupera la información de 'Mi círculo' del perfil del usuario en la BD.
+    """
+    telephone = str(telephone).replace(" ", "")
+    return db.get_user_info(telephone, "CIRCLE") or {}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _run_farewell  –  Tareas de cierre de sesión

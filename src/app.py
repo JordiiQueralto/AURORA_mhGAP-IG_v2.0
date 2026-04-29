@@ -10,6 +10,18 @@ CORS(app, resources={r"/api/*": {"origins": ["null", "http://localhost", "http:/
                                               "http://localhost:5000", "http://127.0.0.1:5000"]}},
      supports_credentials=False)
 
+@app.route('/api/verify', methods=['POST'])
+def verify_user():
+    """Registra al usuario en BD al verificar el SMS. 
+    Llamar antes de /api/start y antes de cargar el círculo."""
+    data = request.json or {}
+    telephone = data.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    is_new = main_api.init_user(telephone)
+    return jsonify({"status": "ok", "is_new": is_new})
+
 @app.route('/api/start', methods=['POST'])
 def start_chat():
     data = request.json
@@ -39,6 +51,15 @@ def handle_message():
         "ended": is_ended
     })
     
+@app.route('/api/circle', methods=['GET'])
+def get_circle():
+    telephone = request.args.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    circle_data = main_api.get_circle_data(telephone)
+    return jsonify({"circle_data": circle_data})
+
 @app.route('/api/circle', methods=['POST'])
 def save_circle():
     data = request.json
