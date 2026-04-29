@@ -38,6 +38,20 @@ def handle_message():
         "bot_message": bot_message,
         "ended": is_ended
     })
+    
+@app.route('/api/circle', methods=['POST'])
+def save_circle():
+    data = request.json
+    telephone = data.get('telephone')
+    circle_data = data.get('circle_data') # Objeto con contactos, centro médico, etc.
+
+    if not telephone or circle_data is None:
+        return jsonify({"error": "telephone y circle_data requeridos"}), 400
+
+    # Procesar el guardado
+    main_api.save_circle_data(telephone, circle_data)
+
+    return jsonify({"status": "ok", "message": "Datos del círculo guardados correctamente"})
 
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():

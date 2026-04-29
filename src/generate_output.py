@@ -113,3 +113,35 @@ def use_case_class(conversation_history):
         use_case = "ASSISTANCE"
         return use_case
     
+
+import climage
+import os
+
+def bot_output_image(phase, state):
+    image_path = None 
+    
+    if phase == "DEP_PROTOCOLS":
+        if state == "1":
+            image_path = "../images/nDEP_user_esp.png"
+    elif phase == "SUI_PROTOCOLS":
+        if state == "1":
+            image_path = "../images/SUI_user_esp.png"
+
+    return image_path
+
+# Ejemplo
+#phase = "SUI_PROTOCOLS"
+#state = "1"
+#image_path = bot_output_image(phase, state)
+
+#if image_path and os.path.exists(image_path):
+#    # Convertimos la imagen a texto para la terminal
+#    # width=80 es un buen tamaño estándar
+#    output = climage.convert(image_path, is_unicode=True, width=40)
+
+#    print(output)
+#elif image_path:
+#    print(f"Error: El archivo no existe en la ruta {image_path}")
+
+#else:
+#    print("No hay imagen para este contexto.")

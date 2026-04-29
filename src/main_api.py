@@ -38,6 +38,7 @@ def start_conversation(telephone):
         db.add_user_info(telephone, "name", "")
         db.add_user_info(telephone, "age (years)", "")
         db.add_user_info(telephone, "USER_TERMS.status", "rejected")
+        db.add_user_info(telephone, "CIRCLE", {})
         db.add_user_info(telephone, "PROFILE", {})
         db.add_user_info(telephone, "DEP_EVAL", {})
         db.add_user_info(telephone, "SUI_EVAL", {})
@@ -217,6 +218,18 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
     db.save_flow(telephone, new_phase, new_state)
 
     return bot_output, is_ended, new_phase, new_state, new_variant
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# save_circle_data  –  Guardar info de contactos en la DB
+# ─────────────────────────────────────────────────────────────────────────────
+def save_circle_data(telephone, circle_data):
+    """
+    Guarda la información de 'Mi círculo' en el perfil del usuario en la BD.
+    """
+    telephone = int(telephone)
+    # Guardamos todo el objeto bajo la clave 'CIRCLE' en el perfil del usuario
+    db.add_user_info(telephone, "CIRCLE", circle_data)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
