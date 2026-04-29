@@ -29,7 +29,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center;justify-content:center;font-family:var(--f0);color:var(--c0)}
 
-.phone{width:390px;height:844px;background:#000;border-radius:40px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px #ffffff09,0 32px 80px #00000090,0 0 100px #00a88412}
+.phone{width:390px;height:844px;background:#000;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 0 0 1px #ffffff09,0 32px 80px #00000090,0 0 100px #00a88412}
 
 .screen{display:none;flex-direction:column;width:100%;height:100%;flex-shrink:0}
 .screen.active{display:flex}
@@ -892,7 +892,7 @@ async function openChat(){
     if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
     removeTyping();
-    addBubble("bot", d.bot_message);
+    addBubble("bot", d.bot_message, d.image_url || null);
     setStatus("en línea", true);
     document.getElementById("send-btn").disabled=false;
   }catch(e){
@@ -926,7 +926,7 @@ async function sendMsg(){
     if(!r.ok) throw new Error("HTTP "+r.status);
     const d = await r.json();
     removeTyping();
-    addBubble("bot", d.bot_message);
+    addBubble("bot", d.bot_message, d.image_url || null);
     if(d.ended){
       sessionEnded=true;
       setStatus("sesión cerrada", false);
@@ -945,12 +945,58 @@ async function sendMsg(){
     setStatus("error", false);
   }
 }
-function addBubble(who,text){
-  const row=document.createElement("div"); row.className="msg-row "+who;
-  const t=new Date(), time=t.getHours().toString().padStart(2,"0")+":"+t.getMinutes().toString().padStart(2,"0");
-  const ticks=who==="user"?`<div style="display:flex;gap:1px"><svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#53bdeb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5.5L4.5 9 9 1M7 5.5L10.5 9 15 1"/></svg></div>`:"";
-  row.innerHTML=`<div class="bubble">${esc(text).replace(/\n/g,"<br/>")}<div class="bubble-meta"><span class="bubble-time">${time}</span>${ticks}</div></div>`;
-  document.getElementById("chat-box").appendChild(row); scrollBottom();
+function addBubble(who, text, imageUrl = null) {
+  const row = document.createElement("div");
+  row.className = "msg-row " + who;
+  const t = new Date();
+  const time = t.getHours().toString().padStart(2,"0") + ":" + t.getMinutes().toString().padStart(2,"0");
+  const ticks = who === "user"
+    ? `<div style="display:flex;gap:1px"><svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#53bdeb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5.5L4.5 9 9 1M7 5.5L10.5 9 15 1"/></svg></div>`
+    : "";
+
+  // Contenido de texto (solo si hay texto)
+  const textContent = text
+    ? `<div>${esc(text).replace(/\n/g,"<br/>")}</div>`
+    : "";
+
+  // Imagen (solo si hay URL)
+  const imgContent = imageUrl
+  ? `<img src="${imageUrl}" alt="Imagen informativa"
+       style="max-width:100%;border-radius:6px;margin-top:${text?'8px':'0'};display:block;cursor:zoom-in;"
+       onclick="openLightbox(this.src)"
+       onerror="this.style.display='none'"/>`
+  : "";
+
+  row.innerHTML = `<div class="bubble">${textContent}${imgContent}<div class="bubble-meta"><span class="bubble-time">${time}</span>${ticks}</div></div>`;
+  document.getElementById("chat-box").appendChild(row);
+  scrollBottom();
+}
+function openLightbox(src) {
+  let lb = document.getElementById("lightbox-overlay");
+  if (!lb) {
+    lb = document.createElement("div");
+    lb.id = "lightbox-overlay";
+    lb.style.cssText = `
+      position:absolute; inset:0; z-index:9999;
+      background:rgba(0,0,0,0.88);
+      display:flex; align-items:center; justify-content:center;
+      cursor:zoom-out; padding:16px; box-sizing:border-box;
+      border-radius:40px;
+    `;
+    lb.innerHTML = `<img id="lightbox-img" style="
+      max-width:100%; max-height:100%;
+      border-radius:8px;
+      object-fit:contain;
+      box-shadow:0 8px 40px rgba(0,0,0,0.6);
+      pointer-events:none;
+    "/>`;
+    lb.addEventListener("click", () => lb.style.display = "none");
+
+    // ← appendear al .phone, no al body
+    document.querySelector(".phone").appendChild(lb);
+  }
+  document.getElementById("lightbox-img").src = src;
+  lb.style.display = "flex";
 }
 function showTyping(){
   removeTyping();

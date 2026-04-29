@@ -4,6 +4,7 @@ import phrase_dictionary
 import db
 import datetime
 import time
+import climage
 
 
 def main(telephone):
@@ -331,10 +332,27 @@ def main(telephone):
                 # Rompemos el bucle si llegamos a phase `FAREWELL`    
                 if phase == "FAREWELL":
                     break
+           
+                
+    #---------------------------------------------------------------------------------------------------#        
+    ### 6. SUI PROTOCOLS
+    #---------------------------------------------------------------------------------------------------#            
+    elif phase == "SUI_PROTOCOLS":
+        if state == "1":
+            bot_output = ''
+            return bot_output
+        
+        elif state == "2":
+            # Creamos la `bot_output`
+            image_path_user, image_path_family = generate_output.bot_output_image(phase, state)
+            bot_output = climage.convert(image_path_user, is_unicode=True, width=40)
+            print(bot_output)
+            
+            phase, state = "FAREWELL", "normal"
     
     
     #---------------------------------------------------------------------------------------------------#        
-    ### 6. FAREWELL
+    ### 7. FAREWELL
     #---------------------------------------------------------------------------------------------------#
     elif phase == "FAREWELL":
         farewell = generate_output.farewell(state)

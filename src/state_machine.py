@@ -974,7 +974,6 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                
                 phase = "SUI_EVAL"
                 state = "2A"
                 return (phase, state, variant)
@@ -987,8 +986,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    
-                    phase = "SUI_PROTOCOL"
+                    phase = "SUI_PROTOCOLS"
                     state = "1"
                     return (phase, state, variant)
                 
@@ -1149,7 +1147,6 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "no"
                 db.add_user_info(telephone, key, value)
                 
-                
                 phase = "SUI_EVAL"
                 state = "2B.1"
                 return (phase, state, variant)
@@ -1162,8 +1159,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
                     
-                    
-                    phase = "SUI_PROTOCOL"
+                    phase = "SUI_PROTOCOLS"
                     state = "2"
                     return (phase, state, variant) 
                 
@@ -1309,7 +1305,7 @@ def StateMachine(telephone, phase, state, user_input):
                     db.add_user_info(telephone, key, value)
                     
                     
-                    phase = "SUI_PROTOCOL"
+                    phase = "SUI_PROTOCOLS"
                     state = "3"
                     return (phase, state, variant) 
                 
@@ -1465,7 +1461,6 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                
                 phase = "SUI_EVAL"
                 state = "3"
                 return (phase, state, variant)
@@ -1478,8 +1473,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    
-                    phase = "SUI_PROTOCOL"
+                    phase = "SUI_PROTOCOLS"
                     state = "3"
                     return (phase, state, variant)
                 
@@ -1682,10 +1676,12 @@ def StateMachine(telephone, phase, state, user_input):
     elif phase == "SUI_PROTOCOLS":
         
         if state == "1":
-            
-            return 
+            phase, state = "FAREELL", "normal"
+            return (phase, state, variant)
             
         elif state == "2":
+            
+            
             return
         
         else:

@@ -49,6 +49,7 @@ def init_user(telephone):
         db.add_user_info(telephone, "SUI_EVAL", {})
         db.add_user_info(telephone, "checkpoint.phase", "")
         db.add_user_info(telephone, "checkpoint.state", "")
+        db.add_user_info(telephone, "ctx", {})
 
     return is_new
 
@@ -84,7 +85,7 @@ def start_conversation(telephone):
     _ctx_set(telephone, _CTX_STATE, "")
     _ctx_set(telephone, _CTX_VARIANT, 0)
 
-    return bot_output
+    return bot_output, None     # None correponds to `image_path`
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -93,11 +94,12 @@ def start_conversation(telephone):
 def process_message(telephone, user_input):
     telephone = str(telephone).replace(" ", "")
     n_user_input = state_machine.normalize_text(user_input)
+    image_path = None
 
     # 1. Salida rápida global
     if n_user_input == "salir":
         _run_farewell(telephone, "normal")
-        return generate_output.farewell("normal"), True
+        return generate_output.farewell("normal"), image_path, True
 
     # 2. Recuperar el contexto íntegro de la BD
     memory = db.user_memory(telephone)
@@ -149,7 +151,7 @@ def process_message(telephone, user_input):
         # Ahora el usuario ha respondido a "¿Cómo podría ayudarte?". Pasamos a PROFILE/name
         new_phase, new_state = "PROFILE", "name"
         new_variant = 0
-        bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
             telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
@@ -157,7 +159,7 @@ def process_message(telephone, user_input):
         # El usuario ha respondido al mensaje de Bienvenida personalizado.
         new_phase, new_state = db.resume_conversation(telephone)
         new_variant = 0
-        bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
             telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
@@ -175,7 +177,7 @@ def process_message(telephone, user_input):
             )
 
         # Generar la pregunta del BOT para el NUEVO estado
-        bot_output, is_ended, new_phase, new_state, new_variant = _generate_response(
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
             telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
         )
 
@@ -186,7 +188,7 @@ def process_message(telephone, user_input):
     _ctx_set(telephone, _CTX_STATE, new_state)
     _ctx_set(telephone, _CTX_VARIANT, new_variant)
 
-    return bot_output, is_ended
+    return bot_output, image_path, is_ended
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -194,10 +196,12 @@ def process_message(telephone, user_input):
 # ─────────────────────────────────────────────────────────────────────────────
 def _generate_response(telephone, new_phase, new_state, new_variant, user_input, last_bot, memory):
     is_ended = False
+    image_path = None
 
     # Revisar si se debe hacer clasificación automática
     if new_phase == "USE_CASE_EVAL":
-        use_case = generate_output.use_case_class(db.conversation_history(telephone))
+        conversation_history = db.conversation_history(telephone)
+        use_case = generate_output.use_case_class(conversation_history)
         
         if use_case == "EMERGENCY":
             new_phase, new_state = "SUI_EVAL", "1"
@@ -213,8 +217,12 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
         bot_output = generate_output.farewell(new_state)
         _run_farewell(telephone, new_state)
         db.save_flow(telephone, new_phase, new_state)
-        return bot_output, True, new_phase, new_state, new_variant
+        return bot_output, None, True, new_phase, new_state, new_variant
 
+     # Obtener imagen para esta fase/estado
+    image_path_user, image_path_family = generate_output.bot_output_image(new_phase, new_state)
+    image_path = image_path_user
+    
     # Si todo sigue, preparamos el nuevo output
     if new_variant != 0:
         nucleo = phrase_dictionary.variant_dict(new_phase, new_state, new_variant)
@@ -227,7 +235,7 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
     # Guardamos checkpoint seguro
     db.save_flow(telephone, new_phase, new_state)
 
-    return bot_output, is_ended, new_phase, new_state, new_variant
+    return bot_output, image_path, is_ended, new_phase, new_state, new_variant
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -291,8 +299,3 @@ def reset_session(telephone):
             _ctx_set(telephone, key, None)
         except Exception:
             pass
-        
-        
-# Example
-data = get_circle_data('+341234')
-print(data)

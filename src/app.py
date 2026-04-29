@@ -1,6 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import main_api
+import os
 
 app = Flask(__name__)
 
@@ -31,6 +32,13 @@ def get_circle():
     circle_data = main_api.get_circle_data(telephone)
     return jsonify({"circle_data": circle_data})
 
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    # Usar ruta absoluta garantizada, subiendo un nivel si images/ está fuera de backend/
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    images_dir = os.path.join(base_dir, '..', 'images')
+    return send_from_directory(images_dir, filename)
+
 @app.route('/api/start', methods=['POST'])
 def start_chat():
     data = request.json
@@ -38,10 +46,14 @@ def start_chat():
     if not telephone:
         return jsonify({"error": "telephone requerido"}), 400
 
-    bot_message = main_api.start_conversation(telephone)
+    bot_message, image_path = main_api.start_conversation(telephone)
+    
+    # Convertir ruta relativa en URL absoluta del servidor
+    image_url = f"http://localhost:5000/{image_path}" if image_path else None
 
     return jsonify({
         "bot_message": bot_message,
+        "image_url": image_url,
         "ended": False
     })
 
@@ -53,10 +65,14 @@ def handle_message():
     if not telephone or user_message is None:
         return jsonify({"error": "telephone y message requeridos"}), 400
 
-    bot_message, is_ended = main_api.process_message(telephone, user_message)
+    bot_message, image_path, is_ended = main_api.process_message(telephone, user_message)
+    
+    # Convertir ruta relativa en URL absoluta del servidor
+    image_url = f"http://localhost:5000/{image_path}" if image_path else None
 
     return jsonify({
         "bot_message": bot_message,
+        "image_url": image_url,
         "ended": is_ended
     })
 

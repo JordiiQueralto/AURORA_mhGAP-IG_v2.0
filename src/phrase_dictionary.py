@@ -170,7 +170,19 @@ def bot_output_info(phase, state):
                 capacidad de hacer las cosas del día a día, como trabajar, estudiar, 
                 relacionarte con otros, o cuidarte?”
                 """}
-        }    
+        },
+        "SUI_PROTOCOLS": {
+            "1": {
+                "nucleo": """
+                """},
+            "2": {
+                "nucleo": """ Aquí tienes una guía de ayuda y esperanza. Te animo a conectarte 
+                con tu red de apoyo o acudir al centro de salud más cercano. 
+                """},
+            "3": {
+                "nucleo": """
+                """}
+        }  
     }
     
     # First we get the data for the phase and state 

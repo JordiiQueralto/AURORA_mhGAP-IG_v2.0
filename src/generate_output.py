@@ -61,6 +61,21 @@ def bot_output(last_bot_output, last_user_input, nucleo, memory):
     return bot_output
 
 
+def bot_output_image(phase, state):
+    image_path_user = None 
+    image_path_family = None
+    
+    if phase == "DEP_PROTOCOLS":
+        return image_path_user, image_path_family
+    
+    elif phase == "SUI_PROTOCOLS":
+        if state == "2":
+            image_path_user = "images/SUI/Psicoeducation/user_esp.png"
+            image_path_family = "images/SUI/Psicoeducation/family_esp.png"
+
+    return image_path_user, image_path_family
+
+
 def farewell(state):
     """
     Generates a farewell message for the user.
@@ -103,7 +118,7 @@ def session_summary(memory):
 
 def use_case_class(conversation_history):
     
-    prompt = prompt_builder.summary_prompt_generation(conversation_history)
+    prompt = prompt_builder.use_case_prompt(conversation_history)
     use_case = llm.send_prompt(prompt, 0.0)
     
     if use_case in ["EMERGENCY", "ASSISTANCE", "TALK", "MISENSE"]:
@@ -114,34 +129,4 @@ def use_case_class(conversation_history):
         return use_case
     
 
-import climage
-import os
 
-def bot_output_image(phase, state):
-    image_path = None 
-    
-    if phase == "DEP_PROTOCOLS":
-        if state == "1":
-            image_path = "../images/nDEP_user_esp.png"
-    elif phase == "SUI_PROTOCOLS":
-        if state == "1":
-            image_path = "../images/SUI_user_esp.png"
-
-    return image_path
-
-# Ejemplo
-#phase = "SUI_PROTOCOLS"
-#state = "1"
-#image_path = bot_output_image(phase, state)
-
-#if image_path and os.path.exists(image_path):
-#    # Convertimos la imagen a texto para la terminal
-#    # width=80 es un buen tamaño estándar
-#    output = climage.convert(image_path, is_unicode=True, width=40)
-
-#    print(output)
-#elif image_path:
-#    print(f"Error: El archivo no existe en la ruta {image_path}")
-
-#else:
-#    print("No hay imagen para este contexto.")
