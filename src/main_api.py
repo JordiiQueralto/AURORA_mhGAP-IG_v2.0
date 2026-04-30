@@ -219,9 +219,30 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
         db.save_flow(telephone, new_phase, new_state)
         return bot_output, None, True, new_phase, new_state, new_variant
 
-     # Obtener imagen para esta fase/estado
+    # Obtener imagen para esta fase/estado
     image_path_user, image_path_family = generate_output.bot_output_image(new_phase, new_state)
     image_path = image_path_user
+    
+    # En caso de existir `image_path_family` se les envia notificación
+    if image_path_family:
+        consent = db.get_user_info(telephone, "CIRCLE", "privacy")
+        family_consent = consent["allowContactFamily"]
+        
+        # Si existe consentimiento de compartir datos con familia, le enviamos notificación
+        # a los familiares/gente cercana guardada en a DB
+        if family_consent:
+            contacts = db.get_user_info(telephone, "CIRCLE", "contacts")
+            for contact in contacts:
+                fam_phone = contact.get("phone")
+            if fam_phone and (db.is_new(fam_phone) == False):
+                user_name = db.get_user_name(telephone)
+                db.save_notification(
+                    to_telephone=fam_phone,
+                    from_telephone=telephone,
+                    from_name=user_name,
+                    image_path_family=image_path_family
+                )
+    
     
     # Si todo sigue, preparamos el nuevo output
     if new_variant != 0:
@@ -246,8 +267,26 @@ def save_circle_data(telephone, circle_data):
     Guarda la información de 'Mi círculo' en el perfil del usuario en la BD.
     """
     telephone = str(telephone).replace(" ", "")
+    
+    # Extraemos las distintas partes
+    contacts = circle_data.get("contacts", [])
+    medicalCenter = circle_data.get("medicalCenter", {})
+    privacy = circle_data.get("privacy", )
+    
+    # Limpiamos los números de teléfono
+    for contact in contacts:
+            if "phone" in contact:
+                contact["phone"] = str(contact["phone"]).replace(" ", "")
+                
+    # Volvemos a reconstruir los datos de 'Mi círculo'
+    filtered_circle_data ={
+        "contacts": contacts,
+        "medicalCenter": medicalCenter,
+        "privacy": privacy
+    }
+    
     # Guardamos todo el objeto bajo la clave 'CIRCLE' en el perfil del usuario
-    db.add_user_info(telephone, "CIRCLE", circle_data)
+    db.add_user_info(telephone, "CIRCLE", filtered_circle_data)
     
 # ─────────────────────────────────────────────────────────────────────────────
 # get_circle_data  –  Recuperar la info de contactos guardada en la DB
@@ -285,6 +324,20 @@ def _run_farewell(telephone, state):
             db.add_user_info(telephone, f"{session_path}.valoration", state)
     except Exception as e:
         print(f"\n[Error guardando resumen (Farewell)]: {e}")
+        
+# ─────────────────────────────────────────────────────────────────────────────
+# get_notifications  –  Recupera las notificaciones para un usuario
+# ─────────────────────────────────────────────────────────────────────────────
+def get_notifications(telephone):
+    telephone = str(telephone).replace(" ", "")
+    return db.get_notifications(telephone)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# mark_notifications_read  –  Marca las notificaciones como leídas para un usuario
+# ─────────────────────────────────────────────────────────────────────────────
+def mark_notifications_read(telephone):
+    telephone = str(telephone).replace(" ", "")
+    db.mark_notifications_read(telephone)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # reset_session  –  Borra el contexto de sesión activa para un usuario

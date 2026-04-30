@@ -90,6 +90,27 @@ def save_circle():
 
     return jsonify({"status": "ok", "message": "Datos del círculo guardados correctamente"})
 
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    """El familiar consulta sus notificaciones al abrir la app."""
+    telephone = request.args.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    notifications = main_api.get_notifications(telephone)
+    return jsonify({"notifications": notifications})
+
+@app.route('/api/notifications/read', methods=['POST'])
+def mark_read():
+    """Marca las notificaciones como leídas cuando el familiar abre la pestaña."""
+    data = request.json or {}
+    telephone = data.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    main_api.mark_notifications_read(telephone)
+    return jsonify({"status": "ok"})
+
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():
     """Limpia el contexto de sesión en BD para que la próxima llamada

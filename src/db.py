@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 import llm
 import prompt_builder
+import datetime
 
 # Connection to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
@@ -61,7 +62,13 @@ def add_user_info(telephone, key, value):
     """
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
     
+
+def get_user_name(telephone, key = "name"):
+    user = users.find_one({"telephone": telephone}, {"_id": 0})
+    user_name = user.get("name")
+    return user_name
     
+   
 def get_user_info(telephone, key_part_1, key_part_2):
     
     # Get the user information
@@ -238,4 +245,33 @@ def session_summary(telephone, current_time) -> str:
         summary = str(llm.send_prompt(prompt))
         
         return summary
-    
+
+
+def save_notification(to_telephone, from_telephone, from_name, image_path_family):
+    """Guarda una notificación para el familiar en la colección 'notifications'."""
+    notification = {
+        "to_telephone":      to_telephone,
+        "from_telephone":    from_telephone,
+        "from_name":         from_name,
+        "image_path_family": image_path_family,
+        "timestamp":         datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "read":              False
+    }
+    db["notifications"].insert_one(notification)
+
+
+def get_notifications(telephone):
+    """Recupera todas las notificaciones no leídas para un teléfono."""
+    docs = db["notifications"].find(
+        {"to_telephone": telephone, "read": False},
+        {"_id": 0}
+    )
+    return list(docs)
+
+
+def mark_notifications_read(telephone):
+    """Marca todas las notificaciones de un familiar como leídas."""
+    db["notifications"].update_many(
+        {"to_telephone": telephone, "read": False},
+        {"$set": {"read": True}}
+    )
