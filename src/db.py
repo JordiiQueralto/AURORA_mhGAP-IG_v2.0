@@ -21,10 +21,10 @@ def is_new(telephone:str) -> bool:
     user = users.find_one({"telephone": telephone})
     
     if user:
-        print("\n[Usuario encontrado en la base de datos.]")
+        print("\n[Usuario encontrado en la base de datos.]\n")
         return False
     else:
-        print("\n[Usuario no encontrado. Es un nuevo usuario.]")
+        print("\n[Usuario no encontrado. Es un nuevo usuario.]\n")
         return True
 
 
@@ -41,12 +41,12 @@ def create_user(telephone, is_new):
     try:
         if is_new == True:
             users.insert_one({"telephone": telephone})
-            print("\n[Usuario creado correctamente.]")
+            print("\n[Usuario creado correctamente.]\n")
             return
         else:
             return
     except DuplicateKeyError:
-        print("\n[Error: El usuario ya existe.]")
+        print("\n[Error: El usuario ya existe.]\n")
         return
 
 
@@ -75,7 +75,7 @@ def get_user_info(telephone, key_part_1, key_part_2):
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
-        print("\n[Error: Usuario no encontrado.]")
+        print("\n[Error: Usuario no encontrado.]\n")
         return {}
     
     # Obtain last phase and state registered
@@ -99,7 +99,7 @@ def conversation_history(telephone):
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
-        print("\n[Error: Usuario no encontrado.]")
+        print("\n[Error: Usuario no encontrado.]\n")
         return {}
     
     history_dictionary = {}
@@ -138,7 +138,7 @@ def resume_conversation(telephone):
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
-        print("\n[Error: Usuario no encontrado.]")
+        print("\n[Error: Usuario no encontrado.]\n")
         return {}
     
     # Obtain last phase and state registered
@@ -155,7 +155,7 @@ def user_latest_summary(telephone, latest_key):
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
-        print("\n[Error: Usuario no encontrado.]")
+        print("\n[Error: Usuario no encontrado.]\n")
         return {}
     
     # Obtain last summary
@@ -233,7 +233,7 @@ def session_summary(telephone, current_time) -> str:
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     
     if not user:
-        print("\n[Error: Usuario no encontrado.]")
+        print("\n[Error: Usuario no encontrado.]\n")
         return {}
     
     # Obtain last summary
@@ -246,6 +246,30 @@ def session_summary(telephone, current_time) -> str:
         
         return summary
 
+
+def add_emergency_instance(telephone, session_path, cause, protocol, referal):
+    """
+    Añade una nueva instancia de emergencia al array del usuario.
+    """
+    # Capturamos solo la hora actual
+    hora_activacion = datetime.datetime.now().strftime("%H:%M:%S")
+    
+    new_emergency = {
+        "session_id": session_path,
+        "trigger_hour": hora_activacion,
+        "cause": cause,
+        "protocol_applied": protocol,
+        "referal": referal,
+    }
+    # Usamos $push para agregar a la lista sin borrar lo anterior
+    users.update_one(
+        {"telephone": telephone}, 
+        {"$push": {"EMERGENCY": new_emergency}}
+    )
+    
+    print(f"\n[CASO DE EMERGENCIA DETECTADA (SUI PROTOCOLO {protocol})]\n")
+    return
+    
 
 def save_notification(to_telephone, from_telephone, from_name, image_path_family):
     """Guarda una notificación para el familiar en la colección 'notifications'."""

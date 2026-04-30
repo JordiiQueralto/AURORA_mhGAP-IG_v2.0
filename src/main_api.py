@@ -3,6 +3,7 @@ import state_machine
 import phrase_dictionary
 import db
 import datetime
+import time
 
 # ── Claves de contexto que guardamos entre peticiones ────────────────────────
 _CTX_J             = "j"               
@@ -12,6 +13,7 @@ _CTX_BOT_OUT       = "bot_output"
 _CTX_SESSION_PATH  = "session_path"    
 _CTX_PHASE         = "phase"
 _CTX_STATE         = "state"
+
 
 def _ctx_get(telephone, key, default=None):
     """Lee un valor de contexto de la BD."""
@@ -47,6 +49,7 @@ def init_user(telephone):
         db.add_user_info(telephone, "PROFILE", {})
         db.add_user_info(telephone, "DEP_EVAL", {})
         db.add_user_info(telephone, "SUI_EVAL", {})
+        db.add_user_info(telephone, "EMERGENCY", [])
         db.add_user_info(telephone, "checkpoint.phase", "")
         db.add_user_info(telephone, "checkpoint.state", "")
         db.add_user_info(telephone, "ctx", {})
@@ -69,6 +72,7 @@ def start_conversation(telephone):
     db.add_user_info(telephone, f"{session_path}.valoration", "")
     db.add_user_info(telephone, f"{session_path}.conversation_history", {})
 
+    time.sleep(4)
     bot_output = generate_output.welcome(status, memory)
 
     # Identificamos dónde estamos para la siguiente iteración
@@ -87,7 +91,6 @@ def start_conversation(telephone):
 
     return bot_output, None     # None correponds to `image_path`
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # process_message  –  llamado en cada mensaje del usuario
 # ─────────────────────────────────────────────────────────────────────────────
@@ -98,7 +101,8 @@ def process_message(telephone, user_input):
 
     # 1. Salida rápida global
     if n_user_input == "salir":
-        _run_farewell(telephone, "normal")
+        _run_farewell(telephone)
+        time.sleep(1)
         return generate_output.farewell("normal"), image_path, True
 
     # 2. Recuperar el contexto íntegro de la BD
@@ -121,6 +125,7 @@ def process_message(telephone, user_input):
 
     # Variables que modificaremos
     is_ended = False
+    emergency_112 = False
     bot_output = ""
     new_phase = phase
     new_state = state
@@ -134,8 +139,9 @@ def process_message(telephone, user_input):
                     "status": "rejected",
                     "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
+                time.sleep(1.5)
                 bot_output = "Lo siento, no podemos continuar sin tu aceptación."
-                _run_farewell(telephone, "exit")
+                _run_farewell(telephone)
                 is_ended = True
                 new_phase = "FAREWELL"
             else:
@@ -143,6 +149,7 @@ def process_message(telephone, user_input):
                     "status": "accepted",
                     "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 })
+                time.sleep(2)
                 bot_output = "Gracias por aceptar. ¿Cómo podría ayudarte a explorar como te has sentido?"
                 new_phase = "PRESENTATION_ASKED"
                 new_state = ""
@@ -175,6 +182,66 @@ def process_message(telephone, user_input):
             new_phase, new_state, new_variant = state_machine.security_control(
                 new_phase, new_state, new_variant, user_input
             )
+            
+        # Casos especiales (PROTOCOLOS)
+        if new_phase == "SUI_PROTOCOLS":
+            if new_state == "1":
+                # Obtenemos el bot_output directamente de la libreria de frases
+                bot_output = phrase_dictionary.bot_output_info(new_phase, new_state)
+                
+                # Registramos la emergencia en la BD
+                cause = ""
+                referal = "112"
+                emergency_112 = True
+                print("emergency == True")
+                db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
+                
+            elif new_state == "2":
+                # Obtenemos el bot_output directamente de la libreria de frases
+                bot_output = phrase_dictionary.bot_output_info(new_phase, new_state)
+                
+                # Obtener imagen para esta fase/estado
+                image_path_user, image_path_family = generate_output.bot_output_image(new_phase, new_state)
+                image_path = image_path_user
+                
+                # En caso de existir `image_path_family` se les envia notificación
+                if image_path_family:
+                    consent = db.get_user_info(telephone, "CIRCLE", "privacy")
+                    
+                    # Si 'consent' es None o no tiene la clave, family_consent será False por defecto.
+                    family_consent = consent.get("allowContactFamily",
+                                                 False) if isinstance(consent, dict) else False
+                    
+                    # Si existe consentimiento de compartir datos con familia, le enviamos notificación
+                    # a los familiares/gente cercana guardada en a DB
+                    if family_consent:
+                        contacts = db.get_user_info(telephone, "CIRCLE", "contacts")
+                        for contact in contacts:
+                            fam_phone = contact.get("phone")
+                        if fam_phone and (db.is_new(fam_phone) == False):
+                            user_name = db.get_user_name(telephone)
+                            db.save_notification(
+                                to_telephone=fam_phone,
+                                from_telephone=telephone,
+                                from_name=user_name,
+                                image_path_family=image_path_family
+                            )
+                            
+                # Registramos la emergencia en la BD
+                cause = ""
+                concrete_plan = db.get_user_info(telephone, "SUI_EVAL", "2_A_active_ideation")
+                if concrete_plan == "concrete_plan":
+                    referal = "112"
+                    emergency_112 = True
+                    print("emergency == True")
+                else:
+                    referal = "024"
+                    emergency_112 = False
+                db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
+             
+            _run_farewell (telephone)  
+            return bot_output, image_path, True, emergency_112
+                
 
         # Generar la pregunta del BOT para el NUEVO estado
         bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
@@ -188,8 +255,7 @@ def process_message(telephone, user_input):
     _ctx_set(telephone, _CTX_STATE, new_state)
     _ctx_set(telephone, _CTX_VARIANT, new_variant)
 
-    return bot_output, image_path, is_ended
-
+    return bot_output, image_path, is_ended, emergency_112
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _generate_response  –  Maneja lógicad e transición compleja y Prompt del LLM
@@ -203,6 +269,8 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
         conversation_history = db.conversation_history(telephone)
         use_case = generate_output.use_case_class(conversation_history)
         
+        print (f"[\nUSE CASE DETECTED : {use_case}]\n")
+        
         if use_case == "EMERGENCY":
             new_phase, new_state = "SUI_EVAL", "1"
         elif use_case == "ASSISTANCE":
@@ -214,35 +282,11 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
 
     # Revisar si cerramos llamada
     if new_phase == "FAREWELL":
+        time.sleep(2)
         bot_output = generate_output.farewell(new_state)
-        _run_farewell(telephone, new_state)
+        _run_farewell(telephone)
         db.save_flow(telephone, new_phase, new_state)
         return bot_output, None, True, new_phase, new_state, new_variant
-
-    # Obtener imagen para esta fase/estado
-    image_path_user, image_path_family = generate_output.bot_output_image(new_phase, new_state)
-    image_path = image_path_user
-    
-    # En caso de existir `image_path_family` se les envia notificación
-    if image_path_family:
-        consent = db.get_user_info(telephone, "CIRCLE", "privacy")
-        family_consent = consent["allowContactFamily"]
-        
-        # Si existe consentimiento de compartir datos con familia, le enviamos notificación
-        # a los familiares/gente cercana guardada en a DB
-        if family_consent:
-            contacts = db.get_user_info(telephone, "CIRCLE", "contacts")
-            for contact in contacts:
-                fam_phone = contact.get("phone")
-            if fam_phone and (db.is_new(fam_phone) == False):
-                user_name = db.get_user_name(telephone)
-                db.save_notification(
-                    to_telephone=fam_phone,
-                    from_telephone=telephone,
-                    from_name=user_name,
-                    image_path_family=image_path_family
-                )
-    
     
     # Si todo sigue, preparamos el nuevo output
     if new_variant != 0:
@@ -257,7 +301,6 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
     db.save_flow(telephone, new_phase, new_state)
 
     return bot_output, image_path, is_ended, new_phase, new_state, new_variant
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # save_circle_data  –  Guardar info de contactos en la DB
@@ -311,7 +354,7 @@ def get_circle_data(telephone):
 # ─────────────────────────────────────────────────────────────────────────────
 # _run_farewell  –  Tareas de cierre de sesión
 # ─────────────────────────────────────────────────────────────────────────────
-def _run_farewell(telephone, state):
+def _run_farewell(telephone):
     """Guarda resumen y valoración de la sesión en MongoDB al terminar."""
     try:
         session_path = _ctx_get(telephone, _CTX_SESSION_PATH, "")
@@ -319,11 +362,12 @@ def _run_farewell(telephone, state):
             # Obtener `current_time` removiendo "_session" del final
             current_time = session_path.replace("_session", "")
             summary = db.session_summary(telephone, current_time)
+            valoration = ""
             
             db.add_user_info(telephone, f"{session_path}.summary", summary)
-            db.add_user_info(telephone, f"{session_path}.valoration", state)
+            db.add_user_info(telephone, f"{session_path}.valoration", valoration)
     except Exception as e:
-        print(f"\n[Error guardando resumen (Farewell)]: {e}")
+        print(f"\n[Error guardando resumen (Farewell): {e}]\n")
         
 # ─────────────────────────────────────────────────────────────────────────────
 # get_notifications  –  Recupera las notificaciones para un usuario

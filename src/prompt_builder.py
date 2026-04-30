@@ -66,7 +66,7 @@ def prompt_bot_output_generation(last_bot_output, last_user_input, nucleo, memor
    # TAREA
    1. Genera una pregunta que continúe de forma fluida la última intervención del usuario.
       Comienza con una breve introducción que conecte de manera coherente y conversacional
-      con su mensaje anterior. Máximo 40 palabras.
+      con su mensaje anterior. Máximo 20 palabras.
    2. La pregunta debe finalizar con el `nucleo` EXACTO, sin modificar ni una sola palabra.
    3. Asegúrate de que la pregunta completa esté integrada de forma orgánica en el flujo
       de la conversación, evitando que suene forzada o artificial.
@@ -77,6 +77,11 @@ def prompt_bot_output_generation(last_bot_output, last_user_input, nucleo, memor
    7. No menciones nada sobre ser un asistente virtual o tener memoria.
    8. Si en el `nucleo` se detecta `[parafrasear]`, reemplaza ese fragmento por una 
    paráfrasis de la respuesta del usuario almacenada en `user_input`.
+   9. El significado semántico del bloque de texto generado debe ser coherente con el flujo
+   de la converación.
+   10. El significado semántico de la introducción debe ser coherente con el núcleo posterior,
+   de tal forma que no pueden contener información contradictoria o que no tenga sentido en conjunto.
+   (Ej: Si el núcleo es "Cómo te llamas?", la introducción no puede ser "Holam Jordi, hablemos sobre...")
    """
    
    return prompt

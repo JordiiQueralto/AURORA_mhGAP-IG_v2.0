@@ -173,7 +173,9 @@ def bot_output_info(phase, state):
         },
         "SUI_PROTOCOLS": {
             "1": {
-                "nucleo": """
+                "nucleo": """ Te dejo un número donde podran ayudarte mejor. Porfavor llama 
+                ahora y cuando te repondan diles tu dirección exacta y explícales el tipo de 
+                lesión que te has hecho.
                 """},
             "2": {
                 "nucleo": """ Aquí tienes una guía de ayuda y esperanza. Te animo a conectarte 

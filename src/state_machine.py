@@ -1672,17 +1672,17 @@ def StateMachine(telephone, phase, state, user_input):
                     phase = "SUI_EVAL"
                     state = "3"
                     return (phase, state, variant)
+  
             
     elif phase == "SUI_PROTOCOLS":
         
         if state == "1":
-            phase, state = "FAREELL", "normal"
+            phase, state = "FAREWELL", "normal"
             return (phase, state, variant)
             
         elif state == "2":
-            
-            
-            return
+            phase, state = "FAREWELL", "normal"
+            return (phase, state, variant)
         
         else:
             return
@@ -1801,12 +1801,16 @@ def security_control(phase, state, variant, user_input):
     n_user_input = normalize_text(user_input)
     
     match_emergency = pattern_search(n_user_input, PATTERNS_EMERGENCY) 
+    
+    # En caso de detectar un trigger pasa a evaluacion de suicidio
     if match_emergency:
         new_phase = "SUI_EVAL"
         new_state = "1"
         new_variant = 0
+        print("\n[CONTROL DE SEGURIDAD HA DETECTADO UNA ALERTA!]\n")
         return (new_phase, new_state, new_variant)
-            
+    
+    # En caso contrario se queda igual        
     else:
         new_phase = phase
         new_state = state

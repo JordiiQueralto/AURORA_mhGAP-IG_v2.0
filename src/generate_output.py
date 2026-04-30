@@ -128,5 +128,3 @@ def use_case_class(conversation_history):
         use_case = "ASSISTANCE"
         return use_case
     
-
-
