@@ -1,7 +1,5 @@
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
-import llm
-import prompt_builder
 import datetime
 
 # Connection to MongoDB
@@ -147,22 +145,6 @@ def resume_conversation(telephone):
         state = user.get("checkpoint", {}).get("state")
         return (phase, state)
     
-    
-def user_latest_summary(telephone, latest_key):
-    """"""
-
-    # Get the user information
-    user = users.find_one({"telephone": telephone}, {"_id": 0})
-    
-    if not user:
-        print("\n[Error: Usuario no encontrado.]\n")
-        return {}
-    
-    # Obtain last summary
-    else:
-        latest_summary = user.get(f"{latest_key}", {}).get("summary")
-        return latest_summary
-
 
 def user_keys(telefono):
     """
@@ -225,26 +207,6 @@ def user_memory(telephone, keys_list=["name", "age", "PROFILE"]):
     user_data = users.find_one({"telephone": telephone}, projection)
     
     return user_data
-
-
-def session_summary(telephone, current_time) -> str:
-    
-    # Get the user information
-    user = users.find_one({"telephone": telephone}, {"_id": 0})
-    
-    if not user:
-        print("\n[Error: Usuario no encontrado.]\n")
-        return {}
-    
-    # Obtain last summary
-    else:
-        
-        path = f"{current_time}_session"
-        conversation_history = user.get(path, {}).get("conversation_history")
-        prompt = prompt_builder.summary_prompt_generation(conversation_history)
-        summary = str(llm.send_prompt(prompt))
-        
-        return summary
 
 
 def add_emergency_instance(telephone, session_path, cause, protocol, referal):

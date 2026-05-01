@@ -17,8 +17,12 @@ def normalize_text(user_input: str) -> str:
     user_input = re.sub(r'[\(\)\[\]\{\},;:¡!¿?\.\-_/]+', ' ', user_input)
     n_user_input = re.sub(r'\s+', ' ', user_input).strip()
     return n_user_input
-    
-    
+
+# Example
+text = "gracias, salir"
+n_text = normalize_text(text)    
+print(n_text)
+  
 def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
     """"""
     match = []

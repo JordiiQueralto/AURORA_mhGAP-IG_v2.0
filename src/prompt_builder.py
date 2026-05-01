@@ -1,4 +1,4 @@
-def presentation_prompt_generation(memory) -> str:
+def presentation_prompt(memory) -> str:
    """
    Generates the instructions for the LLM to draft a personalized greeting 
    based on the database history.
@@ -32,7 +32,7 @@ def presentation_prompt_generation(memory) -> str:
    return prompt
 
 
-def prompt_bot_output_generation(last_bot_output, last_user_input, nucleo, memory) -> str:
+def prompt_bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
    """
    Generates a prompt for a LLM. This prompt takes into account the conversation 
    context so that the generated `bot_output` fits naturally within the previous 
@@ -87,47 +87,6 @@ def prompt_bot_output_generation(last_bot_output, last_user_input, nucleo, memor
    return prompt
 
 
-def summary_prompt_generation(conversation_history) -> str:
-   """
-   Generates a prompt for the LLM to create a summary of the session.
-   This summary is intended for the human support team and for future interactions.
-   Args:
-      - conversation_history (dict): The reconstructed conversation history.
-   Returns:
-      - prompt (str): The generated prompt for the LLM.
-   """
-   
-   prompt = f"""
-   # ROL
-   Eres un asistente analítico especializado en síntesis de conversaciones de apoyo 
-   en salud mental.
-
-   # HISTORIAL DE CONVERSACIÓN
-   {conversation_history}
-
-   # TAREA
-   Genera un resumen profesional pero empático de esta sesión que incluya:
-   
-   1. **Punto de entrada**: ¿Cuál fue el tema o preocupación principal del usuario?
-   2. **Temas clave abordados**: Lista los temas principales que se tocaron.
-   3. **Estado emocional**: ¿Cómo se sentía el usuario al inicio y al final?
-   4. **Preocupaciones críticas**: ¿Hubo menciones de ideación suicida, autolesiones o crisis?
-   5. **Recursos/pasos sugeridos**: ¿Qué se sugirió o recomendó?
-   6. **Recomendaciones para futuras interacciones**: ¿Qué debe saber el equipo de apoyo 
-      para la próxima interacción?
-   
-   # FORMATO
-   - Mantén el resumen entre 150-300 palabras.
-   - Usa lenguaje claro y profesional.
-   - Prioriza la información sobre seguridad.
-   - No incluyas detalles personales innecesarios.
-   - No añadas título, empieza directamente con el "Punto de entrada".
-   - No añada formato al texto .md (negrita, curiva, título). Simplemente texto.
-   """
-   
-   return prompt
-
-
 def use_case_prompt(memory: str) -> str:
    """
    
@@ -172,4 +131,93 @@ def use_case_prompt(memory: str) -> str:
    {memory}
    """.strip()
       
+   return prompt
+
+
+def session_summary_prompt(conversation) -> str:
+   """
+   Generates a prompt for the LLM to create a summary of the session.
+   This summary is intended for the human support team and for future interactions.
+   Args:
+      - conversation_history (dict): The reconstructed conversation history.
+   Returns:
+      - prompt (str): The generated prompt for the LLM.
+   """
+   
+   prompt = f"""
+   # ROL
+   Eres un asistente analítico especializado en síntesis de conversaciones de apoyo 
+   en salud mental.
+
+   # HISTORIAL DE CONVERSACIÓN
+   {conversation}
+
+   # TAREA
+   Genera un resumen profesional pero empático de esta sesión que incluya:
+   
+   1. **Punto de entrada**: ¿Cuál fue el tema o preocupación principal del usuario?
+   2. **Temas clave abordados**: Lista los temas principales que se tocaron.
+   3. **Estado emocional**: ¿Cómo se sentía el usuario al inicio y al final?
+   4. **Preocupaciones críticas**: ¿Hubo menciones de ideación suicida, autolesiones o crisis?
+   5. **Recursos/pasos sugeridos**: ¿Qué se sugirió o recomendó?
+   6. **Recomendaciones para futuras interacciones**: ¿Qué debe saber el equipo de apoyo 
+      para la próxima interacción?
+   
+   # FORMATO
+   - Mantén el resumen entre 150-300 palabras.
+   - Usa lenguaje claro y profesional.
+   - Prioriza la información sobre seguridad.
+   - No incluyas detalles personales innecesarios.
+   - No añadas título, empieza directamente con el "Punto de entrada".
+   - No añada formato al texto .md (negrita, curiva, título). Simplemente texto.
+   """
+   
+   return prompt
+
+
+def session_valoration_prompt(conversation) -> str:
+   """Generates a prompt for the LLM to valorate the user satisfaction
+   in : GOOD, REGULAR and BAD"""
+   
+   prompt = f"""
+   # ROL
+   You are an expert evaluator of emotional support conversations, especially in mental health 
+   and suicide prevention contexts.
+   Your task is to analyze the following conversation between a user and a chatbot, and 
+   classify the overall session outcome into one of these three categories:
+   - GOOD
+   - REGULAR
+   - BAD
+
+   # Evaluation criteria:
+
+   GOOD:
+   - The user shows emotional improvement compared to the beginning
+   - The user expresses relief, gratitude, or calmness (e.g., "I feel better", "thank you")
+   - The user is willing to continue talking in the future
+   - The conversation ends in a calm and non-urgent way
+
+   REGULAR:
+   - No clear emotional improvement or deterioration
+   - Neutral or superficial interaction
+   - The user does not strongly engage or express clear satisfaction/dissatisfaction
+   - The outcome is unclear or mixed
+
+   BAD:
+   - The user remains or becomes more distressed, anxious, or frustrated
+   - The user expresses that the chatbot is not helpful
+   - The user requests human help urgently (e.g., doctor, therapist)
+   - The conversation ends abruptly or negatively
+
+   # Important rules:
+   - Focus primarily on the USER's emotional trajectory
+   - Pay special attention to the beginning vs the end of the conversation
+   - Be conservative: if there are strong negative signals, classify as BAD
+
+   Return ONLY one word: GOOD, REGULAR, or BAD.
+
+   # Conversation:
+   {conversation}
+   """
+   
    return prompt

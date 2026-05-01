@@ -1,6 +1,6 @@
 import prompt_builder
 import llm
-import textwrap
+import db
 
 def welcome(status, memory):
     """Generates the welcome message for the user, depending on whether they 
@@ -30,12 +30,25 @@ def welcome(status, memory):
     else:
         # Existing user
         # Generate a specific prompt for LLM to use the memory in the welcome message
-        prompt = prompt_builder.presentation_prompt_generation(memory)
+        prompt = prompt_builder.presentation_prompt(memory)
         bot_output = llm.send_prompt(prompt)
         
     # Return the generated welcome message
     return bot_output
         
+
+def use_case_class(conversation_history):
+    
+    prompt = prompt_builder.use_case_prompt(conversation_history)
+    use_case = llm.send_prompt(prompt, 0.0)
+    
+    if use_case in ["EMERGENCY", "ASSISTANCE", "TALK", "MISENSE"]:
+        return use_case 
+    
+    else:
+        use_case = "ASSISTANCE"
+        return use_case
+    
      
 def bot_output(last_bot_output, last_user_input, nucleo, memory):
     """
@@ -49,7 +62,7 @@ def bot_output(last_bot_output, last_user_input, nucleo, memory):
         - bot_output(str): The generated response."""
         
     # Create a prompt for the LLM including the memory from the DB
-    prompt = prompt_builder.prompt_bot_output_generation(
+    prompt = prompt_builder.prompt_bot_output(
         last_bot_output,
         last_user_input, 
         nucleo, 
@@ -69,7 +82,10 @@ def bot_output_image(phase, state):
         return image_path_user, image_path_family
     
     elif phase == "SUI_PROTOCOLS":
-        if state == "2":
+        if state == "1":
+            image_path_user = None
+            image_path_family = "images/SUI/Emergency/family_esp.png"
+        elif state == "2":
             image_path_user = "images/SUI/Psicoeducation/user_esp.png"
             image_path_family = "images/SUI/Psicoeducation/family_esp.png"
 
@@ -101,30 +117,35 @@ def farewell(state):
     return farewell_message
 
 
-def session_summary(memory):
+def session_summary(telephone, session_path) -> str:
     """
     Generates a summary of the session based on the conversation history.
     Args:
-        - memory (dict): The user's memory with all interactions.
+        - memory (dict): The session conversation history.
     Returns:
         - summary (str): The summary of the session.
     """
+    # Obtain the conversation history of the actual session
+    conversation = db.get_user_info(telephone, session_path, "conversation_history")
     
     # Create a prompt for the LLM to summarize the session
-    prompt = prompt_builder.summary_prompt_generation(memory)
+    prompt = prompt_builder.session_summary_prompt(conversation)
     summary = llm.send_prompt(prompt)
     return summary
 
 
-def use_case_class(conversation_history):
+def session_valoration(telephone, session_path) -> str:
+    """
+    Generates a valoration of the session based on the conversation history.
+    Args:
+        - memory (dict): The session conversation history.
+    Returns:
+        - valoration (str): The valoration of the session.
+    """
+    # Obtain the conversation history of the actual session
+    conversation = db.get_user_info(telephone, session_path, "conversation_history")
     
-    prompt = prompt_builder.use_case_prompt(conversation_history)
-    use_case = llm.send_prompt(prompt, 0.0)
-    
-    if use_case in ["EMERGENCY", "ASSISTANCE", "TALK", "MISENSE"]:
-        return use_case 
-    
-    else:
-        use_case = "ASSISTANCE"
-        return use_case
-    
+    # Create a prompt for the LLM to summarize the session
+    prompt = prompt_builder.session_valoration_prompt(conversation)
+    valoration = llm.send_prompt(prompt)
+    return valoration

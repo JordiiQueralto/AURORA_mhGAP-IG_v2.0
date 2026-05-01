@@ -2,8 +2,13 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import main_api
 import os
+from pymongo import MongoClient
+import re
 
 app = Flask(__name__)
+# Connect to mongoDB
+client = MongoClient("mongodb://localhost:27017/")
+db = client["CHATBOT_mhGAP"]
 
 # Permite peticiones desde el HTML abierto como fichero local (file://)
 # y desde cualquier localhost independientemente del puerto.
@@ -22,6 +27,43 @@ def verify_user():
 
     is_new = main_api.init_user(telephone)
     return jsonify({"status": "ok", "is_new": is_new})
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/medical-centers
+# Devuelve: lista de { countryCode, countryName }
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route("/api/medical-centers", methods=["GET"])
+def list_countries():
+    countries = db.medicalCenters.find(
+        {},
+        {"_id": 0, "countryCode": 1, "countryName": 1}
+    ).sort("countryName", 1)
+    return jsonify(list(countries))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /api/medical-centers/<countryCode>?q=<búsqueda>
+# Devuelve: { countryCode, countryName, centers: [...] }
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route("/api/medical-centers/<country_code>", methods=["GET"])
+def get_centers(country_code):
+    doc = db.medicalCenters.find_one(
+        {"countryCode": country_code.upper()},
+        {"_id": 0}
+    )
+    if not doc:
+        return jsonify({"error": f"País '{country_code}' no encontrado"}), 404
+
+    # Filtro de búsqueda opcional (?q=texto)
+    q = request.args.get("q", "").strip()
+    if q:
+        pattern = re.compile(re.escape(q), re.IGNORECASE)
+        doc["centers"] = [
+            c for c in doc["centers"]
+            if pattern.search(c.get("name", "")) or pattern.search(c.get("city", ""))
+        ]
+
+    return jsonify(doc)
 
 @app.route('/api/circle', methods=['GET'])
 def get_circle():
@@ -114,13 +156,13 @@ def mark_read():
 
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():
-    """Limpia el contexto de sesión en BD para que la próxima llamada
-    a /api/start arranque desde cero para este usuario."""
+    """Ejecuta _run_farewell (guarda resumen de sesión) y limpia el contexto
+    de sesión en BD. Se llama al hacer logout desde el front."""
     data = request.json or {}
     telephone = data.get('telephone')
     if telephone:
         try:
-            main_api.reset_session(int(telephone))
+            main_api.reset_session(str(telephone))
         except Exception:
             pass
     return jsonify({"status": "ok"})
