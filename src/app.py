@@ -107,7 +107,7 @@ def handle_message():
     if not telephone or user_message is None:
         return jsonify({"error": "telephone y message requeridos"}), 400
 
-    bot_message, image_path, is_ended, is_emergency = main_api.process_message(telephone, user_message)
+    bot_message, image_path, is_ended, is_emergency, is_support = main_api.process_message(telephone, user_message)
     
     # Convertir ruta relativa en URL absoluta del servidor
     image_url = f"http://localhost:5000/{image_path}" if image_path else None
@@ -116,7 +116,8 @@ def handle_message():
         "bot_message": bot_message,
         "image_url": image_url,
         "ended": is_ended,
-        "emergency_112": is_emergency
+        "emergency_112": is_emergency,
+        "emergency_024": is_support
     })
 
 @app.route('/api/circle', methods=['POST'])

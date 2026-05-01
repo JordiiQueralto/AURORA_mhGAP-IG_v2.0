@@ -18,10 +18,6 @@ def normalize_text(user_input: str) -> str:
     n_user_input = re.sub(r'\s+', ' ', user_input).strip()
     return n_user_input
 
-# Example
-text = "gracias, salir"
-n_text = normalize_text(text)    
-print(n_text)
   
 def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
     """"""
@@ -215,7 +211,7 @@ def StateMachine(telephone, phase, state, user_input):
             value = user_input
             db.add_user_info(telephone, key, value)
             
-            phase == "PROFILE"
+            phase = "PROFILE"
             state = "expectation"
             db.save_flow(telephone, phase, state)
             return (phase, state, variant)
@@ -362,7 +358,7 @@ def StateMachine(telephone, phase, state, user_input):
     
     
     elif phase == "CHAT":
-        return                    
+        return (phase, state, variant)                    
     
                             
     elif phase == "DEP_EVAL":
@@ -1689,10 +1685,7 @@ def StateMachine(telephone, phase, state, user_input):
             return (phase, state, variant)
         
         else:
-            return
-          
-    else:
-        return
+            return (phase, state, variant)
     
 
 def security_control(phase, state, variant, user_input):

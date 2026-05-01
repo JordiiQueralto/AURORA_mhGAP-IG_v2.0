@@ -6,9 +6,9 @@ import datetime
 import time
 
 # ── Claves de contexto que guardamos entre peticiones ────────────────────────
-_CTX_J             = "j"               
+_CTX_J             = "j"
+_CTX_K             = "K" 
 _CTX_VARIANT       = "variant"         
-_CTX_LAST_BOT_OUT  = "last_bot_output"
 _CTX_BOT_OUT       = "bot_output"
 _CTX_SESSION_PATH  = "session_path"    
 _CTX_PHASE         = "phase"
@@ -84,6 +84,7 @@ def start_conversation(telephone):
     # Persistir contexto inicial
     _ctx_set(telephone, _CTX_SESSION_PATH, session_path)
     _ctx_set(telephone, _CTX_J, 0)
+    _ctx_set(telephone, _CTX_K, 0)
     _ctx_set(telephone, _CTX_BOT_OUT, bot_output)
     _ctx_set(telephone, _CTX_PHASE, phase)
     _ctx_set(telephone, _CTX_STATE, "")
@@ -97,12 +98,11 @@ def start_conversation(telephone):
 def process_message(telephone, user_input):
     telephone = str(telephone).replace(" ", "")
     n_user_input = state_machine.normalize_text(user_input)
-    image_path = None
 
     # 1. Salida rápida global
     if n_user_input == "salir":
         time.sleep(1)
-        return generate_output.farewell("normal"), image_path, True
+        return generate_output.farewell("normal"), None, True, False, False
 
     # 2. Recuperar el contexto íntegro de la BD
     memory = db.user_memory(telephone)
@@ -110,6 +110,7 @@ def process_message(telephone, user_input):
 
     session_path    = _ctx_get(telephone, _CTX_SESSION_PATH, "")
     j               = int(_ctx_get(telephone, _CTX_J, 0))
+    k               = int(_ctx_get(telephone, _CTX_K, 0))
     last_bot_output = _ctx_get(telephone, _CTX_BOT_OUT, "")
     phase           = _ctx_get(telephone, _CTX_PHASE, "")
     state           = _ctx_get(telephone, _CTX_STATE, "")
@@ -123,8 +124,10 @@ def process_message(telephone, user_input):
     j += 1
 
     # Variables que modificaremos
+    image_path = None
     is_ended = False
     emergency_112 = False
+    emergency_024 = False
     bot_output = ""
     new_phase = phase
     new_state = state
@@ -156,17 +159,18 @@ def process_message(telephone, user_input):
         # Ahora el usuario ha respondido a "¿Cómo podría ayudarte?". Pasamos a PROFILE/name
         new_phase, new_state = "PROFILE", "name"
         new_variant = 0
-        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant, k = _generate_response(
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory, session_path, k
         )
 
     elif phase == "RESUMING":
         # El usuario ha respondido al mensaje de Bienvenida personalizado.
         new_phase, new_state = db.resume_conversation(telephone)
         new_variant = 0
-        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant, k = _generate_response(
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory, session_path, k
         )
+        
 
     # ── B. FLUJO NORMAL Y MÁQUINA DE ESTADOS ─────────────────────────────────
     else:
@@ -176,7 +180,7 @@ def process_message(telephone, user_input):
         )
 
         # Control de seguridad (Emergencia)
-        if phase == "DEP_EVAL":
+        if phase == "DEP_EVAL" or phase == "CHAT":
             new_phase, new_state, new_variant = state_machine.security_control(
                 new_phase, new_state, new_variant, user_input
             )
@@ -205,20 +209,19 @@ def process_message(telephone, user_input):
                         contacts = db.get_user_info(telephone, "CIRCLE", "contacts")
                         for contact in contacts:
                             fam_phone = contact.get("phone")
-                        if fam_phone and (db.is_new(fam_phone) == False):
-                            user_name = db.get_user_name(telephone)
-                            db.save_notification(
-                                to_telephone=fam_phone,
-                                from_telephone=telephone,
-                                from_name=user_name,
-                                image_path_family=image_path_family
-                            )
+                            if fam_phone and (db.is_new(fam_phone) == False):
+                                user_name = db.get_user_name(telephone)
+                                db.save_notification(
+                                    to_telephone=fam_phone,
+                                    from_telephone=telephone,
+                                    from_name=user_name,
+                                    image_path_family=image_path_family
+                                    )
                 
                 # Registramos la emergencia en la BD
                 cause = ""
                 referal = "112"
                 emergency_112 = True
-                print("emergency == True")
                 db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
                 
             elif new_state == "2":
@@ -243,48 +246,44 @@ def process_message(telephone, user_input):
                         contacts = db.get_user_info(telephone, "CIRCLE", "contacts")
                         for contact in contacts:
                             fam_phone = contact.get("phone")
-                        if fam_phone and (db.is_new(fam_phone) == False):
-                            user_name = db.get_user_name(telephone)
-                            db.save_notification(
-                                to_telephone=fam_phone,
-                                from_telephone=telephone,
-                                from_name=user_name,
-                                image_path_family=image_path_family
-                            )
+                            if fam_phone and (db.is_new(fam_phone) == False):
+                                user_name = db.get_user_name(telephone)
+                                db.save_notification(
+                                    to_telephone=fam_phone,
+                                    from_telephone=telephone,
+                                    from_name=user_name,
+                                    image_path_family=image_path_family
+                                    )
                             
                 # Registramos la emergencia en la BD
                 cause = ""
-                concrete_plan = db.get_user_info(telephone, "SUI_EVAL", "2_A_active_ideation")
-                if concrete_plan == "concrete_plan":
-                    referal = "112"
-                    emergency_112 = True
-                    print("emergency == True")
-                else:
-                    referal = "024"
-                    emergency_112 = False
+                referal = "024"
+                emergency_024 = True
                 db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
               
-            return bot_output, image_path, True, emergency_112
+            return bot_output, image_path, True, emergency_112, emergency_024
                 
 
         # Generar la pregunta del BOT para el NUEVO estado
-        bot_output, image_path, is_ended, new_phase, new_state, new_variant = _generate_response(
-            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory
+        bot_output, image_path, is_ended, new_phase, new_state, new_variant, k = _generate_response(
+            telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory, session_path, k
         )
 
     # 4. Actualizar estado de vuelta a la BD
     _ctx_set(telephone, _CTX_J, j)
+    _ctx_set(telephone, _CTX_K, k)
     _ctx_set(telephone, _CTX_BOT_OUT, bot_output)
     _ctx_set(telephone, _CTX_PHASE, new_phase)
     _ctx_set(telephone, _CTX_STATE, new_state)
     _ctx_set(telephone, _CTX_VARIANT, new_variant)
 
-    return bot_output, image_path, is_ended, emergency_112
+    return bot_output, image_path, is_ended, emergency_112, emergency_024
 
 # ─────────────────────────────────────────────────────────────────────────────
 # _generate_response  –  Maneja lógicad e transición compleja y Prompt del LLM
 # ─────────────────────────────────────────────────────────────────────────────
-def _generate_response(telephone, new_phase, new_state, new_variant, user_input, last_bot, memory):
+def _generate_response(telephone, new_phase, new_state, new_variant, user_input, 
+                       last_bot, memory, session_path, k):
     is_ended = False
     image_path = None
 
@@ -293,37 +292,68 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
         conversation_history = db.conversation_history(telephone)
         use_case = generate_output.use_case_class(conversation_history)
         
-        print (f"[\nUSE CASE DETECTED : {use_case}]\n")
+        print (f"\n[USE CASE DETECTED : {use_case}]\n")
         
         if use_case == "EMERGENCY":
             new_phase, new_state = "SUI_EVAL", "1"
         elif use_case == "ASSISTANCE":
             new_phase, new_state = "DEP_EVAL", "1A.1"
         elif use_case == "TALK":
-            new_phase, new_state = "CHAT", "error"
+            new_phase, new_state = "CHAT", ""
         else:
             new_phase, new_state = "FAREWELL", "misuse"
+    
+    if new_phase == "CHAT":
+        # Modo libre de conversación. No hay máquina de estados, solo respuesta abierta del LLM.
+        # Obtain the conversation history of the actual session
+        conversation = db.get_user_info(telephone, session_path, "conversation_history")
+        
+        # Every 5 messages reevaluate if use case change is needed
+        if (k % 5 == 0) and (k != 0):
+            
+            use_case = generate_output.use_case_class(conversation)
+            print (f"\n[REEVALUATION USE CASE: {use_case}]\n")
+                
+            if use_case == "EMERGENCY":
+                new_phase, new_state = "SUI_EVAL", "1"
+                    
+            elif use_case == "ASSISTANCE":
+                new_phase, new_state = "DEP_EVAL", "1A.1"
+                    
+            elif use_case == "TALK":
+                new_phase, new_state = "CHAT", ""
+                    
+            else:
+                new_phase, new_state = "FAREWELL", "misuse"
 
+        # Comprobamos que el phase sigue igual y que no ha cambiado debido a reevaluación
+        if new_phase == "CHAT":
+            # Output generado por LLM
+            bot_output = generate_output.talk_mode(conversation)
+            k += 1
+            return bot_output, image_path, is_ended, new_phase, new_state, new_variant, k
+    
     # Revisar si cerramos llamada
     if new_phase == "FAREWELL":
         time.sleep(2)
         bot_output = generate_output.farewell(new_state)
         db.save_flow(telephone, new_phase, new_state)
-        return bot_output, None, True, new_phase, new_state, new_variant
+        return bot_output, None, True, new_phase, new_state, new_variant, k
     
-    # Si todo sigue, preparamos el nuevo output
-    if new_variant != 0:
-        nucleo = phrase_dictionary.variant_dict(new_phase, new_state, new_variant)
     else:
-        nucleo = phrase_dictionary.bot_output_info(new_phase, new_state)
+        # Si todo sigue, preparamos el nuevo output
+        if new_variant != 0:
+            nucleo = phrase_dictionary.variant_dict(new_phase, new_state, new_variant)
+        else:
+            nucleo = phrase_dictionary.bot_output_info(new_phase, new_state)
 
-    # Llamada al LLM
-    bot_output = generate_output.bot_output(last_bot, user_input, nucleo, memory)
-    
-    # Guardamos checkpoint seguro
-    db.save_flow(telephone, new_phase, new_state)
+        # Llamada al LLM
+        bot_output = generate_output.bot_output(last_bot, user_input, nucleo, memory)
+        
+        # Guardamos checkpoint seguro
+        db.save_flow(telephone, new_phase, new_state)
 
-    return bot_output, image_path, is_ended, new_phase, new_state, new_variant
+        return bot_output, image_path, is_ended, new_phase, new_state, new_variant, k
 
 # ─────────────────────────────────────────────────────────────────────────────
 # save_circle_data  –  Guardar info de contactos en la DB
@@ -337,7 +367,7 @@ def save_circle_data(telephone, circle_data):
     # Extraemos las distintas partes
     contacts = circle_data.get("contacts", [])
     medicalCenter = circle_data.get("medicalCenter", {})
-    privacy = circle_data.get("privacy", )
+    privacy = circle_data.get("privacy", {})
     
     # Limpiamos los números de teléfono
     for contact in contacts:
@@ -415,8 +445,8 @@ def reset_session(telephone):
     telephone = str(telephone).replace(" ", "")
     # Guardar resumen de sesión antes de borrar el contexto
     _run_farewell(telephone)
-    for key in [_CTX_J, _CTX_VARIANT, _CTX_LAST_BOT_OUT,
-                _CTX_BOT_OUT, _CTX_SESSION_PATH, _CTX_PHASE, _CTX_STATE]:
+    for key in [_CTX_J, _CTX_VARIANT,_CTX_BOT_OUT, _CTX_SESSION_PATH, 
+                _CTX_PHASE, _CTX_STATE]:
         try:
             _ctx_set(telephone, key, None)
         except Exception:

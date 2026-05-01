@@ -5,14 +5,15 @@ import datetime
 # Connection to MongoDB
 client = MongoClient("mongodb://localhost:27017/")
 db = client["CHATBOT_mhGAP"]
-users = db["users"]  # collection
+users = db["users"] # collection users
+specialists = db["specialists"]  # collection specialists
 
 
 def is_new(telephone:str) -> bool:
     """
     Verifies if a user with the given phone number exists in the database.
     Args:
-        - telephone (int): The phone number to check.
+        - telephone (str): The phone number to check.
     Returns:
         - bool: False if the user exists, True otherwise.
     """
@@ -30,7 +31,7 @@ def create_user(telephone, is_new):
     """
     Creates a new user in the database if they do not already exist.
     Args:
-        - telephone (int): The phone number of the user to create.
+        - telephone (str): The phone number of the user to create.
     Returns:
         - None
     """
@@ -52,13 +53,14 @@ def add_user_info(telephone, key, value):
     """
     Adds information to an existing user in the database.
     Args:
-        - telephone (int): The phone number of the user.
+        - telephone (str): The phone number of the user.
         - key (str): The field to update.
         - value (Any): The value to set for the field.
     Returns:
         - None
     """
-    users.update_one({"telephone": telephone}, {"$set": {key: value}})
+    users.update_one({"telephone": telephone}, {"$set": {key: value}})      
+    return
     
 
 def get_user_name(telephone, key = "name"):
@@ -261,3 +263,45 @@ def mark_notifications_read(telephone):
         {"to_telephone": telephone, "read": False},
         {"$set": {"read": True}}
     )
+    
+# SPECIALISTS
+def is_registered(coll_number:str) -> bool:
+    """
+    Verifies if a specialist with the given collegiate number exists in the database.
+    Args:
+        - coll_number (str): The phone number to check.
+    Returns:
+        - bool: True if the user exists, False otherwise.
+    """
+    specialist = specialists.find_one({"coll_number": coll_number})
+    
+    if specialist:
+        print("\n[Usuario encontrado en la base de datos.]\n")
+        return True
+    else:
+        print("\n[Usuario no encontrado. Es un nuevo usuario.]\n")
+        return False
+
+
+def register_med(coll_number, register_info):
+    users.create_index("coll_number", unique=True)
+    
+    specialists.insert_one({"coll_number": coll_number}, {"$set": {register_info}})
+    print("\n[Perfil de especialista registrado correctamente]\n")
+    return
+
+
+def add_med_info(coll_number, key, value):
+    """
+    Adds information to an existing specialist in the database.
+    Args:
+        - coll_number (str): The collegiate number of the user.
+        - key (str): The field to update.
+        - value (Any): The value to set for the field.
+    Returns:
+        - None
+    """
+    users.update_one({"coll_number": coll_number}, {"$set": {key: value}})      
+    return
+    
+    

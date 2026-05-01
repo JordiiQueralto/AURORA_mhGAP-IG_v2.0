@@ -2,7 +2,7 @@ import prompt_builder
 import llm
 import db
 
-def welcome(status, memory):
+def welcome(status, memory) -> str:
     """Generates the welcome message for the user, depending on whether they 
     are new (new users or have not accepted the terms of usage previously) or 
     existing, and using memory if available.
@@ -37,7 +37,7 @@ def welcome(status, memory):
     return bot_output
         
 
-def use_case_class(conversation_history):
+def use_case_class(conversation_history) -> str:
     
     prompt = prompt_builder.use_case_prompt(conversation_history)
     use_case = llm.send_prompt(prompt, 0.0)
@@ -50,7 +50,7 @@ def use_case_class(conversation_history):
         return use_case
     
      
-def bot_output(last_bot_output, last_user_input, nucleo, memory):
+def bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
     """
     Generates a response based on the user's input and the conversation context.
     Args:
@@ -74,7 +74,7 @@ def bot_output(last_bot_output, last_user_input, nucleo, memory):
     return bot_output
 
 
-def bot_output_image(phase, state):
+def bot_output_image(phase, state) -> str:
     image_path_user = None 
     image_path_family = None
     
@@ -92,7 +92,32 @@ def bot_output_image(phase, state):
     return image_path_user, image_path_family
 
 
-def farewell(state):
+def talk_mode(conversation: dict, n: int=8) -> str:
+    """
+    Keep up to the last n messages (including bot_output_{i} and user_input_{i}) and 
+    send them to the LLM.
+
+    Args:
+       - conversation (dict): Chat history with keys like 'user_input_0', 'bot_output_0'
+       - n (int): Number of turns to keep (up to n if fewer are available)
+
+    Returns:
+       - bot_output(str): LLM response
+    """
+
+    # Filter only the last n messages to avoid LLM token waste
+    sorted_items = sorted(conversation.items(), key=lambda x: int(x[0].split('_')[-1])) 
+    last_items = sorted_items[-n:] 
+    conversation_filtered = dict(last_items)
+
+    # Generate prompt and get response
+    prompt = prompt_builder.prompt_talk_mode(conversation_filtered)
+    bot_output = llm.send_prompt(prompt)
+
+    return bot_output
+
+
+def farewell(state) -> str:
     """
     Generates a farewell message for the user.
     Returns:
@@ -147,5 +172,5 @@ def session_valoration(telephone, session_path) -> str:
     
     # Create a prompt for the LLM to summarize the session
     prompt = prompt_builder.session_valoration_prompt(conversation)
-    valoration = llm.send_prompt(prompt)
+    valoration = llm.send_prompt(prompt, 0.0)
     return valoration

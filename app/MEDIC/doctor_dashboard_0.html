@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Panel Médico — mhGAP</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── TOKENS ───────────────────────────────────────────── */
+:root{
+  --bg:        #0a0f13;
+  --panel:     #111b21;
+  --surface:   #162028;
+  --card:      #1a2830;
+  --border:    #ffffff0d;
+  --border-m:  #ffffff18;
+  --accent:    #00a884;
+  --accent-d:  #02735e;
+  --accent-l:  #25d366;
+  --accent-glow: #00a88430;
+  --text:      #e9edef;
+  --muted:     #8696a0;
+  --dim:       #4a5a64;
+  --danger:    #f15c6d;
+  --warn:      #ffa040;
+  --info:      #5b9bd5;
+  --purple:    #9d9dff;
+  --f0: 'DM Sans', sans-serif;
+  --f1: 'Instrument Serif', serif;
+  --r:  10px;
+  --dur: 0.2s;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:var(--f0);color:var(--text);overflow:hidden}
+
+/* ── LAYOUT ───────────────────────────────────────────── */
+.app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;height:100vh}
+
+/* ── TOPBAR ───────────────────────────────────────────── */
+.topbar{
+  grid-column:1/-1;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;gap:16px;
+}
+.topbar-logo{display:flex;align-items:center;gap:10px;width:196px}
+.topbar-logo-icon{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-d));
+  display:flex;align-items:center;justify-content:center;font-size:15px;
+  box-shadow:0 0 16px var(--accent-glow);
+}
+.topbar-logo-txt{font-family:var(--f1);font-size:17px;font-style:italic}
+.topbar-logo-txt span{color:var(--accent)}
+.topbar-divider{flex:1}
+.topbar-chip{
+  background:var(--surface);border:1px solid var(--border-m);border-radius:99px;
+  padding:5px 12px 5px 8px;display:flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--muted);cursor:default;
+}
+.topbar-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.topbar-chip strong{color:var(--text)}
+.topbar-notif{
+  position:relative;width:36px;height:36px;background:var(--surface);
+  border:1px solid var(--border);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background var(--dur);
+}
+.topbar-notif:hover{background:var(--card)}
+.notif-badge{
+  position:absolute;top:6px;right:7px;width:7px;height:7px;
+  border-radius:50%;background:var(--danger);border:1.5px solid var(--panel);
+}
+.topbar-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-d));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:600;font-size:13px;cursor:pointer;
+  box-shadow:0 0 0 2px var(--accent-glow);
+}
+
+/* ── SIDEBAR ──────────────────────────────────────────── */
+.sidebar{
+  background:var(--panel);border-right:1px solid var(--border);
+  padding:20px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;
+}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--dim);
+  text-transform:uppercase;padding:14px 10px 6px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);
+  cursor:pointer;font-size:13.5px;color:var(--muted);
+  transition:background var(--dur),color var(--dur);border:none;background:none;width:100%;text-align:left;
+}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:#00a88415;color:var(--accent);font-weight:500}
+.nav-icon{font-size:16px;width:20px;flex-shrink:0;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.logout-btn{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);
+  cursor:pointer;font-size:13.5px;color:var(--dim);
+  transition:background var(--dur),color var(--dur);border:none;background:none;width:100%;text-align:left;
+}
+.logout-btn:hover{background:#f15c6d10;color:var(--danger)}
+
+/* ── MAIN CONTENT ─────────────────────────────────────── */
+.main{overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:28px 32px;min-height:100%;animation:fadeIn .22s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE HEADERS ─────────────────────────────────────── */
+.page-header{margin-bottom:24px}
+.page-title{font-family:var(--f1);font-size:26px;font-style:italic;color:var(--text)}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* ── FORM STYLES ──────────────────────────────────────── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.form-full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.03em}
+.field input,.field select,.field textarea{
+  background:var(--surface);border:1px solid var(--border-m);border-radius:var(--r);
+  padding:10px 14px;color:var(--text);font-family:var(--f0);font-size:14px;outline:none;
+  transition:border-color var(--dur),box-shadow var(--dur);
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);
+}
+.field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+.field select option{background:var(--surface)}
+.field textarea{resize:vertical;min-height:80px}
+
+/* ── CARD ─────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
+.card + .card{margin-top:16px}
+
+/* ── SECTION DIVIDER ──────────────────────────────────── */
+.sect{margin-top:24px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+
+/* ── AVATAR UPLOAD ────────────────────────────────────── */
+.avatar-upload{display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.avatar-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));
+  display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;flex-shrink:0;
+  box-shadow:0 0 0 3px var(--accent-glow),0 0 24px var(--accent-glow)}
+.avatar-upload-info h3{font-size:15px;font-weight:500;margin-bottom:4px}
+.avatar-upload-info p{font-size:12px;color:var(--muted);line-height:1.5}
+.btn-outline{
+  margin-top:10px;background:none;border:1px solid var(--border-m);border-radius:8px;
+  padding:7px 14px;color:var(--muted);font-family:var(--f0);font-size:13px;cursor:pointer;
+  transition:all var(--dur);
+}
+.btn-outline:hover{background:var(--surface);color:var(--text);border-color:var(--accent)}
+
+/* ── SAVE BUTTON ──────────────────────────────────────── */
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.btn-primary{
+  background:var(--accent);color:#fff;border:none;border-radius:9px;
+  padding:10px 24px;font-family:var(--f0);font-size:14px;font-weight:500;
+  cursor:pointer;transition:background var(--dur),box-shadow var(--dur);
+  box-shadow:0 4px 18px var(--accent-glow);
+}
+.btn-primary:hover{background:var(--accent-l);box-shadow:0 4px 24px #25d36640}
+.btn-secondary{
+  background:var(--surface);color:var(--muted);border:1px solid var(--border-m);border-radius:9px;
+  padding:10px 18px;font-family:var(--f0);font-size:14px;cursor:pointer;
+  transition:all var(--dur);
+}
+.btn-secondary:hover{background:var(--card);color:var(--text)}
+
+/* ── TOAST ────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  background:#0d2920;border:1px solid var(--accent);border-radius:12px;
+  padding:14px 20px;display:flex;align-items:center;gap:10px;
+  font-size:14px;box-shadow:0 8px 32px #000a;
+  transform:translateY(20px);opacity:0;transition:all .3s ease;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast-icon{font-size:18px}
+
+/* ── STAT CARDS ───────────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.stat-label{font-size:11.5px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat-value{font-family:var(--f1);font-size:30px;font-style:italic;color:var(--text)}
+.stat-delta{font-size:12px;margin-top:4px;display:flex;align-items:center;gap:4px}
+.stat-delta.up{color:var(--accent-l)}
+.stat-delta.dn{color:var(--danger)}
+.stat-delta.neu{color:var(--muted)}
+
+/* ── CHARTS GRID ──────────────────────────────────────── */
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.charts-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-wrap{position:relative;height:220px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── PATIENTS TABLE ───────────────────────────────────── */
+.table-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.search-box{flex:1;position:relative}
+.search-box input{
+  width:100%;background:var(--surface);border:1px solid var(--border-m);border-radius:9px;
+  padding:9px 14px 9px 38px;color:var(--text);font-family:var(--f0);font-size:13.5px;outline:none;
+  transition:border-color var(--dur);
+}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--dim)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--dim);pointer-events:none}
+.filter-sel{
+  background:var(--surface);border:1px solid var(--border-m);border-radius:9px;
+  padding:9px 14px;color:var(--muted);font-family:var(--f0);font-size:13px;outline:none;cursor:pointer;
+}
+.filter-sel:focus{border-color:var(--accent)}
+.filter-sel option{background:var(--surface)}
+
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface);border-bottom:1px solid var(--border)}
+th{
+  padding:11px 16px;text-align:left;font-size:11px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--dur);cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+td{padding:13px 16px;font-size:13.5px}
+.td-name{font-weight:500;color:var(--text)}
+.td-phone{color:var(--muted);font-size:12.5px}
+.td-date{color:var(--muted);font-size:12.5px}
+
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:500;
+}
+.badge-green{background:#00a88418;color:var(--accent-l)}
+.badge-red{background:#f15c6d18;color:#f8909a}
+.badge-yellow{background:#ffa04018;color:var(--warn)}
+.badge-blue{background:#5b9bd518;color:var(--info)}
+.badge-purple{background:#9d9dff18;color:var(--purple)}
+
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── DETAIL MODAL ─────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;background:#00000090;backdrop-filter:blur(4px);
+  z-index:500;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--panel);border:1px solid var(--border-m);border-radius:18px;
+  width:520px;max-height:80vh;overflow-y:auto;padding:28px;
+  transform:scale(0.95);transition:transform .25s;
+}
+.modal-overlay.open .modal{transform:scale(1)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;transition:color var(--dur)}
+.modal-close:hover{color:var(--text)}
+.modal-patient-id{font-size:11px;color:var(--dim);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.modal-patient-name{font-family:var(--f1);font-size:22px;font-style:italic}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.info-item label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.info-item p{font-size:13.5px;margin-top:3px}
+.modal-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.modal-section-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.session-list{display:flex;flex-direction:column;gap:8px}
+.session-row{background:var(--surface);border-radius:9px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.session-row-left{font-size:13px}
+.session-row-date{font-size:11.5px;color:var(--muted);margin-top:2px}
+.session-row-status{font-size:12px}
+.emergency-flag{
+  background:#f15c6d18;border:1px solid #f15c6d30;border-radius:9px;
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+  font-size:13px;color:#f8909a;margin-top:12px;
+}
+
+/* ── SCROLLBAR ────────────────────────────────────────── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#ffffff18;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#ffffff28}
+
+/* ── EMPTY STATE ──────────────────────────────────────── */
+.empty-state{text-align:center;padding:48px 20px}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4}
+.empty-text{font-size:14px;color:var(--muted)}
+
+/* ── PAGINATION ───────────────────────────────────────── */
+.pagination{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;
+  padding:5px 12px;color:var(--muted);cursor:pointer;font-size:12px;font-family:var(--f0);
+  transition:all var(--dur);
+}
+.pag-btn:hover{background:var(--card);color:var(--text)}
+.pag-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ TOPBAR ════════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="topbar-logo-icon">🧠</div>
+      <div class="topbar-logo-txt">mh<span>GAP</span> Médico</div>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-chip">
+      <span class="topbar-chip-dot"></span>
+      <span>Sistema activo &nbsp;·&nbsp; <strong id="top-center-name">Hospital General</strong></span>
+    </div>
+    <div class="topbar-notif" title="Notificaciones">
+      🔔
+      <span class="notif-badge"></span>
+    </div>
+    <div class="topbar-avatar" id="topbar-avatar" title="Mi perfil">DR</div>
+  </header>
+
+  <!-- ═══ SIDEBAR ═══════════════════════════════════════ -->
+  <nav class="sidebar">
+    <span class="nav-section">Navegación</span>
+
+    <button class="nav-item active" onclick="navigate('perfil')">
+      <span class="nav-icon">👤</span> Mi perfil
+    </button>
+    <button class="nav-item" onclick="navigate('stats')">
+      <span class="nav-icon">📊</span> Estadísticas
+    </button>
+    <button class="nav-item" onclick="navigate('patients')">
+      <span class="nav-icon">🫂</span> Usuarios
+    </button>
+
+    <span class="nav-section">Herramientas</span>
+    <button class="nav-item" onclick="navigate('alerts')">
+      <span class="nav-icon">⚠️</span> Alertas activas
+    </button>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="confirmLogout()">
+        <span class="nav-icon">↩</span> Cerrar sesión
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══ MAIN ═══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ─── PERFIL ──────────────────────────────────────── -->
+    <section class="page active" id="page-perfil">
+      <div class="page-header">
+        <h1 class="page-title">Mi perfil profesional</h1>
+        <p class="page-sub">Datos del colegiado registrado en el sistema</p>
+      </div>
+
+      <div class="card">
+        <!-- Avatar upload row -->
+        <div class="avatar-upload">
+          <div class="avatar-big" id="profile-avatar">DR</div>
+          <div class="avatar-upload-info">
+            <h3 id="profile-fullname">Dr./Dra. —</h3>
+            <p>Foto de perfil opcional.<br>JPG o PNG, máx 2 MB.</p>
+            <button class="btn-outline" onclick="document.getElementById('avatar-file').click()">Cambiar foto</button>
+            <input type="file" id="avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
+          </div>
+        </div>
+
+        <!-- Datos personales -->
+        <div class="sect">Datos personales</div>
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field">
+            <label>Nombre *</label>
+            <input type="text" id="f-nombre" placeholder="Nombre" oninput="updateHeaderAvatar()"/>
+          </div>
+          <div class="field">
+            <label>Apellidos *</label>
+            <input type="text" id="f-apellidos" placeholder="Primer y segundo apellido" oninput="updateHeaderAvatar()"/>
+          </div>
+          <div class="field">
+            <label>Fecha de nacimiento *</label>
+            <input type="date" id="f-fnacimiento"/>
+          </div>
+          <div class="field">
+            <label>Nº de colegiado *</label>
+            <input type="text" id="f-colegiado" placeholder="p.ej. 28-5678"/>
+          </div>
+          <div class="field">
+            <label>Género</label>
+            <select id="f-genero">
+              <option value="">Seleccionar…</option>
+              <option value="dr">Dr. (él/him)</option>
+              <option value="dra">Dra. (ella/her)</option>
+              <option value="dr-neutral">Dr./Dra. (neutro)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Especialidad</label>
+            <select id="f-especialidad">
+              <option value="">Seleccionar…</option>
+              <option>Psiquiatría</option>
+              <option>Psicología clínica</option>
+              <option>Medicina de familia</option>
+              <option>Neurología</option>
+              <option>Atención primaria</option>
+              <option>Otra</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="sect" style="margin-top:28px">Contacto y acceso</div>
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field">
+            <label>Correo electrónico *</label>
+            <input type="email" id="f-email" placeholder="doctor@hospital.es"/>
+          </div>
+          <div class="field">
+            <label>Teléfono profesional</label>
+            <input type="tel" id="f-telefono" placeholder="+34 600 000 000"/>
+          </div>
+        </div>
+
+        <!-- Centro sanitario -->
+        <div class="sect" style="margin-top:28px">Centro sanitario</div>
+        <div class="form-grid cols-3" style="margin-top:16px">
+          <div class="field" style="grid-column:span 2">
+            <label>Centro sanitario donde practica *</label>
+            <input type="text" id="f-centro" placeholder="Hospital / Centro de salud / Clínica" oninput="updateTopCenter()"/>
+          </div>
+          <div class="field">
+            <label>Ciudad *</label>
+            <input type="text" id="f-ciudad" placeholder="Ciudad"/>
+          </div>
+          <div class="field">
+            <label>Provincia / Comunidad</label>
+            <input type="text" id="f-provincia" placeholder="Provincia o comunidad autónoma"/>
+          </div>
+          <div class="field">
+            <label>País</label>
+            <select id="f-pais">
+              <option value="ES" selected>🇪🇸 España</option>
+              <option value="MX">🇲🇽 México</option>
+              <option value="AR">🇦🇷 Argentina</option>
+              <option value="CO">🇨🇴 Colombia</option>
+              <option value="CL">🇨🇱 Chile</option>
+              <option value="PE">🇵🇪 Perú</option>
+              <option value="VE">🇻🇪 Venezuela</option>
+              <option value="OTHER">Otro…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Código postal</label>
+            <input type="text" id="f-cp" placeholder="28001"/>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="clearForm()">Restablecer</button>
+          <button class="btn-primary" onclick="saveProfile()">💾 Guardar cambios</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ESTADÍSTICAS ────────────────────────────────── -->
+    <section class="page" id="page-stats">
+      <div class="page-header">
+        <h1 class="page-title">Estadísticas del centro</h1>
+        <p class="page-sub">Resumen de actividad y evolución de usuarios registrados</p>
+      </div>
+
+      <!-- KPIs -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Usuarios activos</div>
+          <div class="stat-value">142</div>
+          <div class="stat-delta up">↑ +12 este mes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sesiones totales</div>
+          <div class="stat-value">3.8k</div>
+          <div class="stat-delta up">↑ +8.4 % vs anterior</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Alertas activas</div>
+          <div class="stat-value">7</div>
+          <div class="stat-delta dn">↑ +3 esta semana</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Usuarios de alto riesgo</div>
+          <div class="stat-value">19</div>
+          <div class="stat-delta neu">Sin cambio significativo</div>
+        </div>
+      </div>
+
+      <!-- Charts row 1 -->
+      <div class="charts-grid">
+        <div class="card">
+          <div class="card-title">Sesiones semanales (últimas 12 semanas)</div>
+          <div class="chart-wrap"><canvas id="chart-sessions"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Distribución por diagnóstico</div>
+          <div class="chart-wrap"><canvas id="chart-diagnoses"></canvas></div>
+          <div class="chart-legend" id="legend-diag"></div>
+        </div>
+      </div>
+
+      <!-- Charts row 2 -->
+      <div class="charts-grid-2">
+        <div class="card">
+          <div class="card-title">Nivel de riesgo — distribución</div>
+          <div class="chart-wrap"><canvas id="chart-risk"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Altas / Bajas mensuales</div>
+          <div class="chart-wrap"><canvas id="chart-flows"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── USUARIOS ─────────────────────────────────────── -->
+    <section class="page" id="page-patients">
+      <div class="page-header">
+        <h1 class="page-title">Usuarios del centro</h1>
+        <p class="page-sub">Información de los pacientes registrados en tu centro sanitario</p>
+      </div>
+
+      <div class="card" style="padding:20px">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-inp" placeholder="Buscar por nombre o teléfono…" oninput="filterTable()"/>
+          </div>
+          <select class="filter-sel" id="filter-risk" onchange="filterTable()">
+            <option value="">Todos los niveles</option>
+            <option value="alto">Alto riesgo</option>
+            <option value="medio">Riesgo moderado</option>
+            <option value="bajo">Bajo riesgo</option>
+            <option value="estable">Estable</option>
+          </select>
+          <select class="filter-sel" id="filter-status" onchange="filterTable()">
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Teléfono</th>
+                <th>Última sesión</th>
+                <th>Sesiones</th>
+                <th>Nivel de riesgo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="patients-tbody">
+              <!-- Generado por JS -->
+            </tbody>
+          </table>
+          <div class="pagination">
+            <span id="pag-info" style="color:var(--muted);font-size:13px">Mostrando 1–15 de 142</span>
+            <div class="pag-btns">
+              <button class="pag-btn">← Ant.</button>
+              <button class="pag-btn active">1</button>
+              <button class="pag-btn">2</button>
+              <button class="pag-btn">3</button>
+              <button class="pag-btn">Sig. →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ALERTAS ──────────────────────────────────────── -->
+    <section class="page" id="page-alerts">
+      <div class="page-header">
+        <h1 class="page-title">Alertas activas</h1>
+        <p class="page-sub">Usuarios que han activado protocolos de emergencia recientemente</p>
+      </div>
+      <div id="alerts-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ─── MODAL DETALLE USUARIO ──────────────────────────────── -->
+<div class="modal-overlay" id="patient-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-patient-id" id="modal-id">ID: —</div>
+        <div class="modal-patient-name" id="modal-name">Nombre del usuario</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div id="modal-emergency-flag" style="display:none" class="emergency-flag">
+      ⚠️ Este usuario ha activado la alerta de emergencia 112 recientemente
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><label>Teléfono</label><p id="modal-phone">—</p></div>
+      <div class="info-item"><label>Registro</label><p id="modal-reg">—</p></div>
+      <div class="info-item"><label>Última sesión</label><p id="modal-last">—</p></div>
+      <div class="info-item"><label>Total sesiones</label><p id="modal-sessions">—</p></div>
+      <div class="info-item"><label>Nivel de riesgo</label><p id="modal-risk">—</p></div>
+      <div class="info-item"><label>Estado</label><p id="modal-status">—</p></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Historial de sesiones</div>
+      <div class="session-list" id="modal-sessions-list"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Notas clínicas</div>
+      <div class="field">
+        <textarea placeholder="Añadir nota clínica (no visible para el usuario)…" id="modal-notes" rows="3"></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn-primary" style="padding:8px 18px;font-size:13px" onclick="saveNote()">Guardar nota</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ──────────────────────────────────────────────── -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✅</span>
+  <span id="toast-msg">Cambios guardados</span>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════════════════ */
+function navigate(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  // highlight sidebar
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.getAttribute('onclick')&&n.getAttribute('onclick').includes("'"+id+"'"))
+      n.classList.add('active');
+  });
+  if(id==='stats') initCharts();
+  if(id==='alerts') renderAlerts();
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROFILE
+══════════════════════════════════════════════════════════ */
+function updateHeaderAvatar(){
+  const n=(document.getElementById('f-nombre').value||'').trim();
+  const a=(document.getElementById('f-apellidos').value||'').trim();
+  const initials=(n[0]||'')+(a[0]||'') || 'DR';
+  document.getElementById('topbar-avatar').textContent=initials.toUpperCase();
+  document.getElementById('profile-avatar').textContent=initials.toUpperCase();
+  const full=`Dr./Dra. ${n} ${a}`.trim();
+  document.getElementById('profile-fullname').textContent=full==='Dr./Dra.'?'Dr./Dra. —':full;
+}
+function updateTopCenter(){
+  const v=document.getElementById('f-centro').value||'Hospital General';
+  document.getElementById('top-center-name').textContent=v||'Hospital General';
+}
+function saveProfile(){
+  const required=['f-nombre','f-apellidos','f-fnacimiento','f-colegiado','f-email','f-centro','f-ciudad'];
+  let ok=true;
+  required.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el.value.trim()){el.style.borderColor='var(--danger)';ok=false;}
+    else el.style.borderColor='';
+  });
+  if(!ok){showToast('Completa los campos obligatorios (*)','⚠️');return;}
+  // Simular guardado
+  showToast('Perfil guardado correctamente','✅');
+}
+function clearForm(){
+  ['f-nombre','f-apellidos','f-fnacimiento','f-colegiado','f-email','f-telefono',
+   'f-centro','f-ciudad','f-provincia','f-cp'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-genero').selectedIndex=0;
+  document.getElementById('f-especialidad').selectedIndex=0;
+  document.getElementById('f-pais').value='ES';
+  updateHeaderAvatar();updateTopCenter();
+}
+function handleAvatarUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=document.createElement('img');
+    img.src=ev.target.result;img.style.cssText='width:80px;height:80px;border-radius:50%;object-fit:cover';
+    const av=document.getElementById('profile-avatar');
+    av.textContent='';av.appendChild(img);
+  };
+  reader.readAsDataURL(file);
+  showToast('Foto actualizada','📷');
+}
+
+/* ══════════════════════════════════════════════════════════
+   CHARTS
+══════════════════════════════════════════════════════════ */
+let chartsInit=false;
+function initCharts(){
+  if(chartsInit)return;chartsInit=true;
+  const cf={color:'#fff',font:{family:'DM Sans',size:11}};
+  const gridColor='#ffffff0a';
+
+  // ── Sessions line chart ──
+  new Chart(document.getElementById('chart-sessions'),{
+    type:'line',
+    data:{
+      labels:['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10','S11','S12'],
+      datasets:[{
+        label:'Sesiones',
+        data:[210,245,230,278,290,260,310,325,298,340,358,381],
+        borderColor:'#00a884',backgroundColor:'#00a88412',
+        borderWidth:2,pointRadius:4,pointBackgroundColor:'#00a884',
+        pointHoverRadius:6,fill:true,tension:0.4
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a2830',titleColor:'#e9edef',bodyColor:'#8696a0',borderColor:'#ffffff18',borderWidth:1}},
+      scales:{
+        x:{grid:{color:gridColor},ticks:{...cf}},
+        y:{grid:{color:gridColor},ticks:{...cf}}
+      }
+    }
+  });
+
+  // ── Donut diagnoses ──
+  const diagLabels=['Depresión','Ansiedad','Estrés severo','Duelo','Trastorno bipolar','Otro'];
+  const diagColors=['#00a884','#5b9bd5','#9d9dff','#ffa040','#f15c6d','#4a5a64'];
+  new Chart(document.getElementById('chart-diagnoses'),{
+    type:'doughnut',
+    data:{labels:diagLabels,datasets:[{data:[34,28,18,10,6,4],backgroundColor:diagColors,borderWidth:0,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a2830',titleColor:'#e9edef',bodyColor:'#8696a0',borderColor:'#ffffff18',borderWidth:1}}
+    }
+  });
+  // legend
+  const leg=document.getElementById('legend-diag');
+  diagLabels.forEach((l,i)=>{
+    leg.innerHTML+=`<div class="legend-item"><span class="legend-dot" style="background:${diagColors[i]}"></span>${l}</div>`;
+  });
+
+  // ── Risk bar ──
+  new Chart(document.getElementById('chart-risk'),{
+    type:'bar',
+    data:{
+      labels:['Estable','Bajo','Moderado','Alto'],
+      datasets:[{
+        data:[68,35,28,11],
+        backgroundColor:['#00a88430','#5b9bd530','#ffa04030','#f15c6d30'],
+        borderColor:['#00a884','#5b9bd5','#ffa040','#f15c6d'],
+        borderWidth:1.5,borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a2830',titleColor:'#e9edef',bodyColor:'#8696a0',borderColor:'#ffffff18',borderWidth:1}},
+      scales:{x:{grid:{color:gridColor},ticks:{...cf}},y:{grid:{color:gridColor},ticks:{...cf}}}
+    }
+  });
+
+  // ── Flows bar ──
+  new Chart(document.getElementById('chart-flows'),{
+    type:'bar',
+    data:{
+      labels:['Ene','Feb','Mar','Abr','May','Jun'],
+      datasets:[
+        {label:'Altas',data:[14,18,12,20,16,22],backgroundColor:'#00a88430',borderColor:'#00a884',borderWidth:1.5,borderRadius:5},
+        {label:'Bajas',data:[6,8,5,9,7,10],backgroundColor:'#f15c6d30',borderColor:'#f15c6d',borderWidth:1.5,borderRadius:5}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8696a0',font:{family:'DM Sans',size:11}}},tooltip:{backgroundColor:'#1a2830',titleColor:'#e9edef',bodyColor:'#8696a0',borderColor:'#ffffff18',borderWidth:1}},
+      scales:{x:{grid:{color:gridColor},ticks:{...cf}},y:{grid:{color:gridColor},ticks:{...cf}}}
+    }
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   PATIENTS DATA (mock — sustituir por fetch /api/*)
+══════════════════════════════════════════════════════════ */
+const PATIENTS=[
+  {id:'USR-001',name:'M. García',phone:'+34 6** ***-1',last:'2025-07-18',sessions:24,risk:'alto',status:'activo',emergency:true,reg:'2025-01-12',notes:'',sessionLog:[{date:'2025-07-18',topic:'Crisis de ansiedad aguda',status:'completada'},{date:'2025-07-11',topic:'Seguimiento semanal',status:'completada'},{date:'2025-07-04',topic:'Psicoeducación',status:'completada'}]},
+  {id:'USR-002',name:'L. Martínez',phone:'+34 6** ***-2',last:'2025-07-17',sessions:18,risk:'medio',status:'activo',emergency:false,reg:'2025-02-05',notes:'',sessionLog:[{date:'2025-07-17',topic:'Manejo del estrés',status:'completada'},{date:'2025-07-10',topic:'Técnicas de relajación',status:'completada'}]},
+  {id:'USR-003',name:'C. López',phone:'+34 6** ***-3',last:'2025-07-15',sessions:9,risk:'bajo',status:'activo',emergency:false,reg:'2025-04-20',notes:'',sessionLog:[{date:'2025-07-15',topic:'Evaluación inicial',status:'completada'}]},
+  {id:'USR-004',name:'A. Sánchez',phone:'+34 6** ***-4',last:'2025-07-10',sessions:31,risk:'estable',status:'activo',emergency:false,reg:'2024-11-03',notes:'',sessionLog:[{date:'2025-07-10',topic:'Seguimiento mensual',status:'completada'}]},
+  {id:'USR-005',name:'P. Fernández',phone:'+34 6** ***-5',last:'2025-06-28',sessions:5,risk:'medio',status:'inactivo',emergency:false,reg:'2025-05-15',notes:'',sessionLog:[{date:'2025-06-28',topic:'Orientación inicial',status:'completada'}]},
+  {id:'USR-006',name:'R. Torres',phone:'+34 6** ***-6',last:'2025-07-19',sessions:43,risk:'alto',status:'activo',emergency:true,reg:'2024-09-01',notes:'',sessionLog:[{date:'2025-07-19',topic:'Emergencia 112 activada',status:'emergencia'},{date:'2025-07-12',topic:'Sesión de crisis',status:'completada'}]},
+  {id:'USR-007',name:'I. Moreno',phone:'+34 6** ***-7',last:'2025-07-16',sessions:12,risk:'bajo',status:'activo',emergency:false,reg:'2025-03-22',notes:'',sessionLog:[{date:'2025-07-16',topic:'Psicoeducación ansiedad',status:'completada'}]},
+  {id:'USR-008',name:'D. Jiménez',phone:'+34 6** ***-8',last:'2025-07-14',sessions:7,risk:'estable',status:'activo',emergency:false,reg:'2025-04-10',notes:'',sessionLog:[{date:'2025-07-14',topic:'Sesión de seguimiento',status:'completada'}]},
+  {id:'USR-009',name:'E. Ruiz',phone:'+34 6** ***-9',last:'2025-07-13',sessions:20,risk:'medio',status:'activo',emergency:false,reg:'2025-01-30',notes:'',sessionLog:[{date:'2025-07-13',topic:'Terapia cognitiva',status:'completada'}]},
+  {id:'USR-010',name:'F. Díaz',phone:'+34 6** ***-0',last:'2025-06-15',sessions:2,risk:'bajo',status:'inactivo',emergency:false,reg:'2025-06-10',notes:'',sessionLog:[{date:'2025-06-15',topic:'Primer contacto',status:'completada'}]},
+  {id:'USR-011',name:'N. Romero',phone:'+34 6** ***-A',last:'2025-07-18',sessions:37,risk:'alto',status:'activo',emergency:false,reg:'2024-10-14',notes:'',sessionLog:[{date:'2025-07-18',topic:'Evaluación de riesgo',status:'completada'}]},
+  {id:'USR-012',name:'V. Álvarez',phone:'+34 6** ***-B',last:'2025-07-17',sessions:15,risk:'estable',status:'activo',emergency:false,reg:'2025-02-18',notes:'',sessionLog:[{date:'2025-07-17',topic:'Seguimiento quincenal',status:'completada'}]},
+];
+
+const RISK_BADGE={
+  alto:'<span class="badge badge-red"><span class="badge-dot"></span>Alto</span>',
+  medio:'<span class="badge badge-yellow"><span class="badge-dot"></span>Moderado</span>',
+  bajo:'<span class="badge badge-blue"><span class="badge-dot"></span>Bajo</span>',
+  estable:'<span class="badge badge-green"><span class="badge-dot"></span>Estable</span>'
+};
+const STATUS_BADGE={
+  activo:'<span class="badge badge-green">Activo</span>',
+  inactivo:'<span class="badge" style="background:#ffffff0a;color:var(--muted)">Inactivo</span>'
+};
+
+let filtered=PATIENTS.slice();
+
+function renderTable(){
+  const tbody=document.getElementById('patients-tbody');
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-text">No se encontraron usuarios</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML=filtered.map(p=>`
+    <tr onclick="openModal('${p.id}')">
+      <td>
+        <div class="td-name">${p.name}</div>
+        <div class="td-phone">${p.id}</div>
+      </td>
+      <td class="td-phone">${p.phone}</td>
+      <td class="td-date">${formatDate(p.last)}</td>
+      <td style="font-size:13px">${p.sessions}</td>
+      <td>${RISK_BADGE[p.risk]}</td>
+      <td>${STATUS_BADGE[p.status]}</td>
+    </tr>
+  `).join('');
+}
+
+function filterTable(){
+  const q=document.getElementById('search-inp').value.toLowerCase();
+  const risk=document.getElementById('filter-risk').value;
+  const status=document.getElementById('filter-status').value;
+  filtered=PATIENTS.filter(p=>{
+    const matchQ=!q||p.name.toLowerCase().includes(q)||p.phone.includes(q)||p.id.toLowerCase().includes(q);
+    const matchR=!risk||p.risk===risk;
+    const matchS=!status||p.status===status;
+    return matchQ&&matchR&&matchS;
+  });
+  renderTable();
+  document.getElementById('pag-info').textContent=`Mostrando ${filtered.length} de ${PATIENTS.length}`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MODAL
+══════════════════════════════════════════════════════════ */
+let currentPatient=null;
+function openModal(id){
+  const p=PATIENTS.find(x=>x.id===id);if(!p)return;
+  currentPatient=p;
+  document.getElementById('modal-id').textContent=`ID: ${p.id}`;
+  document.getElementById('modal-name').textContent=p.name;
+  document.getElementById('modal-phone').textContent=p.phone;
+  document.getElementById('modal-reg').textContent=formatDate(p.reg);
+  document.getElementById('modal-last').textContent=formatDate(p.last);
+  document.getElementById('modal-sessions').textContent=p.sessions+' sesiones';
+  document.getElementById('modal-risk').innerHTML=RISK_BADGE[p.risk];
+  document.getElementById('modal-status').innerHTML=STATUS_BADGE[p.status];
+  document.getElementById('modal-notes').value=p.notes||'';
+  document.getElementById('modal-emergency-flag').style.display=p.emergency?'flex':'none';
+  // session log
+  const sl=document.getElementById('modal-sessions-list');
+  sl.innerHTML=p.sessionLog.map(s=>`
+    <div class="session-row">
+      <div class="session-row-left">
+        ${s.topic}
+        <div class="session-row-date">${formatDate(s.date)}</div>
+      </div>
+      <span class="session-row-status">${s.status==='emergencia'?'<span class="badge badge-red">Emergencia</span>':'<span class="badge badge-green">Completada</span>'}</span>
+    </div>
+  `).join('');
+  document.getElementById('patient-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('patient-modal').classList.remove('open')}
+function closeModalOnOverlay(e){if(e.target===document.getElementById('patient-modal'))closeModal()}
+function saveNote(){
+  if(currentPatient){currentPatient.notes=document.getElementById('modal-notes').value;}
+  showToast('Nota guardada','📝');
+}
+
+/* ══════════════════════════════════════════════════════════
+   ALERTS
+══════════════════════════════════════════════════════════ */
+function renderAlerts(){
+  const emergencias=PATIENTS.filter(p=>p.emergency);
+  const container=document.getElementById('alerts-list');
+  if(!emergencias.length){
+    container.innerHTML=`<div class="card"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No hay alertas activas en este momento</div></div></div>`;
+    return;
+  }
+  container.innerHTML=emergencias.map(p=>`
+    <div class="card" style="border-color:#f15c6d30;cursor:pointer" onclick="navigate('patients');openModal('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-size:18px">🚨</span>
+            <span style="font-weight:500;font-size:15px">${p.name}</span>
+            ${RISK_BADGE[p.risk]}
+          </div>
+          <div style="font-size:13px;color:var(--muted)">ID: ${p.id} &nbsp;·&nbsp; Última sesión: ${formatDate(p.last)}</div>
+          <div style="font-size:13px;color:#f8909a;margin-top:8px">⚠️ Alerta de emergencia 112 activada</div>
+        </div>
+        <button class="btn-outline" style="flex-shrink:0" onclick="event.stopPropagation();navigate('patients');openModal('${p.id}')">Ver ficha →</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════ */
+let toastTimer=null;
+function showToast(msg,icon='✅'){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-icon').textContent=icon;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+/* ══════════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════════ */
+function formatDate(d){
+  if(!d)return'—';
+  const dt=new Date(d+'T00:00:00');
+  return dt.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
+}
+function confirmLogout(){
+  if(confirm('¿Seguro que deseas cerrar sesión?'))showToast('Sesión cerrada','👋');
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+renderTable();
+</script>
+</body>
+</html>
