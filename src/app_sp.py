@@ -8,13 +8,15 @@ Endpoints expuestos:
   POST  /api/doctor/login             → Login
   PUT   /api/doctor/profile           → Actualizar perfil  [Auth]
   GET   /api/doctor/patients          → Usuarios del centro [Auth]
-  PUT   /api/doctor/patients/<id>/notes → Guardar nota clínica [Auth]
+  PUT   /api/doctor/patients/<id>/notes   → Guardar nota clínica [Auth]
+  GET   /api/doctor/patients/<id>/sessions → Historial de sesiones [Auth]
+  GET   /api/doctor/patients/<id>/report   → Generar informe PDF [Auth]
 
   GET   /api/doctor/countries         → Lista de países con centros (reutiliza medicalCenters)
   GET   /api/medical-centers/<code>   → Centros de un país (igual que app.py)
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from functools import wraps
 from pymongo import MongoClient
@@ -221,6 +223,71 @@ def save_note(specialist, user_id):
     except Exception as e:
         print(f"[ERROR /notes] {e}")
         return jsonify({"error": "Error al guardar la nota."}), 500
+
+
+
+@app.route("/api/doctor/patients/<user_id>/sessions", methods=["GET"])
+@require_auth
+def get_patient_sessions(specialist, user_id):
+    """
+    Devuelve el historial completo de sesiones de un usuario concreto.
+    Requiere Authorization: Bearer <token>
+
+    Devuelve lista de sesiones con: date, datetime, summary, valoration, status
+    ordenadas de más reciente a más antigua.
+    """
+    try:
+        sessions = main_api_sp.get_patient_sessions(user_id)
+        return jsonify({"sessions": sessions}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        print(f"[ERROR /sessions] {e}")
+        return jsonify({"error": "Error al recuperar sesiones."}), 500
+
+
+@app.route("/api/doctor/patients/<user_id>/report", methods=["GET"])
+@require_auth
+def generate_report(specialist, user_id):
+    """
+    Genera el informe PDF del paciente y lo devuelve como descarga directa.
+    Requiere Authorization: Bearer <token>
+
+    El PDF se genera en memoria con un fichero temporal y se elimina tras el envío,
+    por lo que no queda nada escrito en disco del servidor.
+    """
+    import tempfile, os
+
+    try:
+        # Creamos un fichero temporal con extensión .pdf
+        tmp = tempfile.NamedTemporaryFile(suffix=".pdf", delete=False)
+        tmp_path = tmp.name
+        tmp.close()
+
+        # Generamos el PDF en esa ruta temporal (en vez de en Descargas)
+        main_api_sp.generate_patient_report(user_id, output_path=tmp_path)
+
+        # Nombre de descarga legible para el médico
+        filename = f"Informe_{user_id}.pdf"
+
+        return send_file(
+            tmp_path,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename,
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        print(f"[ERROR /report] {e}")
+        return jsonify({"error": "Error al generar el informe."}), 500
+    finally:
+        # Limpieza del fichero temporal aunque haya error
+        try:
+            if 'tmp_path' in locals() and os.path.exists(tmp_path):
+                os.remove(tmp_path)
+        except Exception:
+            pass
 
 
 # ──────────────────────────────────────────────────────────────────────────────

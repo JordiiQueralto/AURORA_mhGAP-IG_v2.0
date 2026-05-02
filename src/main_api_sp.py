@@ -8,8 +8,8 @@ import hashlib
 import os
 import secrets
 import re
-
 import db
+import reportPDF
 
 # ──────────────────────────────────────────────────────────────────────────────
 # HELPERS INTERNOS
@@ -214,10 +214,13 @@ def get_patients_for_specialist(center_name: str) -> list:
             is_emergency_session = any(
                 e.get("session_id", "") == key for e in emergency_list
             )
+            valoration = session_data.get("valoration", "") or ""
             session_log.append({
-                "date":   date_str,
-                "topic":  (summary[:80] if summary else "Sesion registrada"),
-                "status": "emergencia" if is_emergency_session else "completada",
+                "date":      date_str,
+                "datetime":  raw_date,           # "YYYY-MM-DD HH:MM:SS" para ordenar
+                "summary":   summary,            # texto completo del resumen
+                "valoration": valoration,        # "BUENA" / "REGULAR" / "MALA" etc.
+                "status":    "emergencia" if is_emergency_session else "completada",
             })
 
         # ── Nivel de riesgo desde PROFILE ─────────────────────────────────────
@@ -246,11 +249,60 @@ def get_patients_for_specialist(center_name: str) -> list:
             "emergency":  has_emergency,
             "reg":        "",          # no se guarda createdAt en users
             "notes":      "",          # las notas se cargan por separado si se necesitan
-            "sessionLog": session_log[-5:],   # max 5 mas recientes
+            "sessionLog": session_log,         # todas las sesiones, ordenadas cronologicamente
         })
 
     return patients
 
+
+
+def get_patient_sessions(user_id: str) -> list:
+    """
+    Devuelve el historial completo de sesiones de un usuario por su _id.
+    Cada sesion incluye: date, datetime, summary, valoration, status.
+    Ordenadas de mas reciente a mas antigua.
+    """
+    from bson import ObjectId
+    user = db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise ValueError("Usuario no encontrado.")
+
+    emergency_list = user.get("EMERGENCY", [])
+    session_keys   = sorted([k for k in user.keys() if k.endswith("_session")])
+    sessions       = []
+
+    for key in session_keys:
+        session_data = user.get(key, {})
+        raw_date     = key.replace("_session", "")   # "YYYY-MM-DD HH:MM:SS"
+        date_str     = raw_date[:10]                  # "YYYY-MM-DD"
+
+        summary    = session_data.get("summary",    "") or ""
+        valoration = session_data.get("valoration", "") or ""
+
+        is_emergency = any(e.get("session_id", "") == key for e in emergency_list)
+
+        sessions.append({
+            "date":       date_str,
+            "datetime":   raw_date,
+            "summary":    summary,
+            "valoration": valoration,
+            "status":     "emergencia" if is_emergency else "completada",
+        })
+
+    # Mas reciente primero
+    sessions.reverse()
+    return sessions
+
+def generate_patient_report(user_id: str, output_path: str = None) -> None:
+    """
+    Genera un informe PDF con los datos del usuario.
+    - output_path: ruta donde guardar el PDF.
+      Si es None, reportPDF lo guarda en la carpeta Descargas del sistema.
+      Si se indica (p.ej. un fichero temporal), se usa esa ruta para que
+      Flask pueda devolverlo directamente al navegador del médico.
+    """
+    reportPDF.generate_report(user_id, output_path=output_path)
+    return
 
 def save_patient_note(user_id: str, specialist_coll: str, note: str) -> None:
     """Guarda una nota clínica del especialista sobre un usuario por su _id."""
