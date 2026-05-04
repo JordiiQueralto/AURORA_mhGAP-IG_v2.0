@@ -251,18 +251,14 @@ def get_users_by_center(center_name: str) -> list:
     Solo incluye usuarios que han dado consentimiento (shareWithHospital=True).
     El nombre viene de la misma coleccion medicalCenters, garantizando coincidencia exacta.
     """
+    # Sin proyeccion: necesitamos las claves "_session" que son dinamicas
+    # (formato "YYYY-MM-DD HH:MM:SS_session") y no se pueden listar de antemano.
+    # MongoDB solo devuelve los campos del documento que existen, por lo que
+    # el rendimiento es aceptable para el volumen de datos de un centro medico.
     cursor = users.find(
         {
             "CIRCLE.medicalCenter.name":        center_name,
             "CIRCLE.privacy.shareWithHospital": True,
-        },
-        {
-            "_id":                      1,
-            "telephone":                1,
-            "name":                     1,
-            "PROFILE":                  1,
-            "EMERGENCY":                1,
-            "checkpoint":               1,
         }
     )
     return list(cursor)

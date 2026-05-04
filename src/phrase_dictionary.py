@@ -24,7 +24,7 @@ def bot_output_info(phase, state):
         
         "DEP_EVAL": {
             "1A.1": {
-                "nucleo": """Durante mínimo un periodo de dos semanas, ¿te has sentido triste, 
+                "nucleo": """Durante un periodo mínimo de dos semanas, ¿te has sentido triste, 
                 vacío o sin ánimo la mayor parte del día, casi todos los días?”"""
             },
             "1A.2": {
@@ -171,6 +171,7 @@ def bot_output_info(phase, state):
                 relacionarte con otros, o cuidarte?”
                 """}
         },
+        
         "SUI_PROTOCOLS": {
             "1": {
                 "nucleo": """ Te dejo un número donde podran ayudarte mejor. Porfavor llama 

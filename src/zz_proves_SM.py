@@ -1,9 +1,9 @@
 import state_machine
 
-telephone = 111
-phase = "PROFILE"
-state = "commitment"
-user_input = "no lo se"
+telephone = "+34999"
+phase = "SUI_EVAL"
+state = "5"
+user_input = "me cuesta hasta ducharme"
 
 n_user_input = state_machine.normalize_text(user_input)
 
