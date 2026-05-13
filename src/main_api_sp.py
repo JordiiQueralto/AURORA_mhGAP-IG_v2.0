@@ -168,6 +168,27 @@ def save_profile_update(coll_number: str, profile_data: dict) -> None:
 # PATIENTS
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+def _normalize_risk(risk_raw: str) -> str:
+    """
+    Normaliza el valor risk_level guardado por el LLM en la BD.
+    Acepta mayusculas, minusculas, con/sin tilde y variantes en ingles.
+    """
+    v = (risk_raw or "").lower().strip()
+    # Eliminar tildes para comparacion robusta
+    v = v.replace("á","a").replace("é","e").replace("í","i").replace("ó","o").replace("ú","u")
+    if v in ("alto", "alta", "high", "elevado", "elevada", "muy alto", "muy alta"):
+        return "alto"
+    if v in ("medio", "media", "moderate", "moderado", "moderada", "intermedio", "intermedia"):
+        return "medio"
+    if v in ("bajo", "baja", "low", "reducido", "reducida", "leve"):
+        return "bajo"
+    if v in ("estable", "stable", "sin riesgo", "normal", "nulo", "nula", "ninguno"):
+        return "estable"
+    # Valor desconocido → estable por defecto (conservador)
+    return "estable"
+
+
 def get_patients_for_specialist(center_name: str) -> list:
     """
     Devuelve la lista de usuarios del mismo centro medico que el especialista,
@@ -223,10 +244,15 @@ def get_patients_for_specialist(center_name: str) -> list:
                 "status":    "emergencia" if is_emergency_session else "completada",
             })
 
-        # ── Nivel de riesgo desde PROFILE ─────────────────────────────────────
-        profile  = u.get("PROFILE", {})
-        risk_raw = profile.get("riskLevel", "").lower() if isinstance(profile, dict) else ""
-        risk     = risk_raw if risk_raw in ("alto", "medio", "bajo", "estable") else "estable"
+        # ── Nivel de riesgo: se lee de la ULTIMA sesion ({session_path}.risk_level)
+        # generate_output.session_risk() lo guarda en _run_farewell de main_api.py
+        risk = "estable"  # valor por defecto si no hay sesiones o no tiene risk_level
+        if session_keys:
+            last_session_key = session_keys[-1]   # sorted ASC → el ultimo es el mas reciente
+            last_session_data = u.get(last_session_key, {})
+            risk_raw = (last_session_data.get("risk_level", "") or "").lower().strip()
+            # Normalizar distintas variantes que puede devolver el LLM
+            risk = _normalize_risk(risk_raw)
 
         # ── Estado activo/inactivo: si la ultima sesion fue hace menos de 30 dias
         status = "inactivo"
@@ -281,11 +307,13 @@ def get_patient_sessions(user_id: str) -> list:
 
         is_emergency = any(e.get("session_id", "") == key for e in emergency_list)
 
+        risk_level = (session_data.get("risk_level", "") or "").lower().strip()
         sessions.append({
             "date":       date_str,
             "datetime":   raw_date,
             "summary":    summary,
             "valoration": valoration,
+            "risk_level": risk_level,
             "status":     "emergencia" if is_emergency else "completada",
         })
 
@@ -303,6 +331,199 @@ def generate_patient_report(user_id: str, output_path: str = None) -> None:
     """
     reportPDF.generate_report(user_id, output_path=output_path)
     return
+
+
+def get_risk_distribution(center_name: str) -> dict:
+    """
+    Calcula la distribución de niveles de riesgo de todos los usuarios
+    del centro, leyendo el risk_level de la ultima sesion de cada uno.
+    Devuelve: { "estable": N, "bajo": N, "medio": N, "alto": N }
+    """
+    raw_users = db.get_users_by_center(center_name)
+    distribution = {"estable": 0, "bajo": 0, "medio": 0, "alto": 0}
+
+    for u in raw_users:
+        session_keys = sorted([k for k in u.keys() if k.endswith("_session")])
+        risk = "estable"
+        if session_keys:
+            last_data = u.get(session_keys[-1], {})
+            risk_raw  = (last_data.get("risk_level", "") or "").lower().strip()
+            risk = _normalize_risk(risk_raw)
+        distribution[risk] += 1
+
+    return distribution
+
+
+def get_sessions_by_day(center_name: str, days: int = 30) -> dict:
+    """
+    Cuenta cuantas sesiones hubo cada dia en los ultimos `days` dias,
+    para todos los usuarios del centro.
+    Un mismo usuario puede contribuir con varias sesiones en el mismo dia.
+    Devuelve: { "YYYY-MM-DD": count, ... } ordenado cronologicamente.
+    """
+    import datetime as _dt
+    raw_users = db.get_users_by_center(center_name)
+    cutoff    = _dt.date.today() - _dt.timedelta(days=days - 1)
+    counts    = {}
+
+    for u in raw_users:
+        for key in u.keys():
+            if not key.endswith("_session"):
+                continue
+            # La clave tiene formato "YYYY-MM-DD HH:MM:SS_session"
+            date_str = key.replace("_session", "")[:10]   # "YYYY-MM-DD"
+            try:
+                day = _dt.date.fromisoformat(date_str)
+            except ValueError:
+                continue
+            if day >= cutoff:
+                counts[date_str] = counts.get(date_str, 0) + 1
+
+    # Rellenar todos los dias del rango (incluso con 0)
+    result = {}
+    for i in range(days):
+        d = (cutoff + _dt.timedelta(days=i)).isoformat()
+        result[d] = counts.get(d, 0)
+
+    return result   # dict ordenado (Python 3.7+ mantiene orden de insercion)
+
+
+def get_valoration_distribution(center_name: str) -> dict:
+    """
+    Cuenta cuantas sesiones tienen cada tipo de valoracion,
+    de forma acumulativa (un usuario puede contribuir varias veces).
+    Devuelve: { "buena": N, "regular": N, "mala": N, "sin_valorar": N }
+    """
+    raw_users = db.get_users_by_center(center_name)
+    dist = {"buena": 0, "regular": 0, "mala": 0, "sin_valorar": 0}
+
+    for u in raw_users:
+        for key in u.keys():
+            if not key.endswith("_session"):
+                continue
+            session_data = u.get(key, {})
+            val = (session_data.get("valoration", "") or "").lower().strip()
+            # Normalizar tildes
+            val = val.replace("á","a").replace("é","e").replace("ó","o")
+            if val in ("buena", "bueno", "good", "bien"):
+                dist["buena"]   += 1
+            elif val in ("regular", "medio", "moderate"):
+                dist["regular"] += 1
+            elif val in ("mala", "malo", "bad", "mal"):
+                dist["mala"]    += 1
+            else:
+                dist["sin_valorar"] += 1
+
+    return dist
+
+
+
+def get_screening_distribution(center_name: str) -> dict:
+    """
+    Lee el campo SCREENING de cada usuario del centro y cuenta cuantos
+    tienen cada resultado.
+
+    Estructura en BD:
+      SCREENING: {
+        SUI: "self_harm" | "concrete_plan" | "ideation" | "improbable" | "others"
+        DEP: "depression" | "bipolar" | "others"
+      }
+
+    Devuelve:
+      {
+        "sui": { "self_harm":0, "concrete_plan":0, "ideation":0, "improbable":0, "others":0 },
+        "dep": { "depression":0, "bipolar":0, "others":0 }
+      }
+    """
+    raw_users = db.get_users_by_center(center_name)
+
+    sui = {"self_harm": 0, "concrete_plan": 0, "ideation": 0, "improbable": 0, "others": 0}
+    dep = {"depression": 0, "bipolar": 0, "others": 0}
+
+    print(f"\n[SCREENING] Usuarios encontrados en centro '{center_name}': {len(raw_users)}")
+
+    for u in raw_users:
+        name = u.get("name", "?")
+        # El campo puede estar en mayusculas SCREENING o en minusculas screening
+        # Buscamos ambas variantes para ser robustos
+        screening = u.get("SCREENING") or u.get("screening") or {}
+        if not isinstance(screening, dict):
+            print(f"  [{name}] SCREENING no es dict: {type(screening)} → {screening!r}")
+            continue
+
+        print(f"  [{name}] SCREENING: {screening}")
+
+        # ── SUI — buscar clave en mayusculas y minusculas ─────────────────────
+        sui_val = (screening.get("SUI") or screening.get("sui") or "").lower().strip()
+        if sui_val in sui:
+            sui[sui_val] += 1
+        elif sui_val:
+            print(f"  [{name}] SUI valor inesperado: {sui_val!r} → others")
+            sui["others"] += 1
+
+        # ── DEP — buscar clave en mayusculas y minusculas ─────────────────────
+        dep_val = (screening.get("DEP") or screening.get("dep") or "").lower().strip()
+        if dep_val in dep:
+            dep[dep_val] += 1
+        elif dep_val:
+            print(f"  [{name}] DEP valor inesperado: {dep_val!r} → others")
+            dep["others"] += 1
+
+    print(f"  SUI result: {sui}")
+    print(f"  DEP result: {dep}\n")
+    return {"sui": sui, "dep": dep}
+
+
+def get_emergency_followup_stats(center_name: str) -> dict:
+    """
+    Recorre todos los usuarios del centro y cuenta:
+      - total_emergencies:  entradas en el array EMERGENCY
+      - total_followups:    entradas en FOLLOWUP.history
+      - outcome_no_help:    followups con outcome=True  ("no ha buscado ayuda")
+      - outcome_help:       followups con outcome=False ("ha buscado ayuda")
+
+    Estructura en BD:
+      EMERGENCY: [ { session_id, trigger_hour, protocol_applied, referal }, ... ]
+      FOLLOWUP: {
+        history: [ { emergency_date, followup_date, outcome: bool, reason }, ... ],
+        last_check: "YYYY-MM-DD HH:MM:SS"
+      }
+    """
+    raw_users = db.get_users_by_center(center_name)
+
+    total_emergencies = 0
+    total_followups   = 0
+    outcome_no_help   = 0   # outcome: True  → no buscó ayuda
+    outcome_help      = 0   # outcome: False → sí buscó ayuda
+
+    for u in raw_users:
+        # ── EMERGENCY ─────────────────────────────────────────────────────────
+        emergency_list = u.get("EMERGENCY", [])
+        if isinstance(emergency_list, list):
+            total_emergencies += len(emergency_list)
+
+        # ── FOLLOWUP ──────────────────────────────────────────────────────────
+        followup = u.get("FOLLOWUP", {})
+        if not isinstance(followup, dict):
+            continue
+        history = followup.get("history", [])
+        if not isinstance(history, list):
+            continue
+
+        total_followups += len(history)
+        for entry in history:
+            outcome = entry.get("outcome")
+            if outcome is True:
+                outcome_no_help += 1
+            elif outcome is False:
+                outcome_help += 1
+
+    return {
+        "total_emergencies": total_emergencies,
+        "total_followups":   total_followups,
+        "outcome_no_help":   outcome_no_help,
+        "outcome_help":      outcome_help,
+    }
 
 def save_patient_note(user_id: str, specialist_coll: str, note: str) -> None:
     """Guarda una nota clínica del especialista sobre un usuario por su _id."""

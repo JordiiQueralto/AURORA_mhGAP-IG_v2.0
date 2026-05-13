@@ -49,7 +49,10 @@ def init_user(telephone):
         db.add_user_info(telephone, "PROFILE", {})
         db.add_user_info(telephone, "DEP_EVAL", {})
         db.add_user_info(telephone, "SUI_EVAL", {})
+        db.add_user_info(telephone, "SCREENING", {})
         db.add_user_info(telephone, "EMERGENCY", [])
+        db.add_user_info(telephone, "FOLLOWUP.history", [])
+        db.add_user_info(telephone, "FOLLOWUP.last_check", "")
         db.add_user_info(telephone, "checkpoint.phase", "")
         db.add_user_info(telephone, "checkpoint.state", "")
         db.add_user_info(telephone, "ctx", {})
@@ -70,6 +73,7 @@ def start_conversation(telephone):
     
     db.add_user_info(telephone, f"{session_path}.summary", "")
     db.add_user_info(telephone, f"{session_path}.valoration", "")
+    db.add_user_info(telephone, f"{session_path}.risk_level", "")
     db.add_user_info(telephone, f"{session_path}.conversation_history", {})
 
     time.sleep(4)
@@ -79,7 +83,7 @@ def start_conversation(telephone):
     if status == "rejected":
         phase = "PRESENTATION"
     else:
-        phase = "RESUMING" # Flag para retomar al usuario antiguo correctamente
+        phase = "RESUMING" # Flag para retomar al usuario ya registrado
 
     # Persistir contexto inicial
     _ctx_set(telephone, _CTX_SESSION_PATH, session_path)
@@ -99,12 +103,7 @@ def process_message(telephone, user_input):
     telephone = str(telephone).replace(" ", "")
     n_user_input = state_machine.normalize_text(user_input)
 
-    # 1. Salida rápida global
-    if n_user_input == "salir":
-        time.sleep(1)
-        return generate_output.farewell("normal"), None, True, False, False
-
-    # 2. Recuperar el contexto íntegro de la BD
+    # 1. Recuperar el contexto íntegro de la BD
     memory = db.user_memory(telephone)
     status = db.user_status(telephone)
 
@@ -118,7 +117,7 @@ def process_message(telephone, user_input):
 
     conv_path = f"{session_path}.conversation_history"
 
-    # 3. Guardar el input del usuario emparejado con la salida previa del bot
+    # 2. Guardar el input del usuario emparejado con la salida previa del bot
     db.add_user_info(telephone, f"{conv_path}.bot_output_{j}", last_bot_output)
     db.add_user_info(telephone, f"{conv_path}.user_input_{j}", user_input)
     j += 1
@@ -159,6 +158,7 @@ def process_message(telephone, user_input):
         # Ahora el usuario ha respondido a "¿Cómo podría ayudarte?". Pasamos a PROFILE/name
         new_phase, new_state = "PROFILE", "name"
         new_variant = 0
+        db.save_flow(telephone, new_phase, new_state)
         bot_output, image_path, is_ended, new_phase, new_state, new_variant, k = _generate_response(
             telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory, session_path, k
         )
@@ -219,10 +219,9 @@ def process_message(telephone, user_input):
                                     )
                 
                 # Registramos la emergencia en la BD
-                cause = ""
                 referal = "112"
                 emergency_112 = True
-                db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
+                db.add_emergency_instance(telephone, session_path, new_state, referal)
                 
             elif new_state == "2":
                 # Obtenemos el bot_output directamente de la libreria de frases
@@ -256,11 +255,11 @@ def process_message(telephone, user_input):
                                     )
                             
                 # Registramos la emergencia en la BD
-                cause = ""
                 referal = "024"
                 emergency_024 = True
-                db.add_emergency_instance(telephone, session_path, cause, new_state, referal)
-              
+                db.add_emergency_instance(telephone, session_path, new_state, referal)
+                
+            db.save_flow(telephone, "FOLLOWUP", "contact_verification")  
             return bot_output, image_path, True, emergency_112, emergency_024
                 
 
@@ -269,7 +268,7 @@ def process_message(telephone, user_input):
             telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory, session_path, k
         )
 
-    # 4. Actualizar estado de vuelta a la BD
+    # 3. Actualizar estado de vuelta a la BD
     _ctx_set(telephone, _CTX_J, j)
     _ctx_set(telephone, _CTX_K, k)
     _ctx_set(telephone, _CTX_BOT_OUT, bot_output)
@@ -298,6 +297,7 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
             new_phase, new_state = "SUI_EVAL", "1"
         elif use_case == "ASSISTANCE":
             new_phase, new_state = "DEP_EVAL", "1A.1"
+            db.save_flow(telephone, new_phase, new_state)
         elif use_case == "TALK":
             new_phase, new_state = "CHAT", ""
         else:
@@ -337,7 +337,6 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
     if new_phase == "FAREWELL":
         time.sleep(2)
         bot_output = generate_output.farewell(new_state)
-        db.save_flow(telephone, new_phase, new_state)
         return bot_output, None, True, new_phase, new_state, new_variant, k
     
     else:
@@ -349,9 +348,6 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
 
         # Llamada al LLM
         bot_output = generate_output.bot_output(last_bot, user_input, nucleo, memory)
-        
-        # Guardamos checkpoint seguro
-        db.save_flow(telephone, new_phase, new_state)
 
         return bot_output, image_path, is_ended, new_phase, new_state, new_variant, k
 
@@ -408,15 +404,58 @@ def get_circle_data(telephone):
 # _run_farewell  –  Tareas de cierre de sesión
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_farewell(telephone):
-    """Guarda resumen y valoración de la sesión en MongoDB al terminar."""
+    """Guarda resumen, valoración y nivel de riesgo de crisis de la sesión en 
+    MongoDB al terminar."""
     try:
         session_path = _ctx_get(telephone, _CTX_SESSION_PATH, "")
         if session_path:
             summary = generate_output.session_summary(telephone, session_path)
             valoration = generate_output.session_valoration(telephone, session_path)
+            risk_level = generate_output.session_risk(telephone, session_path)
             
             db.add_user_info(telephone, f"{session_path}.summary", summary)
             db.add_user_info(telephone, f"{session_path}.valoration", valoration)
+            db.add_user_info(telephone, f"{session_path}.risk_level", risk_level)
+            
+            # Revisar si existe ctx.contact_verification
+            ctx = db.get_user_info(telephone, "ctx")
+
+            if ctx and isinstance(ctx, dict) and "contact_verification" in ctx:
+                # 1. Preparamos los datos base que siempre existen
+                # Obtenemos el array de emergencias
+                emergencies = db.get_user_info(telephone, "EMERGENCY")
+
+                if emergencies and isinstance(emergencies, list) and len(emergencies) > 0:
+                    # Accedemos al último elemento del array (-1)
+                    last_emergency = emergencies[-1]
+                    
+                    # Extraemos el session_id (que contiene la fecha)
+                    raw_session = last_emergency.get("session_id", "")
+                    
+                    # Limpiamos el formato
+                    emergency_date = raw_session.replace("_session", "")
+                else:
+                    emergency_date = None
+                    
+                followup_date = ctx["session_path"].replace("_session", "")
+                new_instance = {
+                    "emergency_date": emergency_date,
+                    "followup_date": followup_date, 
+                    "outcome": ctx["contact_verification"]
+                }
+
+                # 2. Añadimos la razón solo si existe (no llamó a emergencias)
+                if "non_contact_reason" in ctx:
+                    new_instance["reason"] = ctx["non_contact_reason"]
+
+                # 3. Guardamos
+                db.add_to_list(telephone, "FOLLOWUP.history", new_instance)
+                db.add_user_info(telephone, "FOLLOWUP.last_check", followup_date)
+                
+                # 4. Borramos info ya usada
+                db.delete_user_info(telephone, "ctx.contact_verification")
+                db.delete_user_info(telephone, "ctx.non_contact_reason")
+            
     except Exception as e:
         print(f"\n[Error guardando resumen (Farewell): {e}]\n")
         
@@ -446,7 +485,7 @@ def reset_session(telephone):
     # Guardar resumen de sesión antes de borrar el contexto
     _run_farewell(telephone)
     for key in [_CTX_J, _CTX_VARIANT,_CTX_BOT_OUT, _CTX_SESSION_PATH, 
-                _CTX_PHASE, _CTX_STATE]:
+                _CTX_PHASE, _CTX_STATE, _CTX_K]:
         try:
             _ctx_set(telephone, key, None)
         except Exception:

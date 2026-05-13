@@ -170,7 +170,27 @@ def session_valoration(telephone, session_path) -> str:
     # Obtain the conversation history of the actual session
     conversation = db.get_user_info(telephone, session_path, "conversation_history")
     
-    # Create a prompt for the LLM to summarize the session
+    # Create a prompt for the LLM to valorate the session
     prompt = prompt_builder.session_valoration_prompt(conversation)
     valoration = llm.send_prompt(prompt, 0.0)
     return valoration
+
+
+def session_risk(telephone, session_path) -> str:
+    """
+    Generate a risk assessment of the session based on the conversation history, 
+    classifying it as "BUENA", "REGULAR" or "MALA".
+    Args:
+        - telephone (str): The user's telephone number.
+        - session_path (str): The path to the session data.
+
+    Returns:
+        str: The risk assessment of the session.
+    """
+    # Obtain the conversation history of the actual session
+    conversation = db.get_user_info(telephone, session_path, "conversation_history")
+    
+    # Create a prompt for the LLM to detrmine risk of crisis
+    prompt = prompt_builder.risk_level_prompt(conversation)
+    risk_level = llm.send_prompt(prompt, 0.0)
+    return risk_level

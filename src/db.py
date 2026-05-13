@@ -45,12 +45,17 @@ def get_user_name(telephone, key="name"):
     return user.get("name") if user else None
 
 
-def get_user_info(telephone, key_part_1, key_part_2):
+def get_user_info(telephone, key1, key2=None):
     user = users.find_one({"telephone": telephone}, {"_id": 0})
-    if not user:
-        print("\n[Error: Usuario no encontrado.]\n")
-        return {}
-    return user.get(key_part_1, {}).get(key_part_2)
+    if not user: return None
+    
+    data = user.get(key1)
+    
+    # Si pedimos un segundo nivel y el primero es un diccionario
+    if key2 and isinstance(data, dict):
+        return data.get(key2)
+    
+    return data
 
 
 def user_status(telephone: str) -> str:
@@ -114,12 +119,11 @@ def user_memory(telephone, keys_list=["name", "age", "PROFILE"]):
     return users.find_one({"telephone": telephone}, projection)
 
 
-def add_emergency_instance(telephone, session_path, cause, protocol, referal):
+def add_emergency_instance(telephone, session_path, protocol, referal):
     hora_activacion = datetime.datetime.now().strftime("%H:%M:%S")
     new_emergency = {
         "session_id":        session_path,
         "trigger_hour":      hora_activacion,
-        "cause":             cause,
         "protocol_applied":  protocol,
         "referal":           referal,
     }
@@ -156,6 +160,17 @@ def mark_notifications_read(telephone):
         {"$set": {"read": True}}
     )
 
+
+def add_to_list(telephone, key, list_item):
+    # $push añade el objeto al final del array
+    users.update_one({"telephone": telephone}, {"$push": {key: list_item}})
+    return
+
+def delete_user_info(telephone, key):
+    """Elimina físicamente una clave del documento del usuario."""
+    # $unset elimina el campo por completo
+    users.update_one({"telephone": telephone}, {"$unset": {key: ""}})
+    return
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SPECIALISTS

@@ -129,6 +129,9 @@ def prompt_bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
    10. El significado semántico de la introducción debe ser coherente con el núcleo posterior,
    de tal forma que no pueden contener información contradictoria o que no tenga sentido en conjunto.
    (Ej: Si el núcleo es "Cómo te llamas?", la introducción no puede ser "Holam Jordi, hablemos sobre...")
+   11. Si el usuario admite no haber contactado con los recursos de emergencia sugeridos, NO valides 
+   su decisión de no llamar. En su lugar, mantén una actitud de escucha empática pero insiste suavemente 
+   en la importancia de buscar apoyo profesional.
    """
    
    return prompt
@@ -220,47 +223,94 @@ def session_summary_prompt(conversation) -> str:
 
 def session_valoration_prompt(conversation) -> str:
    """Generates a prompt for the LLM to valorate the user satisfaction
-   in : GOOD, REGULAR and BAD"""
+   in : BUENA, REGULAR and MALA"""
    
    prompt = f"""
    # ROL
-   You are an expert evaluator of emotional support conversations, especially in mental health 
-   and suicide prevention contexts.
-   Your task is to analyze the following conversation between a user and a chatbot, and 
-   classify the overall session outcome into one of these three categories:
-   - GOOD
-   - REGULAR
-   - BAD
-
-   # Evaluation criteria:
-
-   GOOD:
-   - The user shows emotional improvement compared to the beginning
-   - The user expresses relief, gratitude, or calmness (e.g., "I feel better", "thank you")
-   - The user is willing to continue talking in the future
-   - The conversation ends in a calm and non-urgent way
-
+   Eres un experto evaluador de conversaciones de apoyo emocional, especialmente en contextos 
+   de salud mental y prevención del suicidio.
+   Tu tarea es analizar la siguiente conversación entre un usuario y un chatbot, y 
+   clasificar el resultado general de la sesión en una de estas tres categorías:
+    - BUENA
+    - REGULAR
+    - MALA
+   
+   # Criterios de evaluación:
+   BUENA:
+    - El usuario muestra una mejora emocional en comparación con el inicio.
+    - El usuario expresa alivio, gratitud o calma (ej. "me siento mejor", "gracias").
+    - El usuario muestra disposición a seguir hablando en el futuro.
+    - La conversación termina de forma tranquila y sin urgencia.
+   
    REGULAR:
-   - No clear emotional improvement or deterioration
-   - Neutral or superficial interaction
-   - The user does not strongly engage or express clear satisfaction/dissatisfaction
-   - The outcome is unclear or mixed
+    - No hay una mejora o deterioro emocional evidente.
+    - La interacción es neutral o superficial.
+    - El usuario no se involucra profundamente ni expresa satisfacción/insatisfacción clara.
+    - El resultado es ambiguo o mixto.
 
-   BAD:
-   - The user remains or becomes more distressed, anxious, or frustrated
-   - The user expresses that the chatbot is not helpful
-   - The user requests human help urgently (e.g., doctor, therapist)
-   - The conversation ends abruptly or negatively
+   MALA:
+    - El usuario permanece o se muestra más angustiado, ansioso o frustrado.
+    - El usuario expresa que el chatbot no le está ayudando.
+    - El usuario solicita ayuda humana de forma urgente (ej. médico, terapeuta).
+    - La conversación termina de manera abrupta o negativa.
 
-   # Important rules:
-   - Focus primarily on the USER's emotional trajectory
-   - Pay special attention to the beginning vs the end of the conversation
-   - Be conservative: if there are strong negative signals, classify as BAD
+   # Reglas importantes:
+    - Céntrate principalmente en la trayectoria emocional del USUARIO.
+    - Presta especial atención al inicio frente al final de la conversación.
+    - Sé conservador: si hay señales negativas fuertes, clasifica como MALA.
 
-   Return ONLY one word: GOOD, REGULAR, or BAD.
+   Devuelve ÚNICAMENTE una palabra: BUENA, REGULAR o MALA.
 
-   # Conversation:
+   # Conversación:
    {conversation}
    """
    
+   return prompt
+
+
+def risk_level_prompt(conversation):
+   """Generates a prompt for the LLM to valorate the user's risk level of a crisis 
+   in : ESTABLE, BAJO, MODERADO, and ALTO"""
+   
+   prompt = f"""
+   # ROL
+   Eres un especialista en triaje psicológico y gestión de crisis. 
+   Tu objetivo es analizar la conversación adjunta para determinar el nivel de riesgo 
+   de seguridad del usuario (autolesiones, ideación suicida o crisis de angustia severa).
+
+   # NIVELES DE RIESGO:
+
+   ESTABLE:
+    - El usuario no expresa deseos de hacerse daño ni desesperanza extrema.
+    - Se muestra comunicativo y capaz de razonar.
+    - No hay signos de agitación motora o desbordamiento emocional incontrolable.
+
+   BAJO:
+    - El usuario no expresa deseos de hacerse daño ni desesperanza extrema.
+    - Se muestra comunicativo y capaz de razonar.
+    - No hay signos de agitación motora o desbordamiento emocional incontrolable.
+
+   MODERADO:
+    - Expresa desesperanza, soledad profunda o sentimientos de ser una carga.
+    - Hay indicios de ideación pasiva (ej. "ojalá no despertara"), pero sin un plan claro.
+    - Muestra ambivalencia o una angustia que empieza a escalar.
+    - El usuario se siente sobrepasado por sus problemas actuales.
+
+   ALTO:
+    - Expresión clara de deseos de morir o autolesionarse.
+    - Menciona un plan, un método o una urgencia temporal inmediata.
+    - Estado de agitación, pánico extremo o desconexión con la realidad.
+    - El usuario se despide de forma inusual o indica que ya no hay vuelta atrás.
+
+   # REGLAS DE ORO:
+   1. Ante la menor duda o presencia de señales de alerta, escala al nivel superior.
+   2. La seguridad del usuario es la prioridad: es mejor sobreestimar el riesgo que infraestimarlo.
+   3. Ignora el tono del chatbot; céntrate exclusivamente en el contenido y la intención del USUARIO.
+
+   Devuelve ÚNICAMENTE una palabra: ESTABLE, BAJO, MODERADO o ALTO.
+
+   # CONVERSACIÓN:
+   {conversation}
+   """
+    
    return prompt

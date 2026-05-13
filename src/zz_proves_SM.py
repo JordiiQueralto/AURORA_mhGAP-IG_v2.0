@@ -2,8 +2,8 @@ import state_machine
 
 telephone = "+34999"
 phase = "SUI_EVAL"
-state = "5"
-user_input = "me cuesta hasta ducharme"
+state = "4"
+user_input = "tengo dolor de espalda casi todos los dias"
 
 n_user_input = state_machine.normalize_text(user_input)
 

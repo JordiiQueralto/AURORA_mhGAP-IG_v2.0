@@ -290,6 +290,59 @@ def generate_report(specialist, user_id):
             pass
 
 
+
+@app.route("/api/doctor/stats", methods=["GET"])
+@require_auth
+def get_stats(specialist):
+    """
+    Devuelve estadísticas reales del centro para los gráficos del dashboard:
+      - riskDistribution:    { estable, bajo, medio, alto }
+      - sessionsByDay:       { "YYYY-MM-DD": count } ultimos 30 dias
+      - valorationDist:      { buena, regular, mala, sin_valorar }
+      - suiDist:             { self_harm, concrete_plan, ideation, improbable, others }
+      - depDist:             { depression, bipolar, others }
+      - emergencyStats:      { total_emergencies, total_followups, outcome_no_help, outcome_help }
+    Requiere Authorization: Bearer <token>
+    """
+    center_name = specialist.get("centerName", "")
+    try:
+        risk_dist    = main_api_sp.get_risk_distribution(center_name)
+        sessions_day = main_api_sp.get_sessions_by_day(center_name, days=30)
+        valoration   = main_api_sp.get_valoration_distribution(center_name)
+        screening    = main_api_sp.get_screening_distribution(center_name)
+        emergency_stats = main_api_sp.get_emergency_followup_stats(center_name)
+        return jsonify({
+            "riskDistribution": risk_dist,
+            "sessionsByDay":    sessions_day,
+            "valorationDist":   valoration,
+            "suiDist":          screening["sui"],
+            "depDist":          screening["dep"],
+            "emergencyStats":   emergency_stats,
+        }), 200
+    except Exception as e:
+        print(f"[ERROR /stats] {e}")
+        return jsonify({"error": "Error al recuperar estadísticas."}), 500
+
+
+@app.route("/api/doctor/stats/debug", methods=["GET"])
+@require_auth
+def debug_screening(specialist):
+    """
+    Endpoint de debug: devuelve el campo SCREENING de cada usuario del centro
+    tal como está en BD, para diagnosticar problemas de datos.
+    """
+    center_name = specialist.get("centerName", "")
+    raw_users = main_api_sp.db.get_users_by_center(center_name)
+    result = []
+    for u in raw_users:
+        result.append({
+            "name":      u.get("name", "?"),
+            "telephone": str(u.get("telephone", "?")),
+            "SCREENING": u.get("SCREENING") or u.get("screening"),
+            "has_circle_share": u.get("CIRCLE", {}).get("privacy", {}).get("shareWithHospital"),
+        })
+    return jsonify({"users": result, "count": len(result)}), 200
+
 # ──────────────────────────────────────────────────────────────────────────────
 # MEDICAL CENTERS (reutilizando la misma colección de app.py)
 # ──────────────────────────────────────────────────────────────────────────────

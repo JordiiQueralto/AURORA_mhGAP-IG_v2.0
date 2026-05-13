@@ -245,8 +245,149 @@ def generate_report(user_id_str, output_path=None):
             if functional_val is not None:
                 functional_text = "Sí" if functional_val else "No"
                 pdf.data_row("¿Impacto funcional en actividades diarias?", functional_text)
+                
+            # --- 2A.1 En tratamiento/medicación ---
+            med_val = dep_eval.get("2A_1_on_medication")
+            if med_val is not None:
+                med_text = "Sí" if med_val else "No"
+                pdf.data_row("¿Actualmente en tratamiento o medicación?", med_text)
+            
+            # --- 2A.2 Condiciones físicas ---
+            phys_cond_val = dep_eval.get("2A_2_physical_conditions")
+            if phys_cond_val is not None:
+                phys_cond_text = "Sí" if phys_cond_val else "No"
+                pdf.data_row("¿Condiciones físicas relevantes (tiroides, anemia, etc.)?", phys_cond_text)
+            
+            # --- 2B.1 Episodio maníaco/hipomaníaco ---
+            mania_val = dep_eval.get("2B_1_mania_episode")
+            if mania_val is not None:
+                mania_text = "Sí" if mania_val else "No"
+                pdf.data_row("¿Episodios de euforia o irritabilidad exagerada?", mania_text)
+            
+            # --- 2B.2 Menor necesidad de sueño ---
+            sleep_need_val = dep_eval.get("2B_2_decreased_sleep_need")
+            if sleep_need_val is not None:
+                sleep_need_text = "Sí" if sleep_need_val else "No"
+                pdf.data_row("¿Menor necesidad de sueño sin cansancio?", sleep_need_text)
+            
+            # --- 2B.3 Actividad excesiva ---
+            excess_activity_val = dep_eval.get("2B_3_excessive_activity")
+            if excess_activity_val is not None:
+                excess_activity_text = "Sí" if excess_activity_val else "No"
+                pdf.data_row("¿Actividad o energía excesiva?", excess_activity_text)
+            
+            # --- 2B.4 Decisiones impulsivas ---
+            impulsive_val = dep_eval.get("2B_4_impulsive_decisions")
+            if impulsive_val is not None:
+                impulsive_text = "Sí" if impulsive_val else "No"
+                pdf.data_row("¿Decisiones impulsivas o gastos excesivos?", impulsive_text)
+            
+            # --- 2B.5 Desinhibición social ---
+            disinhibition_val = dep_eval.get("2B_5_social_disinhibition")
+            if disinhibition_val is not None:
+                disinhibition_text = "Sí" if disinhibition_val else "No"
+                pdf.data_row("¿Comportamiento más desinhibido o sin filtro?", disinhibition_text)
+            
+            # --- 2B.6 Distractibilidad ---
+            distract_val = dep_eval.get("2B_6_distractibility")
+            if distract_val is not None:
+                distract_text = "Sí" if distract_val else "No"
+                pdf.data_row("¿Fácil distracción o dificultad de concentración?", distract_text)
+            
+            # --- 2B.7 Grandiosidad ---
+            grandios_val = dep_eval.get("2B_7_grandiosity")
+            if grandios_val is not None:
+                grandios_text = "Sí" if grandios_val else "No"
+                pdf.data_row("¿Sentimientos de grandiosidad o destino especial?", grandios_text)
+            
+            # --- 2C Duelo reciente ---
+            bereavement_val = dep_eval.get("2C_recent_bereavement")
+            if bereavement_val is not None:
+                bereavement_text = "Sí" if bereavement_val else "No"
+                pdf.data_row("¿Duelo reciente (fallecimiento de persona cercana)?", bereavement_text)
+            
+            # --- 2D.1 Ideación suicida en último mes ---
+            suicidal_val = dep_eval.get("2D_1_suicidal_ideation")
+            if suicidal_val is not None:
+                suicidal_text = "Sí" if suicidal_val else "No"
+                pdf.data_row("¿Ideación suicida en el último mes?", suicidal_text)
+            
+            # --- 2D.2 Sentimientos de indignidad ---
+            unworthiness_val = dep_eval.get("2D_2_unworthiness")
+            if unworthiness_val is not None:
+                unworthiness_text = "Sí" if unworthiness_val else "No"
+                pdf.data_row("¿Sentimientos de indignidad o ser una carga?", unworthiness_text)
+            
+            # --- 2D.3 Síntomas psicóticos ---
+            psychotic_val = dep_eval.get("2D_3_psychotic_symptoms")
+            if psychotic_val is not None:
+                psychotic_text = "Sí" if psychotic_val else "No"
+                pdf.data_row("¿Síntomas psicóticos (alucinaciones, delirios)?", psychotic_text)
+            
+            # --- 2D.4 Aislamiento social ---
+            withdrawal_val = dep_eval.get("2D_4_social_withdrawal")
+            if withdrawal_val is not None:
+                withdrawal_text = "Sí" if withdrawal_val else "No"
+                pdf.data_row("¿Retirada social o aislamiento?", withdrawal_text)
+            
+            # --- 2D.5 Impacto funcional severo ---
+            func_impair_val = dep_eval.get("2D_5_functional_impairment")
+            if func_impair_val is not None:
+                func_impair_text = "Sí" if func_impair_val else "No"
+                pdf.data_row("¿Impacto funcional severo?", func_impair_text)
+            
+            # --- 2E.1 Diagnóstico previo de depresión ---
+            prior_diag_val = dep_eval.get("2E_1_prior_diagnosis")
+            if prior_diag_val is not None:
+                prior_diag_text = "Sí" if prior_diag_val else "No"
+                pdf.data_row("¿Diagnóstico previo de depresión?", prior_diag_text)
+            
+            # --- 2E.2 Medicación previa para depresión ---
+            prior_med_val = dep_eval.get("2E_2_prior_medication")
+            if prior_med_val is not None:
+                prior_med_text = "Sí" if prior_med_val else "No"
+                pdf.data_row("¿Ha recibido medicación previa para depresión?", prior_med_text)
+            
+            # --- 2E.3 Hospitalización previa ---
+            prior_hosp_val = dep_eval.get("2E_3_prior_hospitalization")
+            if prior_hosp_val is not None:
+                prior_hosp_text = "Sí" if prior_hosp_val else "No"
+                pdf.data_row("¿Hospitalización previa por problemas de salud mental?", prior_hosp_text)
+            
+            # --- 3A Consumo concurrente de alcohol ---
+            alcohol_val = dep_eval.get("3A_concurrent_alcohol")
+            if alcohol_val is not None:
+                alcohol_text = "Sí" if alcohol_val else "No"
+                pdf.data_row("¿Consumo concurrente de alcohol?", alcohol_text)
+            
+            # --- 3B Consumo concurrente de sustancias ---
+            substances_val = dep_eval.get("3B_concurrent_substances")
+            if substances_val is not None:
+                substances_text = "Sí" if substances_val else "No"
+                pdf.data_row("¿Consumo concurrente de otras sustancias?", substances_text)
             
             pdf.ln(5)
+        
+                # --- Disclaimer / Descargo de responsabilidad ---
+        pdf.ln(10)
+        pdf.set_font("Arial", "I", 8)
+        pdf.set_text_color(100, 100, 100)
+
+        disclaimer = (
+            "Este informe ha sido generado automáticamente a partir de información "
+            "recopilada mediante un sistema conversacional automatizado (chatbot). "
+            "Los resultados presentados son únicamente orientativos y no constituyen "
+            "un diagnóstico clínico ni sustituyen la valoración, evaluación o criterio "
+            "de un profesional sanitario cualificado. La información contenida puede "
+            "presentar errores, omisiones o interpretaciones inexactas. "
+            "Este documento no debe utilizarse como única base para la toma de "
+            "decisiones clínicas o terapéuticas."
+        )
+
+        pdf.multi_cell(0, 5, disclaimer)
+
+        # Restaurar formato por defecto
+        pdf.set_text_color(0, 0, 0)
 
         # --- Lógica de guardado ---
         # Si se pasa output_path (p.ej. fichero temporal desde Flask),

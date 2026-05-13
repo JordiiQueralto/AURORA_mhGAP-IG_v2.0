@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Panel Médico — mhGAP</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0a0f13;--panel:#111b21;--surface:#162028;--card:#1a2830;
+  --border:#ffffff0d;--border-m:#ffffff18;
+  --accent:#00a884;--accent-d:#02735e;--accent-l:#25d366;--accent-glow:#00a88430;
+  --text:#e9edef;--muted:#8696a0;--dim:#4a5a64;
+  --danger:#f15c6d;--warn:#ffa040;--info:#5b9bd5;--purple:#9d9dff;
+  --f0:'DM Sans',sans-serif;--f1:'Instrument Serif',serif;--r:10px;--dur:0.2s;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);font-family:var(--f0);color:var(--text);overflow:hidden}
+#auth-screen{position:fixed;inset:0;z-index:900;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease}
+#auth-screen.hidden{display:none}
+.auth-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.auth-bg::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,#00a88418 0%,transparent 70%);top:-100px;right:-100px}
+.auth-bg::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,#02735e10 0%,transparent 70%);bottom:-80px;left:-80px}
+.auth-box{position:relative;z-index:1;width:420px;background:var(--panel);border:1px solid var(--border-m);border-radius:20px;padding:36px 36px 28px;box-shadow:0 32px 80px #00000080,0 0 60px #00a88410;max-height:95vh;overflow-y:auto}
+.auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px}
+.auth-logo-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px var(--accent-glow)}
+.auth-logo-txt{font-family:var(--f1);font-size:20px;font-style:italic}
+.auth-logo-txt span{color:var(--accent)}
+.auth-tabs{display:flex;margin-bottom:24px;background:var(--surface);border-radius:10px;padding:3px;border:1px solid var(--border)}
+.auth-tab{flex:1;padding:8px;border:none;border-radius:8px;background:none;color:var(--muted);font-family:var(--f0);font-size:13.5px;font-weight:500;cursor:pointer;transition:all var(--dur)}
+.auth-tab.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px #0005}
+.auth-panel{display:none;flex-direction:column;gap:14px}
+.auth-panel.active{display:flex}
+.auth-field{display:flex;flex-direction:column;gap:5px}
+.auth-field label{font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:.03em}
+.auth-input{background:var(--surface);border:1px solid var(--border-m);border-radius:9px;padding:10px 14px;color:var(--text);font-family:var(--f0);font-size:14px;outline:none;transition:border-color var(--dur),box-shadow var(--dur);width:100%}
+.auth-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.auth-input::placeholder{color:var(--dim)}
+.auth-select{background:var(--surface);border:1px solid var(--border-m);border-radius:9px;padding:10px 14px;color:var(--text);font-family:var(--f0);font-size:14px;outline:none;cursor:pointer;width:100%;transition:border-color var(--dur),box-shadow var(--dur);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238696a0' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.auth-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.auth-select option{background:#162028}
+.auth-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.auth-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:12px;font-family:var(--f0);font-size:14.5px;font-weight:500;cursor:pointer;transition:background var(--dur),box-shadow var(--dur);box-shadow:0 4px 20px var(--accent-glow);margin-top:4px}
+.auth-btn:hover{background:var(--accent-l);box-shadow:0 4px 28px #25d36650}
+.auth-btn:disabled{background:#2a3942;color:var(--dim);cursor:not-allowed;box-shadow:none}
+.auth-error{background:#f15c6d12;border:1px solid #f15c6d30;border-radius:9px;padding:9px 14px;font-size:13px;color:#f8909a;display:none}
+.auth-error.show{display:block}
+.auth-footer{text-align:center;font-size:11.5px;color:var(--dim);margin-top:16px;line-height:1.6}
+.auth-footer a{color:var(--accent);text-decoration:none}
+.center-search-wrap{position:relative}
+.center-search-wrap input{padding-left:34px}
+.center-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--dim);pointer-events:none}
+.center-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--card);border:1px solid var(--border-m);border-radius:10px;max-height:200px;overflow-y:auto;z-index:200;box-shadow:0 8px 28px #0009;display:none}
+.center-dropdown.open{display:block}
+.center-opt{padding:9px 14px;font-size:13.5px;cursor:pointer;transition:background var(--dur);border-bottom:1px solid var(--border)}
+.center-opt:last-child{border-bottom:none}
+.center-opt:hover{background:var(--surface)}
+.center-opt-city{font-size:11.5px;color:var(--muted);margin-top:1px}
+.center-selected-chip{display:none;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--accent);border-radius:9px;padding:8px 14px;font-size:13.5px;color:var(--accent)}
+.center-selected-chip.show{display:flex}
+.center-selected-chip button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;transition:color var(--dur);margin-left:auto}
+.center-selected-chip button:hover{color:var(--danger)}
+#app{display:none;grid-template-columns:220px 1fr;grid-template-rows:56px 1fr;height:100vh}
+#app.visible{display:grid}
+.topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px}
+.topbar-logo{display:flex;align-items:center;gap:10px;width:196px}
+.topbar-logo-icon{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 16px var(--accent-glow)}
+.topbar-logo-txt{font-family:var(--f1);font-size:17px;font-style:italic}
+.topbar-logo-txt span{color:var(--accent)}
+.topbar-divider{flex:1}
+.topbar-chip{background:var(--surface);border:1px solid var(--border-m);border-radius:99px;padding:5px 12px 5px 8px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.topbar-chip-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.topbar-chip strong{color:var(--text)}
+.topbar-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;cursor:pointer;box-shadow:0 0 0 2px var(--accent-glow)}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;font-size:13.5px;color:var(--muted);transition:background var(--dur),color var(--dur);border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--surface);color:var(--text)}
+.nav-item.active{background:#00a88415;color:var(--accent);font-weight:500}
+.nav-icon{font-size:16px;width:20px;flex-shrink:0;text-align:center}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);cursor:pointer;font-size:13.5px;color:var(--dim);transition:background var(--dur),color var(--dur);border:none;background:none;width:100%;text-align:left}
+.logout-btn:hover{background:#f15c6d10;color:var(--danger)}
+.main{overflow-y:auto;background:var(--bg)}
+.page{display:none;padding:28px 32px;min-height:100%;animation:fadeIn .22s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:24px}
+.page-title{font-family:var(--f1);font-size:26px;font-style:italic}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.form-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:.03em}
+.field input,.field select,.field textarea{background:var(--surface);border:1px solid var(--border-m);border-radius:var(--r);padding:10px 14px;color:var(--text);font-family:var(--f0);font-size:14px;outline:none;transition:border-color var(--dur),box-shadow var(--dur)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+.field select option{background:var(--surface)}
+.field textarea{resize:vertical;min-height:80px}
+.sect{margin-top:24px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px}
+.card+.card{margin-top:16px}
+.avatar-upload{display:flex;align-items:center;gap:20px;padding:20px 0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.avatar-big{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-d));display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:600;flex-shrink:0;box-shadow:0 0 0 3px var(--accent-glow),0 0 24px var(--accent-glow);overflow:hidden}
+.avatar-upload-info h3{font-size:15px;font-weight:500;margin-bottom:4px}
+.avatar-upload-info p{font-size:12px;color:var(--muted);line-height:1.5}
+.btn-outline{margin-top:10px;background:none;border:1px solid var(--border-m);border-radius:8px;padding:7px 14px;color:var(--muted);font-family:var(--f0);font-size:13px;cursor:pointer;transition:all var(--dur)}
+.btn-outline:hover{background:var(--surface);color:var(--text);border-color:var(--accent)}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.btn-primary{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 24px;font-family:var(--f0);font-size:14px;font-weight:500;cursor:pointer;transition:background var(--dur),box-shadow var(--dur);box-shadow:0 4px 18px var(--accent-glow)}
+.btn-primary:hover{background:var(--accent-l);box-shadow:0 4px 24px #25d36640}
+.btn-secondary{background:var(--surface);color:var(--muted);border:1px solid var(--border-m);border-radius:9px;padding:10px 18px;font-family:var(--f0);font-size:14px;cursor:pointer;transition:all var(--dur)}
+.btn-secondary:hover{background:var(--card);color:var(--text)}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.stat-label{font-size:11.5px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.stat-value{font-family:var(--f1);font-size:30px;font-style:italic}
+.stat-delta{font-size:12px;margin-top:4px}
+.stat-delta.up{color:var(--accent-l)}.stat-delta.dn{color:var(--danger)}.stat-delta.neu{color:var(--muted)}
+.charts-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.charts-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-wrap{position:relative;height:220px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.table-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.search-box{flex:1;position:relative}
+.search-box input{width:100%;background:var(--surface);border:1px solid var(--border-m);border-radius:9px;padding:9px 14px 9px 38px;color:var(--text);font-family:var(--f0);font-size:13.5px;outline:none;transition:border-color var(--dur)}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--dim)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--dim);pointer-events:none}
+.filter-sel{background:var(--surface);border:1px solid var(--border-m);border-radius:9px;padding:9px 14px;color:var(--muted);font-family:var(--f0);font-size:13px;outline:none;cursor:pointer}
+.filter-sel option{background:var(--surface)}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface);border-bottom:1px solid var(--border)}
+th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--dur);cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+td{padding:13px 16px;font-size:13.5px}
+.td-name{font-weight:500}.td-sub{color:var(--muted);font-size:12px;margin-top:1px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:500}
+.badge-green{background:#00a88418;color:var(--accent-l)}.badge-red{background:#f15c6d18;color:#f8909a}
+.badge-yellow{background:#ffa04018;color:var(--warn)}.badge-blue{background:#5b9bd518;color:var(--info)}
+.badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.pagination{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)}
+.pag-btns{display:flex;gap:6px}
+.pag-btn{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 12px;color:var(--muted);cursor:pointer;font-size:12px;font-family:var(--f0);transition:all var(--dur)}
+.pag-btn:hover{background:var(--card);color:var(--text)}.pag-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.modal-overlay{position:fixed;inset:0;background:#00000090;backdrop-filter:blur(4px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--panel);border:1px solid var(--border-m);border-radius:18px;width:620px;max-height:87vh;overflow-y:auto;padding:28px;transform:scale(0.95);transition:transform .25s}
+.modal-overlay.open .modal{transform:scale(1)}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;transition:color var(--dur)}
+.modal-close:hover{color:var(--text)}
+.modal-patient-id{font-size:11px;color:var(--dim);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.modal-patient-name{font-family:var(--f1);font-size:22px;font-style:italic}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.info-item label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.info-item p{font-size:13.5px;margin-top:3px}
+.modal-section{margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.modal-section-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.emergency-flag{background:#f15c6d18;border:1px solid #f15c6d30;border-radius:9px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;color:#f8909a;margin-top:12px}
+/* SESSION CARDS */
+.session-cards{display:flex;flex-direction:column;gap:8px}
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color var(--dur)}
+.session-card:hover{border-color:var(--border-m)}
+.session-card-header{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;user-select:none}
+.session-date-block{display:flex;flex-direction:column;min-width:78px}
+.session-date-day{font-size:13px;font-weight:500;color:var(--text)}
+.session-date-time{font-size:11px;color:var(--dim);margin-top:1px}
+.session-chevron{margin-left:auto;color:var(--dim);font-size:11px;transition:transform var(--dur),color var(--dur)}
+.session-card.open .session-chevron{transform:rotate(180deg);color:var(--accent)}
+.session-card-body{display:none;padding:0 14px 14px;border-top:1px solid var(--border)}
+.session-card.open .session-card-body{display:block}
+.session-summary-label{font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin-top:12px;margin-bottom:6px}
+.session-summary-text{font-size:13px;color:var(--muted);line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.session-summary-empty{font-size:12.5px;color:var(--dim);font-style:italic}
+.val-buena{background:#00a88418;color:var(--accent-l)}
+.val-regular{background:#ffa04018;color:var(--warn)}
+.val-mala{background:#f15c6d18;color:#f8909a}
+.val-neutral{background:#ffffff0a;color:var(--muted)}
+.sessions-loading{padding:24px;text-align:center;color:var(--dim);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px}
+.empty-state{text-align:center;padding:48px 20px}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4}
+.empty-text{font-size:14px;color:var(--muted)}
+.toast{position:fixed;bottom:28px;right:28px;z-index:9999;background:#0d2920;border:1px solid var(--accent);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:10px;font-size:14px;box-shadow:0 8px 32px #000a;transform:translateY(20px);opacity:0;transition:all .3s ease;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #ffffff40;border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── REPORT BUTTON ───────────────────────────────────── */
+.btn-report{
+  display:inline-flex;align-items:center;gap:6px;
+  background:none;border:1px solid var(--border-m);border-radius:8px;
+  padding:5px 11px;color:var(--muted);font-family:var(--f0);font-size:12px;
+  cursor:pointer;transition:all var(--dur);white-space:nowrap;
+}
+.btn-report:hover{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+.btn-report:disabled{opacity:.4;cursor:not-allowed}
+.btn-report-modal{
+  background:var(--surface);border:1px solid var(--border-m);border-radius:9px;
+  padding:9px 18px;color:var(--muted);font-family:var(--f0);font-size:13.5px;
+  cursor:pointer;transition:all var(--dur);display:flex;align-items:center;gap:8px;
+}
+.btn-report-modal:hover{background:var(--card);color:var(--accent);border-color:var(--accent)}
+.btn-report-modal:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── SCREENING mhGAP ─────────────────────────────────── */
+.screening-section-header{
+  display:flex;align-items:baseline;gap:12px;
+  margin-bottom:16px;padding-bottom:12px;
+  border-bottom:1px solid var(--border);
+}
+.screening-section-title{
+  font-size:13px;font-weight:600;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.screening-section-sub{font-size:12px;color:var(--dim)}
+.screening-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.screening-card-label{
+  font-size:12px;font-weight:600;color:var(--text);
+  margin-bottom:2px;
+}
+.screening-badge{
+  display:inline-block;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 7px;border-radius:99px;margin-bottom:12px;
+}
+.badge-sui{background:#f15c6d18;color:#f8909a}
+.badge-dep{background:#5b9bd518;color:var(--info)}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#ffffff18;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#ffffff28}
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-bg"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🧠</div>
+      <div class="auth-logo-txt">mh<span>GAP</span> <em style="font-style:italic;font-weight:300">Médico</em></div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Acceder</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Registrarse</button>
+    </div>
+    <div class="auth-panel active" id="panel-login">
+      <div class="auth-error" id="login-error"></div>
+      <div class="auth-field"><label>Correo electrónico</label><input class="auth-input" type="email" id="login-email" placeholder="doctor@hospital.es" autocomplete="email"/></div>
+      <div class="auth-field"><label>Contraseña</label><input class="auth-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">Entrar al panel</button>
+      <div class="auth-footer">¿Problemas para acceder? <a href="mailto:soporte@mhgap.es">Contacta con soporte</a></div>
+    </div>
+    <div class="auth-panel" id="panel-register">
+      <div class="auth-error" id="reg-error"></div>
+      <div class="auth-row">
+        <div class="auth-field"><label>Nombre *</label><input class="auth-input" type="text" id="reg-nombre" placeholder="Nombre"/></div>
+        <div class="auth-field"><label>Apellidos *</label><input class="auth-input" type="text" id="reg-apellidos" placeholder="Apellido(s)"/></div>
+      </div>
+      <div class="auth-row">
+        <div class="auth-field"><label>Fecha de nacimiento *</label><input class="auth-input" type="date" id="reg-fnac"/></div>
+        <div class="auth-field"><label>Nº de colegiado *</label><input class="auth-input" type="text" id="reg-colegiado" placeholder="28-5678"/></div>
+      </div>
+      <div class="auth-field"><label>Correo electrónico *</label><input class="auth-input" type="email" id="reg-email" placeholder="doctor@hospital.es"/></div>
+      <div class="auth-row">
+        <div class="auth-field"><label>Contraseña *</label><input class="auth-input" type="password" id="reg-pass" placeholder="Mín. 8 caracteres"/></div>
+        <div class="auth-field"><label>Repetir contraseña *</label><input class="auth-input" type="password" id="reg-pass2" placeholder="Repetir"/></div>
+      </div>
+      <div class="auth-field"><label>País *</label><select class="auth-select" id="reg-pais" onchange="loadCentersForCountry(this.value)"><option value="">Seleccionar país…</option></select></div>
+      <div class="auth-field" id="center-field" style="display:none">
+        <label>Centro sanitario *</label>
+        <div style="position:relative">
+          <div class="center-search-wrap">
+            <span class="center-search-icon">🔍</span>
+            <input class="auth-input" id="reg-center-search" type="text" placeholder="Busca tu centro…" oninput="filterCenters(this.value)" onfocus="openCenterDropdown()" autocomplete="off"/>
+          </div>
+          <div class="center-dropdown" id="center-dropdown"></div>
+        </div>
+        <div class="center-selected-chip" id="center-chip"><span id="center-chip-name">—</span><button onclick="clearCenterSelection()">✕</button></div>
+      </div>
+      <button class="auth-btn" id="reg-btn" onclick="doRegister()">Crear cuenta</button>
+      <div class="auth-footer">Al registrarte aceptas los <a href="#">Términos de uso</a> del sistema mhGAP.</div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-logo"><div class="topbar-logo-icon">🧠</div><div class="topbar-logo-txt">mh<span>GAP</span> Médico</div></div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-chip"><span class="topbar-chip-dot"></span><span>Sistema activo &nbsp;·&nbsp; <strong id="top-center-name">—</strong></span></div>
+
+    <div class="topbar-avatar" id="topbar-avatar">DR</div>
+  </header>
+  <nav class="sidebar">
+    <span class="nav-section">Navegación</span>
+    <button class="nav-item active" onclick="navigate('perfil')"><span class="nav-icon">👤</span> Mi perfil</button>
+    <button class="nav-item" onclick="navigate('stats')"><span class="nav-icon">📊</span> Estadísticas</button>
+    <button class="nav-item" onclick="navigate('patients')"><span class="nav-icon">🫂</span> Usuarios</button>
+    <span class="nav-section">Herramientas</span>
+    <button class="nav-item" onclick="navigate('alerts')"><span class="nav-icon">⚠️</span> Alertas activas</button>
+    <div class="sidebar-footer"><button class="logout-btn" onclick="confirmLogout()"><span class="nav-icon">↩</span> Cerrar sesión</button></div>
+  </nav>
+  <main class="main">
+
+    <section class="page active" id="page-perfil">
+      <div class="page-header"><h1 class="page-title">Mi perfil profesional</h1><p class="page-sub">Datos del colegiado registrado en el sistema</p></div>
+      <div class="card">
+        <div class="avatar-upload">
+          <div class="avatar-big" id="profile-avatar">DR</div>
+          <div class="avatar-upload-info">
+            <h3 id="profile-fullname">Dr./Dra. —</h3>
+            <p>Foto de perfil opcional.<br>JPG o PNG, máx 2 MB.</p>
+            <button class="btn-outline" onclick="document.getElementById('avatar-file').click()">Cambiar foto</button>
+            <input type="file" id="avatar-file" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
+          </div>
+        </div>
+        <div class="sect">Datos personales</div>
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field"><label>Nombre *</label><input type="text" id="f-nombre" placeholder="Nombre" oninput="updateHeaderAvatar()"/></div>
+          <div class="field"><label>Apellidos *</label><input type="text" id="f-apellidos" placeholder="Apellidos" oninput="updateHeaderAvatar()"/></div>
+          <div class="field"><label>Fecha de nacimiento *</label><input type="date" id="f-fnacimiento"/></div>
+          <div class="field"><label>Nº de colegiado *</label><input type="text" id="f-colegiado" placeholder="28-5678"/></div>
+          <div class="field"><label>Género</label><select id="f-genero"><option value="">Seleccionar…</option><option value="dr">Dr. (él/him)</option><option value="dra">Dra. (ella/her)</option><option value="dr-neutral">Dr./Dra. (neutro)</option></select></div>
+          <div class="field"><label>Especialidad</label><select id="f-especialidad"><option value="">Seleccionar…</option><option>Psiquiatría</option><option>Psicología clínica</option><option>Medicina de familia</option><option>Neurología</option><option>Atención primaria</option><option>Otra</option></select></div>
+        </div>
+        <div class="sect" style="margin-top:28px">Contacto y acceso</div>
+        <div class="form-grid" style="margin-top:16px">
+          <div class="field"><label>Correo electrónico *</label><input type="email" id="f-email" placeholder="doctor@hospital.es"/></div>
+          <div class="field"><label>Teléfono profesional</label><input type="tel" id="f-telefono" placeholder="+34 600 000 000"/></div>
+        </div>
+        <div class="sect" style="margin-top:28px">Centro sanitario</div>
+        <div class="form-grid cols-3" style="margin-top:16px">
+          <div class="field" style="grid-column:span 2"><label>Centro sanitario *</label><input type="text" id="f-centro" readonly style="cursor:default;opacity:.7"/></div>
+          <div class="field"><label>Ciudad</label><input type="text" id="f-ciudad" readonly style="cursor:default;opacity:.7"/></div>
+          <div class="field"><label>País</label><input type="text" id="f-pais-txt" readonly style="cursor:default;opacity:.7"/></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" onclick="resetProfileToLoaded()">Descartar cambios</button>
+          <button class="btn-primary" onclick="saveProfile()">💾 Guardar cambios</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-stats">
+      <div class="page-header"><h1 class="page-title">Estadísticas del centro</h1><p class="page-sub">Resumen de actividad y evolución de usuarios registrados</p></div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Usuarios activos</div><div class="stat-value" id="kpi-active">—</div><div class="stat-delta up" id="kpi-active-d"></div></div>
+        <div class="stat-card"><div class="stat-label">Sesiones totales</div><div class="stat-value" id="kpi-sessions">—</div><div class="stat-delta up" id="kpi-sessions-d"></div></div>
+        <div class="stat-card"><div class="stat-label">Alertas activas</div><div class="stat-value" id="kpi-alerts">—</div><div class="stat-delta dn" id="kpi-alerts-d"></div></div>
+        <div class="stat-card"><div class="stat-label">Alto riesgo</div><div class="stat-value" id="kpi-risk">—</div><div class="stat-delta neu" id="kpi-risk-d"></div></div>
+      </div>
+      <!-- Resultado Screening mhGAP -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="screening-section-header">
+          <span class="screening-section-title">Resultado Screening mhGAP</span>
+          <span class="screening-section-sub">Distribución acumulada por centro</span>
+        </div>
+        <div class="screening-grid">
+          <div>
+            <div class="screening-card-label">Screening Tendencias Suicidas (Imminente)</div>
+            <span class="screening-badge badge-sui">SUI</span>
+            <div class="chart-wrap" style="height:190px"><canvas id="chart-sui"></canvas></div>
+            <div class="chart-legend" id="legend-sui" style="margin-top:10px"></div>
+          </div>
+          <div>
+            <div class="screening-card-label">Screening Depresión</div>
+            <span class="screening-badge badge-dep">DEP</span>
+            <div class="chart-wrap" style="height:190px"><canvas id="chart-dep"></canvas></div>
+            <div class="chart-legend" id="legend-dep" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sesiones · Riesgo · Valoración -->
+      <div class="charts-grid">
+        <div class="card"><div class="card-title">Sesiones por día (últimos 30 días)</div><div class="chart-wrap"><canvas id="chart-sessions"></canvas></div></div>
+        <div class="card"><div class="card-title">Nivel de riesgo</div><div class="chart-wrap"><canvas id="chart-risk"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">Valoración de las sesiones</div>
+        <div class="chart-wrap" style="height:160px"><canvas id="chart-valoration"></canvas></div>
+        <div class="chart-legend" id="legend-val" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-patients">
+      <div class="page-header"><h1 class="page-title">Usuarios del centro</h1><p class="page-sub">Pacientes registrados en tu centro sanitario con consentimiento compartido</p></div>
+      <div class="card" style="padding:20px">
+        <div class="table-toolbar">
+          <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="search-inp" placeholder="Buscar por nombre o teléfono…" oninput="filterTable()"/></div>
+          <select class="filter-sel" id="filter-risk" onchange="filterTable()"><option value="">Todos los niveles</option><option value="alto">Alto riesgo</option><option value="medio">Moderado</option><option value="bajo">Bajo</option><option value="estable">Estable</option></select>
+          <select class="filter-sel" id="filter-status" onchange="filterTable()"><option value="">Todos los estados</option><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Usuario</th><th>Teléfono</th><th>Última sesión</th><th>Sesiones</th><th>Nivel de riesgo</th><th>Informe</th></tr></thead>
+            <tbody id="patients-tbody"></tbody>
+          </table>
+          <div class="pagination">
+            <span id="pag-info" style="font-size:13px;color:var(--muted)">—</span>
+            <div class="pag-btns"><button class="pag-btn">← Ant.</button><button class="pag-btn active">1</button><button class="pag-btn">2</button><button class="pag-btn">Sig. →</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" id="page-alerts">
+      <div class="page-header"><h1 class="page-title">Alertas activas</h1><p class="page-sub">Usuarios con protocolos de emergencia activados</p></div>
+      <div id="alerts-list" style="display:flex;flex-direction:column;gap:12px"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- PATIENT MODAL -->
+<div class="modal-overlay" id="patient-modal" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div><div class="modal-patient-id" id="modal-id">—</div><div class="modal-patient-name" id="modal-name">—</div></div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-emergency-flag" style="display:none" class="emergency-flag">⚠️ Este usuario ha activado la alerta de emergencia 112 recientemente</div>
+    <div class="info-grid">
+      <div class="info-item"><label>Teléfono</label><p id="modal-phone">—</p></div>
+      <div class="info-item"><label>Nivel de riesgo</label><p id="modal-risk">—</p></div>
+      <div class="info-item"><label>Última sesión</label><p id="modal-last">—</p></div>
+      <div class="info-item"><label>Total sesiones</label><p id="modal-sessions">—</p></div>
+    </div>
+    <div class="modal-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="modal-section-title">Historial de sesiones</div>
+        <span id="modal-sessions-count" style="font-size:12px;color:var(--dim)"></span>
+      </div>
+      <div class="session-cards" id="modal-sessions-list">
+        <div class="sessions-loading"><span class="spin" style="border-top-color:var(--accent)"></span> Cargando historial…</div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title" style="margin-bottom:12px">Notas clínicas</div>
+      <div class="field"><textarea id="modal-notes" placeholder="Añadir nota clínica (no visible para el usuario)…" rows="3"></textarea></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <button class="btn-report-modal" id="modal-report-btn" onclick="downloadReportFromModal()">
+          📄 Generar informe PDF
+        </button>
+        <button class="btn-primary" style="padding:8px 18px;font-size:13px" onclick="saveNote()">Guardar nota</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toast-icon">✅</span><span id="toast-msg">OK</span></div>
+
+<script>
+const API='http://localhost:5001';
+let SESSION=null,ALL_PATIENTS=[],FILTERED=[],ALL_CENTERS=[],SELECTED_CENTER=null,currentPatient=null;
+
+function switchAuthTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('panel-login').classList.toggle('active',tab==='login');
+  document.getElementById('panel-register').classList.toggle('active',tab==='register');
+  if(tab==='register') loadCountriesForRegister();
+}
+
+async function loadCountriesForRegister(){
+  const sel=document.getElementById('reg-pais');
+  if(sel.options.length>1) return;
+  try{
+    const r=await fetch(`${API}/api/doctor/countries`);
+    const data=await r.json();
+    data.forEach(c=>{const opt=document.createElement('option');opt.value=c.countryCode;opt.textContent=c.countryName;sel.appendChild(opt);});
+  }catch(e){
+    [['ES','🇪🇸 España'],['MX','🇲🇽 México'],['AR','🇦🇷 Argentina'],['CO','🇨🇴 Colombia'],['CL','🇨🇱 Chile']].forEach(([v,t])=>{const opt=document.createElement('option');opt.value=v;opt.textContent=t;sel.appendChild(opt);});
+  }
+}
+
+async function loadCentersForCountry(code){
+  const field=document.getElementById('center-field');
+  if(!code){field.style.display='none';return;}
+  field.style.display='block';clearCenterSelection();
+  document.getElementById('reg-center-search').placeholder='Cargando centros…';
+  ALL_CENTERS=[];
+  try{const r=await fetch(`${API}/api/medical-centers/${code}`);const data=await r.json();ALL_CENTERS=data.centers||[];}catch(e){ALL_CENTERS=[];}
+  document.getElementById('reg-center-search').placeholder=ALL_CENTERS.length?'Busca tu centro…':'Sin centros disponibles';
+}
+function filterCenters(q){
+  const dd=document.getElementById('center-dropdown');
+  if(!ALL_CENTERS.length){dd.classList.remove('open');return;}
+  const ql=q.toLowerCase();
+  const res=ql?ALL_CENTERS.filter(c=>(c.name||'').toLowerCase().includes(ql)||(c.city||'').toLowerCase().includes(ql)):ALL_CENTERS.slice(0,20);
+  dd.innerHTML=res.slice(0,30).map(c=>`<div class="center-opt" onclick="selectCenter(${JSON.stringify(c).replace(/"/g,'&quot;')})"><div>${c.name}</div><div class="center-opt-city">${c.city||''}</div></div>`).join('');
+  dd.classList.toggle('open',res.length>0);
+}
+function openCenterDropdown(){if(ALL_CENTERS.length&&!SELECTED_CENTER)filterCenters(document.getElementById('reg-center-search').value);}
+function selectCenter(c){
+  SELECTED_CENTER=c;
+  document.getElementById('center-chip-name').textContent=`${c.name}${c.city?' — '+c.city:''}`;
+  document.getElementById('center-chip').classList.add('show');
+  document.getElementById('reg-center-search').style.display='none';
+  document.querySelector('.center-search-icon').style.display='none';
+  document.getElementById('center-dropdown').classList.remove('open');
+}
+function clearCenterSelection(){
+  SELECTED_CENTER=null;
+  document.getElementById('center-chip').classList.remove('show');
+  document.getElementById('center-dropdown').classList.remove('open');
+  document.getElementById('reg-center-search').style.display='';
+  document.querySelector('.center-search-icon').style.display='';
+  document.getElementById('reg-center-search').value='';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#center-field'))document.getElementById('center-dropdown').classList.remove('open');});
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  errEl.classList.remove('show');
+  if(!email||!pass){errEl.textContent='Rellena todos los campos.';errEl.classList.add('show');return;}
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>Accediendo…';
+  try{
+    const r=await fetch(`${API}/api/doctor/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.error||'Error de acceso');
+    SESSION=data;onLoginSuccess();
+  }catch(e){errEl.textContent=e.message;errEl.classList.add('show');}
+  finally{btn.disabled=false;btn.innerHTML='Entrar al panel';}
+}
+
+async function doRegister(){
+  const errEl=document.getElementById('reg-error');errEl.classList.remove('show');
+  const nombre=document.getElementById('reg-nombre').value.trim();
+  const apellidos=document.getElementById('reg-apellidos').value.trim();
+  const fnac=document.getElementById('reg-fnac').value.trim();
+  const colegiado=document.getElementById('reg-colegiado').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const country=document.getElementById('reg-pais').value;
+  if(!nombre||!apellidos||!fnac||!colegiado||!email||!pass||!country||!SELECTED_CENTER){errEl.textContent='Completa todos los campos obligatorios (*)';errEl.classList.add('show');return;}
+  if(pass.length<8){errEl.textContent='La contraseña debe tener al menos 8 caracteres.';errEl.classList.add('show');return;}
+  if(pass!==pass2){errEl.textContent='Las contraseñas no coinciden.';errEl.classList.add('show');return;}
+  const btn=document.getElementById('reg-btn');btn.disabled=true;btn.innerHTML='<span class="spin"></span>Registrando…';
+  try{
+    const r=await fetch(`${API}/api/doctor/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({collegiateNumber:colegiado,firstName:nombre,lastName:apellidos,birthDate:fnac,email,password:pass,countryCode:country,centerName:SELECTED_CENTER.name,centerCity:SELECTED_CENTER.city||''})});
+    const data=await r.json();
+    if(!r.ok) throw new Error(data.error||'Error al registrarse');
+    SESSION=data;onLoginSuccess();
+  }catch(e){errEl.textContent=e.message;errEl.classList.add('show');}
+  finally{btn.disabled=false;btn.innerHTML='Crear cuenta';}
+}
+
+function onLoginSuccess(){
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  populateProfileFromSession();loadPatients();navigate('perfil');
+}
+
+function populateProfileFromSession(){
+  if(!SESSION) return;
+  const s=SESSION;
+  const ini=((s.nombre||'')[0]||'')+((s.apellidos||'')[0]||'');
+  document.getElementById('topbar-avatar').textContent=(ini||'DR').toUpperCase();
+  document.getElementById('top-center-name').textContent=s.centerName||'—';
+  document.getElementById('profile-avatar').textContent=(ini||'DR').toUpperCase();
+  const trat=s.genero==='dra'?'Dra.':'Dr.';
+  document.getElementById('profile-fullname').textContent=`${trat} ${s.nombre||''} ${s.apellidos||''}`.trim();
+  setVal('f-nombre',s.nombre);setVal('f-apellidos',s.apellidos);setVal('f-fnacimiento',s.fechaNacimiento||'');
+  setVal('f-colegiado',s.numeroColegiado||'');setVal('f-email',s.email||'');setVal('f-telefono',s.telefono||'');
+  setVal('f-centro',s.centerName||'');setVal('f-ciudad',s.centerCity||'');setVal('f-pais-txt',s.countryCode||'');
+  const selEsp=document.getElementById('f-especialidad');
+  if(s.especialidad) for(let o of selEsp.options) if(o.value===s.especialidad||o.text===s.especialidad){selEsp.value=o.value;break;}
+  if(s.genero) document.getElementById('f-genero').value=s.genero;
+}
+function setVal(id,val){const el=document.getElementById(id);if(el)el.value=val||'';}
+
+function navigate(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{if((n.getAttribute('onclick')||'').includes("'"+id+"'"))n.classList.add('active');});
+  if(id==='stats'){initCharts();loadRiskChart();}
+  if(id==='alerts') renderAlerts();
+}
+
+function updateHeaderAvatar(){
+  const n=(document.getElementById('f-nombre').value||'').trim();
+  const a=(document.getElementById('f-apellidos').value||'').trim();
+  const i=((n[0]||'')+(a[0]||'')||'DR').toUpperCase();
+  document.getElementById('topbar-avatar').textContent=i;
+  document.getElementById('profile-avatar').textContent=i;
+  document.getElementById('profile-fullname').textContent=`Dr./Dra. ${n} ${a}`.trim()||'Dr./Dra. —';
+}
+async function saveProfile(){
+  const req=['f-nombre','f-apellidos','f-fnacimiento','f-colegiado','f-email'];
+  let ok=true;
+  req.forEach(id=>{const el=document.getElementById(id);if(!el.value.trim()){el.style.borderColor='var(--danger)';ok=false;}else el.style.borderColor='';});
+  if(!ok){showToast('Completa los campos obligatorios (*)','⚠️');return;}
+  const payload={nombre:document.getElementById('f-nombre').value.trim(),apellidos:document.getElementById('f-apellidos').value.trim(),fechaNacimiento:document.getElementById('f-fnacimiento').value,numeroColegiado:document.getElementById('f-colegiado').value.trim(),email:document.getElementById('f-email').value.trim(),telefono:document.getElementById('f-telefono').value.trim(),especialidad:document.getElementById('f-especialidad').value,genero:document.getElementById('f-genero').value};
+  try{
+    const r=await fetch(`${API}/api/doctor/profile`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(SESSION?.token||'')},body:JSON.stringify(payload)});
+    if(!r.ok) throw new Error();
+    Object.assign(SESSION,payload);showToast('Perfil guardado correctamente','✅');
+  }catch(e){showToast('Error al guardar. Inténtalo de nuevo.','❌');}
+}
+function resetProfileToLoaded(){populateProfileFromSession();showToast('Cambios descartados','↩️');}
+function handleAvatarUpload(e){
+  const file=e.target.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{const av=document.getElementById('profile-avatar');av.innerHTML='';const img=document.createElement('img');img.src=ev.target.result;img.style.cssText='width:80px;height:80px;object-fit:cover;border-radius:50%';av.appendChild(img);};
+  reader.readAsDataURL(file);showToast('Foto actualizada','📷');
+}
+
+async function loadPatients(){
+  try{
+    const r=await fetch(`${API}/api/doctor/patients`,{headers:{'Authorization':'Bearer '+(SESSION?.token||'')}});
+    const data=await r.json();ALL_PATIENTS=data.patients||[];
+  }catch(e){ALL_PATIENTS=MOCK_PATIENTS;}
+  FILTERED=ALL_PATIENTS.slice();renderTable();updateKPIs();
+}
+
+const RISK_BADGE={
+  alto:'<span class="badge badge-red"><span class="badge-dot"></span>Alto</span>',
+  medio:'<span class="badge badge-yellow"><span class="badge-dot"></span>Moderado</span>',
+  bajo:'<span class="badge badge-blue"><span class="badge-dot"></span>Bajo</span>',
+  estable:'<span class="badge badge-green"><span class="badge-dot"></span>Estable</span>'
+};
+const STATUS_BADGE={
+  activo:'<span class="badge badge-green">Activo</span>',
+  inactivo:'<span class="badge" style="background:#ffffff0a;color:var(--muted)">Inactivo</span>'
+};
+
+function renderTable(){
+  const tbody=document.getElementById('patients-tbody');
+  if(!FILTERED.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🔎</div><div class="empty-text">No se encontraron usuarios</div></div></td></tr>`;return;}
+  tbody.innerHTML=FILTERED.map(p=>`
+    <tr onclick="openModal('${p.id}')">
+      <td><div class="td-name">${p.name}</div><div class="td-sub">${p.id}</div></td>
+      <td><span style="font-size:13px">${p.phone}</span></td>
+      <td><span style="font-size:13px;color:var(--muted)">${formatDate(p.last)}</span></td>
+      <td><span style="font-size:13px">${p.sessions}</span></td>
+      <td>${RISK_BADGE[p.risk]||''}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn-report" id="rep-${p.id}" onclick="downloadReport('${p.id}',this)" title="Generar y descargar informe PDF">
+          📄 Informe
+        </button>
+      </td>
+    </tr>`).join('');
+  document.getElementById('pag-info').textContent=`Mostrando ${FILTERED.length} de ${ALL_PATIENTS.length} usuarios`;
+}
+function filterTable(){
+  const q=document.getElementById('search-inp').value.toLowerCase();
+  const risk=document.getElementById('filter-risk').value;
+  const status=document.getElementById('filter-status').value;
+  FILTERED=ALL_PATIENTS.filter(p=>{
+    return (!q||p.name.toLowerCase().includes(q)||p.phone.includes(q)||p.id.toLowerCase().includes(q))
+      &&(!risk||p.risk===risk)&&(!status||p.status===status);
+  });
+  renderTable();
+}
+
+function updateKPIs(){
+  const active=ALL_PATIENTS.filter(p=>p.status==='activo').length;
+  const sessions=ALL_PATIENTS.reduce((a,p)=>a+p.sessions,0);
+  const alerts=ALL_PATIENTS.filter(p=>p.emergency).length;
+  const highRisk=ALL_PATIENTS.filter(p=>p.risk==='alto').length;
+  document.getElementById('kpi-active').textContent=active;
+  document.getElementById('kpi-sessions').textContent=sessions>1000?(sessions/1000).toFixed(1)+'k':sessions;
+  document.getElementById('kpi-alerts').textContent=alerts;
+  document.getElementById('kpi-risk').textContent=highRisk;
+  document.getElementById('kpi-active-d').textContent='Usuarios activos en el centro';
+  document.getElementById('kpi-sessions-d').textContent='Total sesiones acumuladas';
+  document.getElementById('kpi-alerts-d').textContent=alerts?`↑ ${alerts} emergencia${alerts>1?'s':''}`:' Sin emergencias activas';
+  document.getElementById('kpi-risk-d').textContent=highRisk?`⚠ ${highRisk} requieren atención`:'Nivel normal';
+  // También actualizar el gráfico de riesgo con los datos de los pacientes cargados
+  // (complementa la llamada al endpoint /stats)
+  if(window._riskChart){
+    const est = ALL_PATIENTS.filter(p=>p.risk==='estable').length;
+    const baj = ALL_PATIENTS.filter(p=>p.risk==='bajo').length;
+    const med = ALL_PATIENTS.filter(p=>p.risk==='medio').length;
+    const alt = ALL_PATIENTS.filter(p=>p.risk==='alto').length;
+    window._riskChart.data.datasets[0].data = [est, baj, med, alt];
+    window._riskChart.update();
+  }
+}
+
+let chartsInit=false;
+function initCharts(){
+  if(chartsInit) return;chartsInit=true;
+  const cf={color:'#8696a0',font:{family:'DM Sans',size:11}};
+  const grid='#ffffff0a';
+  const tip={backgroundColor:'#1a2830',titleColor:'#e9edef',bodyColor:'#8696a0',borderColor:'#ffffff18',borderWidth:1};
+
+  // ── Sesiones por día ───────────────────────────────────────────────────────
+  window._sessionsChart=new Chart(document.getElementById('chart-sessions'),{type:'bar',data:{labels:[],datasets:[{label:'Sesiones',data:[],backgroundColor:'#00a88420',borderColor:'#00a884',borderWidth:1.5,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tip},scales:{x:{grid:{color:grid},ticks:{...cf,maxTicksLimit:10,maxRotation:45,minRotation:30}},y:{grid:{color:grid},ticks:{...cf,precision:0}}}}});
+
+  // ── Nivel de riesgo ────────────────────────────────────────────────────────
+  window._riskChart=new Chart(document.getElementById('chart-risk'),{type:'bar',data:{labels:['Estable','Bajo','Moderado','Alto'],datasets:[{data:[0,0,0,0],backgroundColor:['#00a88430','#5b9bd530','#ffa04030','#f15c6d30'],borderColor:['#00a884','#5b9bd5','#ffa040','#f15c6d'],borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:tip},scales:{x:{grid:{color:grid},ticks:{...cf}},y:{grid:{color:grid},ticks:{...cf}}}}});
+
+  // ── Valoración ─────────────────────────────────────────────────────────────
+  window._valorationChart=new Chart(document.getElementById('chart-valoration'),{type:'doughnut',data:{labels:['Buena','Regular','Mala','Sin valorar'],datasets:[{data:[0,0,0,0],backgroundColor:['#00a88430','#ffa04030','#f15c6d30','#ffffff0a'],borderColor:['#00a884','#ffa040','#f15c6d','#4a5a64'],borderWidth:1.5,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{display:false},tooltip:tip}}});
+  const lv=document.getElementById('legend-val');
+  if(lv){[['#00a884','Buena'],['#ffa040','Regular'],['#f15c6d','Mala'],['#4a5a64','Sin valorar']].forEach(([col,label])=>{lv.innerHTML+=`<div class="legend-item"><span class="legend-dot" style="background:${col}"></span>${label}</div>`;});}
+
+  // ── Screening SUI ──────────────────────────────────────────────────────────
+  const suiLabels=['Emergencia SUI (Autolesión)','Riesgo SUI (Plan Concreto)','Riesgo SUI (Ideación)','Riesgo SUI (Improbable)','Otros'];
+  const suiColors=['#f15c6d','#ffa040','#9d9dff','#5b9bd5','#4a5a64'];
+  window._suiChart=new Chart(document.getElementById('chart-sui'),{type:'doughnut',data:{labels:suiLabels,datasets:[{data:[0,0,0,0,0],backgroundColor:suiColors.map(c=>c+'30'),borderColor:suiColors,borderWidth:1.5,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:tip}}});
+  const ls=document.getElementById('legend-sui');
+  if(ls){suiLabels.forEach((l,i)=>{ls.innerHTML+=`<div class="legend-item"><span class="legend-dot" style="background:${suiColors[i]}"></span>${l}</div>`;});}
+
+  // ── Screening DEP ──────────────────────────────────────────────────────────
+  const depLabels=['Posible Episodio Bipolar','Posible Depresión','Otros'];
+  const depColors=['#9d9dff','#5b9bd5','#4a5a64'];
+  window._depChart=new Chart(document.getElementById('chart-dep'),{type:'doughnut',data:{labels:depLabels,datasets:[{data:[0,0,0],backgroundColor:depColors.map(c=>c+'30'),borderColor:depColors,borderWidth:1.5,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:tip}}});
+  const ldep=document.getElementById('legend-dep');
+  if(ldep){depLabels.forEach((l,i)=>{ldep.innerHTML+=`<div class="legend-item"><span class="legend-dot" style="background:${depColors[i]}"></span>${l}</div>`;});}
+}
+
+async function openModal(id){
+  const p=ALL_PATIENTS.find(x=>x.id===id);if(!p) return;
+  currentPatient=p;
+  document.getElementById('modal-id').textContent=`ID: ${p.id}`;
+  document.getElementById('modal-name').textContent=p.name;
+  document.getElementById('modal-phone').textContent=p.phone;
+  document.getElementById('modal-last').textContent=formatDate(p.last);
+  document.getElementById('modal-sessions').textContent=p.sessions+' sesiones';
+  document.getElementById('modal-risk').innerHTML=RISK_BADGE[p.risk]||p.risk;
+  
+  document.getElementById('modal-notes').value=p.notes||'';
+  document.getElementById('modal-emergency-flag').style.display=p.emergency?'flex':'none';
+  const sl=document.getElementById('modal-sessions-list');
+  sl.innerHTML='<div class="sessions-loading"><span class="spin" style="border-top-color:var(--accent)"></span> Cargando historial…</div>';
+  document.getElementById('modal-sessions-count').textContent='';
+  document.getElementById('patient-modal').classList.add('open');
+  let sessions=p.sessionLog||[];
+  try{
+    const r=await fetch(`${API}/api/doctor/patients/${p.id}/sessions`,{headers:{'Authorization':'Bearer '+(SESSION?.token||'')}});
+    if(r.ok){const data=await r.json();sessions=data.sessions||sessions;}
+  }catch(e){}
+  renderSessionCards(sessions);
+
+  // Actualizar panel superior con los datos reales de sesiones
+  if(sessions && sessions.length > 0){
+    // sessions viene ordenado más reciente primero (del endpoint /sessions)
+    const mostRecent = sessions[0];
+    document.getElementById('modal-last').textContent = formatDate(mostRecent.date);
+    document.getElementById('modal-sessions').textContent = sessions.length + ' sesiones';
+  } else {
+    document.getElementById('modal-last').textContent = '—';
+    document.getElementById('modal-sessions').textContent = '0 sesiones';
+  }
+}
+
+function valorationClass(val){
+  if(!val) return 'val-neutral';
+  const v=val.toUpperCase();
+  if(v==='BUENA'||v==='GOOD'||v==='BIEN') return 'val-buena';
+  if(v==='REGULAR'||v==='MEDIO') return 'val-regular';
+  if(v==='MALA'||v==='BAD'||v==='MAL') return 'val-mala';
+  return 'val-neutral';
+}
+function valorationLabel(val){
+  if(!val) return '—';
+  const v=val.toUpperCase();
+  if(v==='BUENA'||v==='GOOD'||v==='BIEN') return '✦ Buena';
+  if(v==='REGULAR'||v==='MEDIO') return '◆ Regular';
+  if(v==='MALA'||v==='BAD'||v==='MAL') return '✖ Mala';
+  return val;
+}
+
+function renderSessionCards(sessions){
+  const sl=document.getElementById('modal-sessions-list');
+  const count=document.getElementById('modal-sessions-count');
+  if(!sessions||!sessions.length){
+    sl.innerHTML='<div class="empty-state" style="padding:24px"><div class="empty-icon">📋</div><div class="empty-text">Sin sesiones registradas</div></div>';
+    count.textContent='';return;
+  }
+  count.textContent=`${sessions.length} sesión${sessions.length!==1?'es':''}`;
+  sl.innerHTML=sessions.map((s,i)=>{
+    const dateLabel=formatDate(s.date);
+    const timeLabel=(s.datetime||'').slice(11,16);
+    const isEmergency=s.status==='emergencia';
+    const hasSummary=s.summary&&s.summary.trim().length>0;
+    const scId=`sc-${currentPatient.id}-${i}`;
+    const openClass=i===0?'open':'';
+    return `
+    <div class="session-card ${openClass}" id="${scId}">
+      <div class="session-card-header" onclick="toggleSession('${scId}')">
+        <div class="session-date-block">
+          <span class="session-date-day">${dateLabel}</span>
+          ${timeLabel?`<span class="session-date-time">${timeLabel}</span>`:''}
+        </div>
+        ${isEmergency
+          ?'<span class="badge badge-red" style="flex-shrink:0">🚨 Emergencia</span>'
+          :`<span class="badge ${valorationClass(s.valoration)}" style="flex-shrink:0">${valorationLabel(s.valoration)}</span>`}
+        <span class="session-chevron">▼</span>
+      </div>
+      <div class="session-card-body">
+        <div class="session-summary-label">Resumen de sesión</div>
+        ${hasSummary
+          ?`<div class="session-summary-text">${escHtml(s.summary)}</div>`
+          :`<div class="session-summary-empty">No hay resumen disponible para esta sesión.</div>`}
+        ${isEmergency?'<div style="margin-top:10px"><span class="badge badge-red">⚠️ Protocolo de emergencia 112 activado</span></div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleSession(id){document.getElementById(id).classList.toggle('open');}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function closeModal(){document.getElementById('patient-modal').classList.remove('open');}
+function closeModalOnOverlay(e){if(e.target===document.getElementById('patient-modal'))closeModal();}
+
+async function saveNote(){
+  if(!currentPatient) return;
+  const note=document.getElementById('modal-notes').value;
+  currentPatient.notes=note;
+  try{await fetch(`${API}/api/doctor/patients/${currentPatient.id}/notes`,{method:'PUT',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(SESSION?.token||'')},body:JSON.stringify({notes:note})});}catch(e){}
+  showToast('Nota guardada','📝');
+}
+
+function renderAlerts(){
+  const em=ALL_PATIENTS.filter(p=>p.emergency);
+  const c=document.getElementById('alerts-list');
+  if(!em.length){c.innerHTML='<div class="card"><div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">No hay alertas activas en este momento</div></div></div>';return;}
+  c.innerHTML=em.map(p=>`
+    <div class="card" style="border-color:#f15c6d30;cursor:pointer" onclick="navigate('patients');openModal('${p.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:18px">🚨</span><span style="font-weight:500;font-size:15px">${p.name}</span>${RISK_BADGE[p.risk]||''}</div>
+          <div style="font-size:13px;color:var(--muted)">ID: ${p.id} · Última sesión: ${formatDate(p.last)}</div>
+          <div style="font-size:13px;color:#f8909a;margin-top:8px">⚠️ Alerta de emergencia 112 activada</div>
+        </div>
+        <button class="btn-outline" style="flex-shrink:0" onclick="event.stopPropagation();navigate('patients');openModal('${p.id}')">Ver ficha →</button>
+      </div>
+    </div>`).join('');
+}
+
+let toastTimer=null;
+function showToast(msg,icon='✅'){
+  document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-icon').textContent=icon;
+  const t=document.getElementById('toast');t.classList.add('show');clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+function formatDate(d){
+  if(!d) return'—';
+  try{return new Date(d+'T00:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});}catch{return d;}
+}
+function confirmLogout(){
+  if(confirm('¿Seguro que deseas cerrar sesión?')){
+    SESSION=null;ALL_PATIENTS=[];
+    document.getElementById('app').classList.remove('visible');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('login-email').value='';document.getElementById('login-pass').value='';
+    chartsInit=false;
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   REPORT DOWNLOAD
+══════════════════════════════════════════════════════════ */
+async function downloadReport(patientId, btnEl){
+  if(btnEl){
+    btnEl.disabled=true;
+    btnEl.innerHTML='<span class="spin" style="border-top-color:var(--accent)"></span> Generando…';
+  }
+  try{
+    const r = await fetch(`${API}/api/doctor/patients/${patientId}/report`, {
+      headers: {'Authorization': 'Bearer ' + (SESSION?.token || '')}
+    });
+    if(!r.ok){
+      const err = await r.json().catch(()=>({}));
+      throw new Error(err.error || 'Error al generar el informe');
+    }
+    // Obtener el blob y forzar descarga en el navegador
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `Informe_${patientId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Informe descargado correctamente', '📄');
+  } catch(e){
+    showToast(e.message || 'Error al generar el informe', '❌');
+  } finally{
+    if(btnEl){
+      btnEl.disabled=false;
+      btnEl.innerHTML='📄 Informe';
+    }
+  }
+}
+
+function downloadReportFromModal(){
+  if(!currentPatient) return;
+  const btn = document.getElementById('modal-report-btn');
+  downloadReport(currentPatient.id, btn);
+  // Sincronizar también el botón de la tabla si está visible
+  const tableBtn = document.getElementById(`rep-${currentPatient.id}`);
+  if(tableBtn){
+    tableBtn.disabled=true;
+    tableBtn.innerHTML='<span class="spin" style="border-top-color:var(--accent)"></span> Generando…';
+    setTimeout(()=>{ tableBtn.disabled=false; tableBtn.innerHTML='📄 Informe'; }, 8000);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   RISK CHART — datos reales desde el backend
+══════════════════════════════════════════════════════════ */
+async function loadRiskChart(){
+  try{
+    const r=await fetch(`${API}/api/doctor/stats`,{headers:{'Authorization':'Bearer '+(SESSION?.token||'')}});
+    if(!r.ok) return;
+    const data=await r.json();
+
+    // ── Nivel de riesgo ──────────────────────────────────────────────────────
+    const dist=data.riskDistribution||{};
+    if(window._riskChart){
+      window._riskChart.data.datasets[0].data=[dist.estable||0,dist.bajo||0,dist.medio||0,dist.alto||0];
+      window._riskChart.update();
+    }
+
+    // ── Sesiones por día (últimos 30 días) ───────────────────────────────────
+    const sbd=data.sessionsByDay||{};
+    if(window._sessionsChart){
+      const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      const labels=Object.keys(sbd).map(d=>{const dt=new Date(d+'T00:00:00');return `${dt.getDate()} ${meses[dt.getMonth()]}`;});
+      window._sessionsChart.data.labels=labels;
+      window._sessionsChart.data.datasets[0].data=Object.values(sbd);
+      window._sessionsChart.update();
+    }
+
+    // ── Valoración acumulada de sesiones ─────────────────────────────────────
+    const val=data.valorationDist||{};
+    if(window._valorationChart){
+      window._valorationChart.data.datasets[0].data=[val.buena||0,val.regular||0,val.mala||0,val.sin_valorar||0];
+      window._valorationChart.update();
+    }
+
+    // ── Screening SUI ─────────────────────────────────────────────────────────
+    // Orden: self_harm, concrete_plan, ideation, improbable, others
+    const sui=data.suiDist||{};
+    if(window._suiChart){
+      window._suiChart.data.datasets[0].data=[
+        sui.self_harm||0, sui.concrete_plan||0, sui.ideation||0,
+        sui.improbable||0, sui.others||0
+      ];
+      window._suiChart.update();
+    }
+
+    // ── Screening DEP ─────────────────────────────────────────────────────────
+    // Orden: depression, bipolar, others
+    const dep=data.depDist||{};
+    if(window._depChart){
+      window._depChart.data.datasets[0].data=[
+        dep.depression||0, dep.bipolar||0, dep.others||0
+      ];
+      window._depChart.update();
+    }
+
+  }catch(e){console.warn('No se pudo cargar estadísticas:',e);}
+}
+</script>
+</body>
+</html>

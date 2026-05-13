@@ -163,15 +163,13 @@ def StateMachine(telephone, phase, state, user_input):
                 value = formatted_name
                 db.add_user_info(telephone, key, value)
                 
-                phase = "PROFILE"
-                state = "age"
+                phase, state = "PROFILE", "age"
                 db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
                 variant = "repeat"
-                phase = "PROFILE"
-                state = "name"
+                phase, state = "PROFILE", "name"
                 return (phase, state, variant)
 
         elif state == "age":
@@ -182,28 +180,23 @@ def StateMachine(telephone, phase, state, user_input):
                 if 18 <= value < 120:  # Range of validation
                     db.add_user_info(telephone, key, value)
                     
-                    phase = "PROFILE"
-                    state = "reason"
+                    phase, state = "PROFILE", "reason"
                     db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 elif value < 18:
                     
-                    phase = "FAREWELL"
-                    state = "age"
-                    db.save_flow(telephone, phase, state)
+                    phase, state = "FAREWELL", "age"
                     return (phase, state, variant)
                 
                 else:
                     
-                    phase = "PROFILE"
-                    state = "age"
+                    phase, state = "PROFILE", "age"
                     return (phase, state, variant)
                 
             else:
                 variant = "repeat"
-                phase = "PROFILE"
-                state = "age"
+                phase, state = "PROFILE", "age"
                 return (phase, state, variant)
             
         elif state == "reason":
@@ -211,8 +204,7 @@ def StateMachine(telephone, phase, state, user_input):
             value = user_input
             db.add_user_info(telephone, key, value)
             
-            phase = "PROFILE"
-            state = "expectation"
+            phase, state = "PROFILE", "expectation"
             db.save_flow(telephone, phase, state)
             return (phase, state, variant)
         
@@ -221,8 +213,7 @@ def StateMachine(telephone, phase, state, user_input):
             value = user_input
             db.add_user_info(telephone, key, value)
             
-            phase = "PROFILE"
-            state = "commitment"
+            phase, state = "PROFILE", "commitment"
             db.save_flow(telephone, phase, state)
             return (phase, state, variant)
         
@@ -301,14 +292,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "Non commited"
                 db.add_user_info(telephone, key, value)
                 
-                time.sleep(2)
-                raw_bot_output = """Te escucho igualmente, pero ten en cuenta que cuanto más te guardes, 
-                más difícil será para mí darte herramientas que realmente te ayuden."""
-                bot_output = " ".join(raw_bot_output.split())
-                print(f"\nBOT: {bot_output}")
-                
-                phase = "USE_CASE_EVAL"
-                state = ""
+                phase, state = "USE_CASE_EVAL", ""
                 db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
                 
@@ -320,14 +304,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = "Fully commited"
                     db.add_user_info(telephone, key, value)
                     
-                    time.sleep(2)
-                    raw_bot_output = """Perfecto. Tu sinceridad es la base para que este espacio te 
-                    sirva de verdad."""
-                    bot_output = " ".join(raw_bot_output.split())
-                    print(f"\nBOT: {bot_output}")
-                    
-                    phase = "USE_CASE_EVAL"
-                    state = ""
+                    phase, state = "USE_CASE_EVAL", ""
                     db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                     
@@ -339,21 +316,13 @@ def StateMachine(telephone, phase, state, user_input):
                         value = "Partially commited"
                         db.add_user_info(telephone, key, value)
                         
-                        time.sleep(2)
-                        raw_bot_output = """No pasa nada, vamos poco a poco. Solo recuerda que mis 
-                        consejos serán mucho más útiles si compartes lo que de verdad sientes."""
-                        bot_output = " ".join(raw_bot_output.split())
-                        print(f"\nBOT: {bot_output}")
-                        
-                        phase = "USE_CASE_EVAL"
-                        state = ""
+                        phase, state = "USE_CASE_EVAL", ""
                         db.save_flow(telephone, phase, state)
                         return (phase, state, variant)
                         
                     else:
                         variant = "repeat"
-                        phase = "PROFILE"
-                        state = "commitment"
+                        phase, state = "PROFILE", "commitement"
                         return (phase, state, variant) 
     
     
@@ -367,8 +336,7 @@ def StateMachine(telephone, phase, state, user_input):
             PATTERNS_YES = [
 
                 # Afirmaciones directas
-                r"\bsí\b",
-                r"\bsí[,\s]+he\s+notado\b",
+                r"\bsi[,\s]+he\s+notado\b",
                 r"\bclaro\b",
                 r"\bexacto\b",
                 r"\bpor\s+supuesto\b",
@@ -382,19 +350,19 @@ def StateMachine(telephone, phase, state, user_input):
                 r"\btriste\s+todo\s+el\s+tiempo\b",
                 r"\bestado\s+de\s+ánimo\s+bajo\b",
                 r"\bbajo\s+de\s+ánimo\b",
-                r"\bvacío\b",
-                r"\bme\s+siento\s+vac[ií]o\b",
+                r"\bvacio\b",
+                r"\bme\s+siento\s+vacio\b",
                 r"\bsiento\s+un\s+vacío\b",
                 r"\bdeprimid[oa]\b",
-                r"\bdepresión\b",
+                r"\bdepresion\b",
                 r"\bme\s+siento\s+deprimid[oa]\b",
                 r"\bpersistentemente\s+triste\b",
                 r"\bno\s+estoy\s+content[oa]\b",
                 r"\bno\s+estoy\s+feliz\b",
 
                 # COMBINACIONES NATURALES
-                r"\bsi[,.]?\s*(?:llevo\s+asi|me\s+pasa)\s+(?:desde\s+hace|mucho)\b",
-                r"\bsi[,.]?\s*(?:la\s+verdad\s+es\s+que\s+)?(?:estoy\s+fatal|me\s+siento\s+vacio)\b",
+                r"\bsi?\s*(?:llevo\s+asi|me\s+pasa)\s+(?:desde\s+hace|mucho)\b",
+                r"\bsi?\s*(?:la\s+verdad\s+es\s+que\s+)?(?:estoy\s+fatal|me\s+siento\s+vacio)\b",
             ]
             
             PATTERNS_NO = [
@@ -403,7 +371,7 @@ def StateMachine(telephone, phase, state, user_input):
                 r"\bno\b",
                 r"\bno\s+he\s+notado\b",
                 r"\bnunca\b",
-                r"\bjamás\b",
+                r"\bjamas\b",
                 r"\bnada\s+de\s+eso\b",
                 r"\bpara\s+nada\b",
                 r"\ben\s+absoluto\b",
@@ -411,11 +379,11 @@ def StateMachine(telephone, phase, state, user_input):
 
                 # Ausencia de síntomas de ánimo bajo
                 r"\bno\s+estoy\s+triste\b",
-                r"\bno\s+me\s+siento\s+vac[ií]o\b",
+                r"\bno\s+me\s+siento\s+vacio\b",
                 r"\bno\s+estoy\s+deprimid[oa]\b",
-                r"\bno\s+tengo\s+depresión\b",
-                r"\bmi\s+ánimo\s+está\s+bien\b",
-                r"\bestado\s+de\s+ánimo\s+normal\b",
+                r"\bno\s+tengo\s+depresion\b",
+                r"\bmi\s+animo\s+está\s+bien\b",
+                r"\bestado\s+de\s+animo\s+normal\b",
             ]
                         
             # 1 - Negation
@@ -426,6 +394,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1A.2"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -437,6 +406,7 @@ def StateMachine(telephone, phase, state, user_input):
                     db.add_user_info(telephone, key, value)
                     
                     phase, state = "DEP_EVAL", "1A.2"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -502,10 +472,14 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 if previous:
                     phase, state = "DEP_EVAL", "1B.1"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
-                    phase, state = "CHAT", ""
+                    phase, state = "CHAT", ""   # seria OTR
+                    key = "SCREENING.DEP"
+                    value = "others"
+                    db.add_user_info(telephone, key, value)
                     return (phase, state, variant)
             
             else:
@@ -517,6 +491,7 @@ def StateMachine(telephone, phase, state, user_input):
                     db.add_user_info(telephone, key, value)
                     
                     phase, state = "DEP_EVAL", "1B.1"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -576,6 +551,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1B.2"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -587,6 +563,7 @@ def StateMachine(telephone, phase, state, user_input):
                     db.add_user_info(telephone, key, value)
                     
                     phase, state = "DEP_EVAL", "1B.2"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -654,6 +631,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1B.3"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -664,7 +642,8 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "DEP_EVAL", "1B.3" 
+                    phase, state = "DEP_EVAL", "1B.3"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -739,6 +718,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1B.4" 
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -749,7 +729,8 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "DEP_EVAL", "1B.4" 
+                    phase, state = "DEP_EVAL", "1B.4"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -817,6 +798,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1B.5"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -827,7 +809,8 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "DEP_EVAL", "1B.5" 
+                    phase, state = "DEP_EVAL", "1B.5"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -898,6 +881,7 @@ def StateMachine(telephone, phase, state, user_input):
                 db.add_user_info(telephone, key, value)
                 
                 phase, state = "DEP_EVAL", "1B.6"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
@@ -908,7 +892,8 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "DEP_EVAL", "1B.6" 
+                    phase, state = "DEP_EVAL", "1B.6"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
@@ -985,10 +970,14 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 if sum(1 for x in results if x) >= 2:
                     phase, state = "DEP_EVAL", "1C"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
-                    phase, state = "CHAT", ""
+                    phase, state = "CHAT", ""   # seria OTR
+                    key = "SCREENING.DEP"
+                    value = "others"
+                    db.add_user_info(telephone, key, value)
                     return (phase, state, variant)
             
             else:
@@ -1009,10 +998,14 @@ def StateMachine(telephone, phase, state, user_input):
                     
                     if sum(1 for x in results if x) >= 1:
                         phase, state = "DEP_EVAL", "1C"
+                        db.save_flow(telephone, phase, state)
                         return (phase, state, variant)
                     
                     else:
-                        phase, state = "CHAT", ""
+                        phase, state = "CHAT", ""   # seria OTR
+                        key = "SCREENING.DEP"
+                        value = "others"
+                        db.add_user_info(telephone, key, value)
                         return (phase, state, variant)
                 
                 else:
@@ -1081,7 +1074,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase, state = "CHAT", ""
+                phase, state = "CHAT", ""   # seria OTR
+                key = "SCREENING.DEP"
+                value = "others"
+                db.add_user_info(telephone, key, value)
                 return (phase, state, variant)
             
             else:
@@ -1092,7 +1088,11 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "DEP_EVAL", "2A.1" 
+                    phase, state = "DEP_EVAL", "2A.1"
+                    db.save_flow(telephone, phase, state)
+                    key = "SCREENING.DEP"
+                    value = "depression"
+                    db.add_user_info(telephone, key, value)
                     return (phase, state, variant)
                 
                 else:
@@ -1154,28 +1154,30 @@ def StateMachine(telephone, phase, state, user_input):
             # 1 - Negación (No toma medicación)
             match_no = pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
-                key = "MED_EVAL.2A_1_on_medication"
+                key = "DEP_EVAL.2A_1_on_medication"
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase, state = "MED_EVAL", "2A.2"
+                phase, state = "DEP_EVAL", "2A.2"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
                 # 2 - Afirmación (Toma medicación/tratamiento)
                 match_yes = pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
-                    key = "MED_EVAL.2A_1_on_medication"
+                    key = "DEP_EVAL.2A_1_on_medication"
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "MED_EVAL", "2A.2" 
+                    phase, state = "DEP_EVAL", "2A.2" 
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
                     variant = variant_search(n_user_input)
-                    phase, state = "MED_EVAL", "2A.1"
+                    phase, state = "DEP_EVAL", "2A.1"
                     return (phase, state, variant)
         
         elif state == "2A.2":
@@ -1224,28 +1226,30 @@ def StateMachine(telephone, phase, state, user_input):
             # 1 - Negación (Sin patologías físicas detectadas)
             match_no = pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
-                key = "MED_EVAL.2A_2_physical_conditions"
+                key = "DEP_EVAL.2A_2_physical_conditions"
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase, state = "MED_EVAL", "2B.1"
+                phase, state = "DEP_EVAL", "2B.1"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
                 # 2 - Afirmación (Condición física presente)
                 match_yes = pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
-                    key = "MED_EVAL.2A_2_physical_conditions"
+                    key = "DEP_EVAL.2A_2_physical_conditions"
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "MED_EVAL", "2B.1"
+                    phase, state = "DEP_EVAL", "2B.1"
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
                     variant = variant_search(n_user_input)
-                    phase, state = "MED_EVAL", "2A.2"
+                    phase, state = "DEP_EVAL", "2A.2"
                     return (phase, state, variant)
         
         elif state == "2B.1":
@@ -1306,56 +1310,1400 @@ def StateMachine(telephone, phase, state, user_input):
             # 1 - Negación (Ánimo estable o fluctuaciones normales)
             match_no = pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
-                key = "BIP_EVAL.2B_1_mania_episode"
+                key = "DEP_EVAL.2B_1_mania_episode"
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase, state = "BIP_EVAL", "2B.2"
+                phase, state = "DEP_EVAL", "2B.2"
+                db.save_flow(telephone, phase, state)
                 return (phase, state, variant)
             
             else:
                 # 2 - Afirmación (Indicios de episodio maníaco/hipomaníaco)
                 match_yes = pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
-                    key = "BIP_EVAL.2B_1_mania_episode"
+                    key = "DEP_EVAL.2B_1_mania_episode"
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "BIP_EVAL", "2B.2" 
+                    phase, state = "DEP_EVAL", "2B.2" 
+                    db.save_flow(telephone, phase, state)
                     return (phase, state, variant)
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
                     variant = variant_search(n_user_input)
-                    phase, state = "BIP_EVAL", "2B.1"
+                    phase, state = "DEP_EVAL", "2B.1"
                     return (phase, state, variant)
             
         elif state == "2B.2":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y SENSACIÓN DE DESCANSO
+                r"\bsi[,.]?\s*(me ha pasado|he dormido poco sin cansarme|es verdad)\b",
+                r"\b(no necesitaba|sin necesidad de) dormir\b",
+                r"\bapenas dormia y (seguia con energia|estaba bien)\b",
+                r"\bcon (muy |tan )?poco sueno me encontraba (perfecto|totalmente bien|genial)\b",
+                
+                # DISMINUCIÓN CLARA (HORAS ESPECÍFICAS)
+                r"\bdormia (2|3|4|dos|tres|cuatro) horas y (estaba perfecto|me sobraba)\b",
+                r"\bno sentia sueno (aunque|pese a que) hubiera dormido poco\b",
+                r"\bme despertaba (descansado|descansada|a tope) con (muy )?poco sueno\b",
+                
+                # ACTIVIDAD Y ENERGÍA
+                r"\bseguia (activo|activa) todo el dia sin (notar cansancio|cansarme)\b",
+                r"\bpodia funcionar con (poquisimo|nada de) sueno\b",
+                r"\bestaba (lleno|llena) de energia con solo un par de horas\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\bhace una temporada me pasaba\b",
+                r"\bdurante varios dias (seguidos )?dormia muy poco\b",
+                r"\btuve una racha asi\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|correcto|exacto|asi es|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca me ha pasado|nada de eso|no es mi caso)\b",
+                r"\bno recuerdo algo asi\b",
+                r"\bno[,.]?\s*(siempre necesito dormir|duermo normal)\b",
+
+                # DIFERENCIAR INSOMNIO DE MANÍA (CRUCIAL)
+                r"\bhe dormido (mal|poco) pero (si me cansaba|estaba agotado|estaba muerto)\b",
+                r"\bme costaba dormir pero (al dia siguiente )?estaba (agotado|fatal|reventado)\b",
+                r"\b(tengo|he tenido) insomnio\b",
+                r"\bno es (que no necesite|menos necesidad), es que no puedo\b",
+                r"\bsi no duermo me (muero|siento fatal|agoto)\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca)$",
+                r"\bno\b"
+            ]
+
+            
+            # 1 - Negación (O insomnio clásico donde sí hay cansancio)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_2_decreased_sleep_need"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2B.3"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Menos necesidad de sueño detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_2_decreased_sleep_need"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2B.3"
+                    db.save_flow(telephone, phase, state) 
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.2"
+                    return (phase, state, variant)
             
         elif state == "2B.3":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y ACELERACIÓN
+                r"\bsi[,.]?\s*(he tenido epocas|me pasaba eso|he sentido|iba asi)\b",
+                r"\b(iba|voy|estaba) (acelerado|acelerada|a mil|a mil por hora|a cien)\b",
+                r"\bsenti que (iba|estaba) (muy )?acelerado\b",
+                r"\b(tenia|con) (muchisima|demasiada) energia\b",
+                
+                # EXCESO DE ACTIVIDAD / DIFICULTAD DE CONTROL
+                r"\bno (podia quedarme quieto|podia parar|podia frenar)\b",
+                r"\bhacia (muchas|demasiadas) cosas (a la vez|al mismo tiempo) sin cansarme\b",
+                r"\bme (costaba|era imposible) (frenarme|parar|quedarme tranquilo)\b",
+                r"\bestaba (hiperactivo|hiperactiva|desbordado|desbordada)\b",
+                r"\bun (exceso|chorro) de actividad\b",
+                r"\bno paraba en casa\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\bhace (anos|un tiempo) tuve una etapa asi\b",
+                r"\bdurante varios dias (seguidos )?me paso\b",
+                r"\bhe tenido (varios )?episodios de ese tipo\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|tal cual|efectivamente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca me ha pasado|nada de eso|no es mi caso)\b",
+                r"\bno (he tenido|siento) (ese exceso|esa energia|esa actividad)\b",
+                r"\bno me he sentido asi\b",
+
+                # DIFERENCIAR ACTIVIDAD NORMAL DE MANÍA
+                r"\bestaba (muy |bastante )?ocupado pero (era |todo )?normal\b",
+                r"\btenia muchas cosas (que hacer|por hacer) pero no (iba acelerado|estaba descontrolado)\b",
+                r"\btrabajaba mucho pero (bien|sin sentirme descontrolado|con calma)\b",
+                r"\bcansado pero no hiperactivo\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no recuerdo nada asi)\b",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Actividad normal o solo estar ocupado)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_3_excessive_activity"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2B.4"
+                db.save_flow(telephone, phase, state)  
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Actividad excesiva detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_3_excessive_activity"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2B.4"
+                    db.save_flow(telephone, phase, state)  
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.3"
+                    return (phase, state, variant)
             
         elif state == "2B.4":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y GASTOS
+                r"\bsi[,.]?\s*(he tomado decisiones impulsivas|he gastado sin pensar|me he lanzado)\b",
+                r"\b(me gaste|me he gastado) (mucho|demasiado) (dinero|pasta)\b",
+                r"\bsin control (con el dinero|comprando)\b",
+                r"\b(compras|gastos) (compulsivas|compulsivos|sin sentido)\b",
+                r"\bgaste mas de lo que (debia|tenia|pedia)\b",
+                r"\btire la casa por la ventana\b",
+
+                # DECISIONES IMPORTANTES SIN REFLEXIONAR
+                r"\b(tome|hice) decisiones (grandes|importantes) sin (pensar|pensarlo)\b",
+                r"\bme (cambie|deje|deje el) (trabajo|curro) (sin mas|de golpe|sin pensar)\b",
+                r"\bme (meti|enrede) en (proyectos|deudas|líos) sin (reflexionar|pensar)\b",
+                r"\bme lie la manta a la cabeza\b",
+                
+                # IMPULSIVIDAD / FALTA DE CONTROL
+                r"\b(actue|hice las cosas) sin pensar\b",
+                r"\bno (media|pense en) las consecuencias\b",
+                r"\bme (dejaba llevar|lance) y luego me (arrepentia|arrepenti)\b",
+                r"\biba por impulso\b",
+                r"\bestaba (muy |super )?impulsiv[oa]\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\bdurante (aquella|esa) racha\b",
+                r"\bme paso en (varias ocasiones|una epoca)\b",
+                r"\bfui muy impulsiv[oa] (en ese tiempo|entonces)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|tal cual|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca he hecho nada asi|no he tenido gastos|nada de eso)\b",
+                r"\bno suelo (tomar decisiones impulsivas|ser impulsivo)\b",
+                r"\bno me (identifico|reconozco) con eso\b",
+                r"\bno es mi caso\b",
+
+                # DIFERENCIAR IMPULSO NORMAL DE MANÍA
+                r"\bcompro cosas pero (con control|normal|lo justo)\b",
+                r"\b(tome decisiones|decidi) rapido pero (las pense|con cabeza)\b",
+                r"\bhe sido impulsiv[oa] (alguna vez|un poco) pero no (exagerado|de esa forma)\b",
+                r"\bsiempre (pienso|reflexiono) antes de actuar\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no recuerdo algo asi)\b",
+                r"\bno\b"
+            ]
+
+            
+            # 1 - Negación (Conducta controlada)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_4_impulsive_decisions"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2B.5" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Impulsividad detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_4_impulsive_decisions"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2B.5" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.4"
+                    return (phase, state, variant)
             
         elif state == "2B.5":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y VERGÜENZA
+                r"\bsi[,.]?\s*(he hecho cosas fuera de lugar|me daban verguenza|estaba desinhibido)\b",
+                r"\b(hice|he hecho) cosas que antes me (daban|habrian dado) verguenza\b",
+                r"\bsi[,.]?\s*(perdia|perdi|sin) el filtro\b",
+                r"\bdecir cosas que antes me (callaba|daban verguenza)\b",
+
+                # DESINHIBICIÓN / CONDUCTA INAPROPIADA
+                r"\bcomportarme (sin filtro|sin frenos)\b",
+                r"\bdecir lo (primero|primero que se me pasaba) por la cabeza\b",
+                r"\bestaba (demasiado |muy )?lanzado\b",
+                r"\bme daba igual lo que (pensaran|dijeran) (los demas|el resto)\b",
+                r"\bestaba (sobrado|muy crecido)\b",
+                
+                # CONFIANZA Y ATREVIMIENTO
+                r"\bme (sentia|veia) capaz de todo\b",
+                r"\bactuaba sin (reparo|miedo|pensar)\b",
+                r"\bhacia cosas que (normalmente|antes) no haria\b",
+                r"\bme sentia (demasiado |muy )?confiado\b",
+
+                # CONDUCTA SOCIAL / FEEDBACK EXTERNO
+                r"\b(otros|la gente) me (decian|decia) que estaba raro\b",
+                r"\bme dijeron que (estaba pasando limites|me pasaba de la raya)\b",
+                r"\bme comporte de forma (impropia|inadecuada)\b",
+                r"\bllame la atencion por (como hablaba|mi conducta)\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\ben una etapa me paso\b",
+                r"\bdurante varios dias estaba asi\b",
+                r"\bhe tenido epocas en las que (perdia|no tenia) el filtro\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|totalmente|efectivamente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca me ha pasado|nada de eso|no es mi caso)\b",
+                r"\bno (me he sentido|he estado) (lanzado|raro|sin filtro)\b",
+                r"\bno he hecho nada (asi|fuera de lugar)\b",
+
+                # DIFERENCIAR CAMBIOS NORMALES
+                r"\b(dicho|hice) alguna tonteria pero (nada fuera de lo normal|lo tipico)\b",
+                r"\ba veces (he sido|soy) (mas abierto|suelto) pero sin (pasarme|exagerar)\b",
+                r"\bsiempre tengo (el |mi )?filtro\b",
+                r"\bsoy (timido|prudente) siempre\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no recuerdo algo asi)\b",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Conducta social habitual o controlada)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_5_social_disinhibition"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                # Final de la sub-fase 2B
+                phase, state = "DEP_EVAL", "2B.6" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Desinhibición detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_5_social_disinhibition"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2B.6" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.5"
+                    return (phase, state, variant)
+        
+        elif state == "2B.6":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y DISTRACCIÓN
+                r"\bsi[,.]?\s*(me distraigo mucho|me cuesta seguir|me pasa eso)\b",
+                r"\b(me cuesta|es dificil) (seguir|mantener) (el hilo|la conversacion)\b",
+                r"\bse me va (la cabeza|la pinza|el santo al cielo)\b",
+                r"\b(pierdo|he perdido) el hilo (enseguida|facilmente)\b",
+                r"\bcualquier (cosa|ruido|pensamiento) me (distrae|desconcentra|saca)\b",
+
+                # TAREAS INACABADAS / SALTO DE ACTIVIDAD
+                r"\b(dejo|dejar) (las cosas|todo) a medias\b",
+                r"\bvoy saltando de (una cosa a otra|tarea en tarea)\b",
+                r"\bme pongo con algo y (enseguida cambio|no acabo)\b",
+                r"\bno (consigo|puedo) terminar lo que (empiezo|comienzo)\b",
+                r"\bno (consigo|puedo) mantener la atencion\b",
+                
+                # PENSAMIENTOS ACELERADOS / ESTÍMULOS
+                r"\b(se me cruzan|tengo) mil (ideas|pensamientos)\b",
+                r"\bcualquier ruido me (saca de foco|despista)\b",
+                r"\bmi cabeza va (demasiado rapido|a mil) para centrarme\b",
+                r"\bme interrumpe cualquier (cosa|tonteria)\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\ben una temporada me paso\b",
+                r"\bdurante varios dias estaba asi\b",
+                r"\bhe tenido epocas en las que no podia concentrarme\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|totalmente|efectivamente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(no me pasa eso|suelo mantener bien el hilo|no me distraigo)\b",
+                r"\bno me (distraigo|desconcentro) (tanto|asi)\b",
+                r"\bpuedo (centrarme|concentrarme) bien\b",
+
+                # DIFERENCIAR DISTRACCIÓN NORMAL DE MANÍA
+                r"\ba veces (me distraigo|pierdo el hilo) pero (como cualquiera|lo normal)\b",
+                r"\bde vez en cuando pero no (exagerado|siempre)\b",
+                r"\bme desconcentro si (estoy cansado|tengo sueno) pero no (habitualmente|siempre)\b",
+                r"\bpuedo terminar mis tareas\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no recuerdo algo asi)\b",
+                r"\bno\b"
+            ]
+
+            
+            # 1 - Negación (Atención preservada o distracción normal)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_6_distractibility"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2B.7" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Distractibilidad detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_6_distractibility"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2B.7" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.6"
+                    return (phase, state, variant)
+        
+        elif state == "2B.7":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y DESTINO
+                r"\bsi[,.]?\s*(me he sentido asi|estoy destinado|soy especial|lo he sentido)\b",
+                r"\b(siento|creo) que estoy destinado a (algo grande|algo grandioso|hacer historia)\b",
+                r"\btengo una (mision importante|mision especial)\b",
+                r"\bestoy aqui para (hacer algo extraordinario|cambiar el mundo)\b",
+                r"\btengo un proposito (unico|especial)\b",
+
+                # SUPERIORIDAD / CAPACIDADES
+                r"\b(mis capacidades|mi inteligencia) (estan|esta) (muy )?por encima\b",
+                r"\bsoy (mas capaz|mejor|superior) que (los demas|la gente|mis amigos)\b",
+                r"\btengo (poderes|habilidades|talentos) que otros no (tienen|entienden)\b",
+                r"\bveo cosas que (los demas|el resto) no (ven|entienden)\b",
+                r"\bestoy en otro nivel\b",
+                
+                # CONFIANZA EXTREMA
+                r"\bme (veo|siento) capaz de (cualquier cosa|todo)\b",
+                r"\bpuedo conseguir lo que quiera (sin problema|facilmente)\b",
+                r"\bnadie me iguala\b",
+                r"\bsoy (un genio|alguien superior|especial)\b",
+
+                # REFERENCIAS TEMPORALES
+                r"\btuve una epoca en la que me sentia asi\b",
+                r"\bme paso durante (un tiempo|aquella racha)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|totalmente|por supuesto)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca me he sentido asi|no creo tener|no me veo asi)\b",
+                r"\bno me (creo|siento) (especial|superior)\b",
+                r"\bno es mi caso\b",
+                r"\bpara nada soy asi\b",
+
+                # DIFERENCIAR CONFIANZA NORMAL DE GRANDIOSIDAD
+                r"\btengo (metas|ambiciones) pero (no me siento especial|soy normal)\b",
+                r"\bconfio en mi (mismo|misma) pero (dentro de lo normal|lo justo)\b",
+                r"\baspiro a cosas pero sin (sentirme superior|creerme nada)\b",
+                r"\bme considero capaz pero (como cualquiera|nada del otro mundo)\b",
+                r"\bsoy una persona (normal|corriente|humilde)\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no recuerdo algo asi)\b",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Autoestima normal o metas realistas)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2B_7_grandiosity"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                # Mirar las otras respuestas de 2B
+                b1 = db.get_user_info(telephone, "DEP_EVAL", "2B.1")
+                b2 = db.get_user_info(telephone, "DEP_EVAL", "2B.2")
+                b3 = db.get_user_info(telephone, "DEP_EVAL", "2B.3")
+                b4 = db.get_user_info(telephone, "DEP_EVAL", "2B.4")
+                b5 = db.get_user_info(telephone, "DEP_EVAL", "2B.5")
+                b6 = db.get_user_info(telephone, "DEP_EVAL", "2B.6")
+                results = [b1, b2, b3, b4, b5, b6]
+                
+                if sum(1 for x in results if x) >= 2:
+                    phase, state = "DEP_PROTOCOLS", "2"
+                    db.save_flow(telephone, phase, state)
+                    key = "SCREENING.DEP"
+                    value = "bipolar"
+                    db.add_user_info(telephone, key, value)
+                    return (phase, state, variant)
+                
+                else:
+                    phase, state = "DEP_EVAL", "2C"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Grandiosidad detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2B_7_grandiosity"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    # Mirar las otras respuestas de 2B
+                    b1 = db.get_user_info(telephone, "DEP_EVAL", "2B.1")
+                    b2 = db.get_user_info(telephone, "DEP_EVAL", "2B.2")
+                    b3 = db.get_user_info(telephone, "DEP_EVAL", "2B.3")
+                    b4 = db.get_user_info(telephone, "DEP_EVAL", "2B.4")
+                    b5 = db.get_user_info(telephone, "DEP_EVAL", "2B.5")
+                    b6 = db.get_user_info(telephone, "DEP_EVAL", "2B.6")
+                    results = [b1, b2, b3, b4, b5, b6]
+                    
+                    if sum(1 for x in results if x) >= 1:
+                        phase, state = "DEP_PROTOCOLS", "2"
+                        db.save_flow(telephone, phase, state)
+                        key = "SCREENING.DEP"
+                        value = "bipolar"
+                        db.add_user_info(telephone, key, value)
+                        return (phase, state, variant)
+                    
+                    else:
+                        phase, state = "DEP_EVAL", "2C"
+                        db.save_flow(telephone, phase, state)
+                        return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2B.7"
+                    return (phase, state, variant)
             
         elif state == "2C":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(he perdido a alguien|fallecio alguien|ha muerto)\b",
+                r"\b(fallecio|murio|perdi a) (alguien|una persona) (muy )?(cercano|cercana|importante|querido|querida)\b",
+                
+                # FALLECIMIENTO DE FAMILIAR O PAREJA
+                r"\b(murio|fallecio|perdi a) (mi |un )?(padre|madre|papa|mama|hermano|hermana|abuelo|abuela|hijo|hija|tio|tia)\b",
+                r"\b(murio|fallecio|perdi a) mi (pareja|novio|novia|esposo|esposa|marido|mujer)\b",
+                r"\bha muerto un familiar( hace poco| recientemente)?\b",
+
+                # FALLECIMIENTO DE AMIGO
+                r"\b(murio|fallecio|perdi a) mi (mejor )?amigo\b",
+                r"\b(murio|fallecio|perdi a) un amigo (muy )?(cercano|intimo)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES (Con contexto de dolor)
+                r"^(si|asi es|lamentablemente si|tristemente si|por desgracia si)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(no he perdido a nadie|no ha fallecido nadie|nadie cercano)\b",
+                r"\bno[,.]?\s*(no he tenido|ninguna) perdida\b",
+                r"\btodos (estan bien|vivos)\b",
+
+                # PÉRDIDA FUERA DEL PLAZO (MÁS DE 6 MESES) - MUY IMPORTANTE
+                r"\b(fue|paso|murio|fallecio) hace (mas de un ano|anos|mucho|mucho tiempo|bastante)\b",
+                r"\bhace (ya )?(tiempo|anos|mucho) que paso\b",
+                r"\bya hace (anos|mucho) de eso\b",
+                r"\b(fue|paso) en el ano (20[0-2][0-9]|19[0-9]{2})\b", # Filtra menciones a años anteriores como "en 2020"
+
+                # RESPUESTAS BREVES
+                r"^(no|nada de eso|en absoluto|afortunadamente no|que va|ninguno|nadie)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Nadie ha fallecido o la pérdida fue hace mucho tiempo)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2C_recent_bereavement"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_PROTOCOLS", "1" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Pérdida reciente detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2C_recent_bereavement"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2D.1" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2C"
+                    return (phase, state, variant)
             
         elif state == "2D.1":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(he sentido eso|la vida no vale la pena|he pensado eso|me pasa)\b",
+                r"\b(he pensado|pienso) (en |que )?estaria mejor (muerto|muerta|si no estuviera)\b",
+                r"\bhe tenido (esos pensamientos|ideas de ese tipo)\b",
+                
+                # DESEO DE NO EXISTIR / DESAPARECER
+                r"\b(preferiria|ojala) no (estar aqui|existir|despertar)\b",
+                r"\b(me gustaria|quisiera|quiero) desaparecer\b",
+                r"\bno (quiero|tengo ganas de) seguir (viviendo|adelante|con esto)\b",
+                r"\btodo seria (mas facil|mejor) si no estuviera\b",
+                
+                # PÉRDIDA DE SENTIDO VITAL
+                r"\bla vida no tiene (sentido|valor)\b",
+                r"\bnada vale la pena\b",
+                r"\btodo me da igual\b",
+                r"\bpara que seguir\b",
+                r"\bno (veo|tengo) (razon|motivos) para (continuar|seguir|vivir)\b",
+                
+                # CANSANCIO EXISTENCIAL / DESESPERACIÓN
+                r"\bestoy (cansado|cansada|harto|harta) de todo\b",
+                r"\bya no puedo mas (con esto|con mi vida)?\b",
+                r"\bquiero que todo se (acabe|termine)\b",
+                r"\bno quiero seguir viviendo asi\b",
+                
+                # EXPRESIONES DE CARGA (INDIRECTAS)
+                r"\bestarian mejor sin mi\b",
+                r"\bsoy una carga (para todos|para mi familia)\b",
+                r"\bel mundo estaria mejor sin mi\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|exacto|efectivamente|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca he pensado eso|no siento eso|nada de eso)\b",
+                r"\bno he tenido esos pensamientos\b",
+                r"\bpara nada (pienso eso|me pasa)\b",
+                
+                # DIFERENCIAR CANSANCIO NORMAL DE IDEACIÓN
+                r"\bestoy (cansado|cansada) pero no (quiero morir|pienso en eso)\b",
+                r"\ba veces (me siento mal|estoy mal) pero no (pienso en no estar|quiero desaparecer)\b",
+                r"\bme gustaria que las cosas (fueran diferentes|cambiaran) pero no (en desaparecer|morir)\b",
+                r"\bamo la vida\b",
+                r"\btengo (muchos |mis )?motivos para seguir\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Sin ideación detectada)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2D_1_suicidal_ideation"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2D.2" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Ideación detectada - ACTIVAR PROTOCOLO RIESGO)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2D_1_suicidal_ideation"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2D.2" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2D.1"
+                    return (phase, state, variant)
             
         elif state == "2D.2":
-            return
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(no creo merecer|no merezco|me siento asi|tienes razon)\b",
+                r"\bno (merezco|merit) (nada bueno|que me pase nada bueno|el carino)\b",
+                r"\bno (deberia|tendria que) recibir ayuda\b",
+                r"\blas cosas buenas son para otros\b",
+                
+                # SENTIMIENTO DE SER UNA CARGA
+                r"\bsoy una carga (para los demas|para mi familia|para todo el mundo)\b",
+                r"\bmolesto a la gente (que me ayuda|que me quiere)\b",
+                r"\bno (deberian|tendrian que) perder el tiempo conmigo\b",
+                r"\bles hago la vida (mas dificil|imposible)\b",
+                
+                # BAJA AUTOESTIMA / INDIGNIDAD
+                r"\bno valgo (lo suficiente|nada|un pimiento)\b",
+                r"\bno soy suficiente\b",
+                r"\bsoy (un inutil|una inutil|un desastre)\b",
+                r"\bno sirvo para nada\b",
+                
+                # CULPA / AUTORREPROCHE
+                r"\bhe hecho cosas que no merecen perdon\b",
+                r"\bme siento culpable (por todo|de todo)\b",
+                r"\bno merezco (ser feliz|estar bien)\b",
+                r"\bmerezco sufrir\b",
+                
+                # DIFICULTAD PARA ACEPTAR AYUDA
+                r"\bme cuesta (aceptar|creer) que alguien se preocupe\b",
+                r"\bno entiendo por que me ayudan\b",
+                r"\bno deberia aceptar su (apoyo|ayuda)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|totalmente|asi es|exacto|efectivamente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(no siento eso|creo que merezco|nada de eso)\b",
+                r"\bno me siento (asi|de esa manera)\b",
+                r"\bcreo que merezco (ayuda|ser feliz) como cualquiera\b",
+                
+                # DIFERENCIAR HUMILDAD DE INDIGNIDAD
+                r"\b(soy humilde|me cuesta aceptar cumplidos) pero (no porque no lo merezca|estoy bien)\b",
+                r"\bno me siento indigno\b",
+                r"\bagradezco la ayuda (sin sentirme mal|bien)\b",
+                r"\bse que la gente me quiere y lo acepto\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Siente que merece ayuda o bienestar)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2D_2_unworthiness"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2D.3"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Indignidad detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2D_2_unworthiness"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2D.3" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2D.2"
+                    return (phase, state, variant)
             
         elif state == "2D.3":
-            return
             
-        elif state == "2D.3.1":
-            return
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(he escuchado voces|visto cosas|me pasa eso|las oigo)\b",
+                r"\bsi[,.]?\s*(oigo|escucho|veo) (cosas|voces|ruidos) (raros|extranos)\b",
+                
+                # ALUCINACIONES AUDITIVAS
+                r"\b(oigo|escucho) voces que me (hablan|dicen cosas)\b",
+                r"\b(escucho|oigo) (ruidos|susurros) que nadie (mas oye|escucha)\b",
+                r"\b(oigo|escucho) mi nombre (cuando no hay nadie|estando solo|estando sola)\b",
+                r"\bvoces en mi cabeza que no son mías\b",
+                
+                # ALUCINACIONES VISUALES
+                r"\bveo (sombras|figuras|personas) (que no estan|que se mueven|extranas)\b",
+                r"\bveo cosas que (otros|los demas) no (ven|notan)\b",
+                r"\bhe visto (apariciones|fantasmas|gente)\b",
+                
+                # PERCEPCIONES DISCORDANTES / PRESENCIAS
+                r"\bnoto (presencias|que hay alguien) (aunque no haya nadie|estando solo)\b",
+                r"\bpercibo cosas que los demas no (notan|perciben)\b",
+                r"\bla gente me dice que (no es real|me lo invento|no hay nada)\b",
+                r"\blos demas dicen que no hay nada pero yo lo (veo|oigo)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|efectivamente|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca he escuchado|no he visto nada|no me pasa)\b",
+                r"\bno (oigo|veo) nada (raro|extraño)\b",
+                r"\bpara nada (me pasa eso|tengo visiones)\b",
+                
+                # DIFERENCIAR EXPERIENCIAS NORMALES (SUEÑO O ILUSIÓN)
+                r"\bsolo (al dormirme|al despertarme|entre suenos)\b",
+                r"\b(fue|parecia) una ilusion optica\b",
+                r"\ba veces (creo oir|me parece oir) algo pero (luego veo que es real|es el viento)\b",
+                r"\bes mi imaginacion (cuando estoy cansado|por el cansancio)\b",
+                r"\bno estoy (loco|loca) ni veo cosas\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Sin síntomas psicóticos)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2D_3_psychotic_symptoms"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2D.4"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Presencia de alucinaciones)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2D_3_psychotic_symptoms"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2D.4" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2D.3"
+                    return (phase, state, variant)
+            
+        elif state == "2D.4":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y AISLAMIENTO
+                r"\bsi[,.]?\s*(paso mas tiempo solo|me estoy aislando|evito a la gente)\b",
+                r"\bme (estoy aislando|estoy encerrando)\b",
+                r"\b(prefiero|quiero) estar sol[oa]\b",
+                r"\bno me apetece (ver a nadie|quedar con nadie)\b",
+                r"\bme (encierro|quedo) en casa\b",
+                r"\bno salgo (como antes|casi nunca|a ningun lado)\b",
+
+                # EVITACIÓN DE CONTACTO / COMUNICACIÓN
+                r"\bignoro (mensajes|llamadas|invitaciones|a mis amigos)\b",
+                r"\bno (respondo|contesto) (llamadas|mensajes|whatsapp|invitaciones)\b",
+                r"\bdejo (los mensajes|las llamadas) sin (contestar|responder)\b",
+                r"\bpongo excusas para no (quedar|salir)\b",
+                r"\bno (quiero|tengo ganas de) hablar con nadie\b",
+                
+                # PÉRDIDA DE INTERÉS O AGOBIO
+                r"\bya no me interesa (salir|quedar)\b",
+                r"\bme da (pereza|fatiga) el contacto social\b",
+                r"\bla gente me (agobia|estresa|agota)\b",
+                
+                # CAMBIO RESPECTO AL PASADO
+                r"\bantes (respondia|salia) mas\b",
+                r"\bantes era (mas social|mas activo|mas activa)\b",
+                r"\bhe perdido el contacto\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|es verdad|exacto|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(sigo quedando|respondo normalmente|no me he aislado)\b",
+                r"\bno me he (aislado|encerrado)\b",
+                r"\bsigo (viendo|quedando) con gente\b",
+                r"\b(contesto|respondo) a (todo|todos)\b",
+                
+                # DIFERENCIAR SOLEDAD SANA / TRABAJO
+                r"\bestoy (sol[oa]) porque (estoy ocupad[oa]|tengo mucho trabajo)\b",
+                r"\bno es que me aisle, es que no tengo tiempo\b",
+                r"\bdisfruto (de mi tiempo|estar solo) sin evitar a nadie\b",
+                r"\bsigo siendo (social|activo|activa)\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|no es mi caso)\b",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Mantiene vida social o soledad no patológica)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2D_4_social_withdrawal"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2D.5"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Aislamiento detectado)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2D_4_social_withdrawal"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2D.5" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2D.4"
+                    return (phase, state, variant)
+        
+        elif state == "2D.5":
+            
+            PATTERNS_YES: list[str] = [
+                # DIFICULTAD PARA ARRANCAR / PESADEZ
+                r"\bsi[,.]?\s*(no puedo moverme|me quedo en la cama|me cuesta un mundo|me cuesta mucho)\b",
+                r"\b(el despertador|la alarma) suena y (no puedo|no tengo fuerzas)\b",
+                r"\bme quedo (horas |mucho tiempo )?en la cama sin (poder levantarme|fuerzas)\b",
+                r"\bsiento que el cuerpo (me pesa toneladas|no me responde)\b",
+                r"\bme cuesta (horrores|muchisimo) empezar el dia\b",
+                
+                # ABANDONO DE OBLIGACIONES / RENDIMIENTO
+                r"\bhe (faltado|dejado de ir) (al trabajo|a clase|al curro)\b",
+                r"\bestoy (a punto de perder|por perder) el (empleo|trabajo|curro)\b",
+                r"\bno (rindo|estoy rindiendo|puedo producir)\b",
+                r"\bno soy capaz de concentrarme (en lo que estudio|en el trabajo)\b",
+                r"\bhe descuidado mis obligaciones\b",
+                
+                # FALTA DE MOTIVACIÓN / MODO ROBOT
+                r"\bme levanto porque (no me queda otra|tengo que) pero (no tengo ganas|sin energia)\b",
+                r"\bvoy como un robot\b",
+                r"\bhago lo minimo\b",
+                r"\bno me da la vida (para mas|para trabajar)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|me pasa|totalmente)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # FUNCIONALIDAD PRESERVADA
+                r"\bno[,.]?\s*(me levanto y voy bien|cumplo con todo|estoy bien en eso)\b",
+                r"\bme cuesta lo normal (pero cumplo|para todo el mundo)\b",
+                r"\bsigo con (mi ritmo|mis tareas) (de siempre|normal)\b",
+                r"\btengo (energia|fuerzas) para (mis cosas|mis tareas|trabajar)\b",
+                r"\bno he notado que me cueste mas de lo normal\b",
+                
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(en ese aspecto|en eso) (estoy bien|no noto nada)\b",
+                r"\bpara nada[,.]?\s*sigo activo\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|que va|todo normal|ninguno)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Funcionalidad preservada)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2D_5_functional_impairment"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                # Mirar las otras respuestas de 2D
+                d1 = db.get_user_info(telephone, "DEP_EVAL", "2D.1")
+                d2 = db.get_user_info(telephone, "DEP_EVAL", "2D.2")
+                d3 = db.get_user_info(telephone, "DEP_EVAL", "2D.3")
+                d4 = db.get_user_info(telephone, "DEP_EVAL", "2D.4")
+                results = [d1, d2, d3, d4]
+                
+                if sum(1 for x in results if x) >= 1:
+                    phase, state = "DEP_EVAL", "3A"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    phase, state = "DEP_EVAL", "2E.1"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Afectación funcional detectada)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2D_5_functional_impairment"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "3A"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2D.5"
+                    return (phase, state, variant)
+        
+        elif state == "2E.1":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y CONFIRMACIÓN
+                r"\bsi[,.]?\s*(me han diagnosticado|tengo un diagnostico|me lo dijeron)\b",
+                r"\bsi[,.]?\s*(el medico|el psiquiatra|el psicologo) me lo (confirmo|dijo)\b",
+                
+                # DIAGNÓSTICO FORMAL (DEPRESIÓN)
+                r"\bme diagnosticaron (depresion|trastorno)\b",
+                r"\b(tengo|padezco) depresion mayor\b",
+                r"\bme dijeron que tenia (depresion|distimia|trastorno del animo)\b",
+                r"\bhe tenido episodios (depresivos|de depresion) diagnosticados\b",
+                
+                # DIAGNÓSTICO DE OTROS TRASTORNOS DEL ÁNIMO
+                r"\bme diagnosticaron (trastorno bipolar|bipolaridad)\b",
+                r"\bme dijeron que (era|tengo) bipolar\b",
+                r"\btrastorno del estado de animo\b",
+                
+                # TRATAMIENTO PREVIO (INDICADOR DE DIAGNÓSTICO)
+                r"\bhe estado en tratamiento (por|de) depresion\b",
+                r"\b(tome|estoy tomando) antidepresivos\b",
+                r"\bhe ido al (psicologo|psiquiatra) por (depresion|esto)\b",
+                r"\bme han (medicado|recetado algo) para la depresion\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|exacto|efectivamente|si me lo dijeron)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca me han diagnosticado|no tengo diagnostico|no me han dicho nada)\b",
+                r"\bno[,.]?\s*(nunca he ido|no he visitado) al (psicologo|psiquiatra|medico)\b",
+                r"\bnadie me ha (diagnosticado|dicho nada)\b",
+                
+                # DIFERENCIAR SENTIMIENTO DE DIAGNÓSTICO (FILTRO CLAVE)
+                r"\bme (he sentido|siento) deprimido pero nunca (fui a un profesional|me diagnosticaron)\b",
+                r"\bcreo que (he tenido|tengo) depresion pero (no es oficial|nadie me lo ha dicho)\b",
+                r"\bnunca me lo (confirmaron|dijeron formalmente)\b",
+                r"\bhe estado mal pero sin ir al medico\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca|no es mi caso)\b",
+                r"\bno\b"
+            ]
+            # 1 - Negación (Sin antecedentes profesionales confirmados)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2E_1_prior_diagnosis"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2E.2"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Antecedentes confirmados)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2E_1_prior_diagnosis"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2E.2" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2E.1"
+                    return (phase, state, variant)
+        
+        elif state == "2E.2":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO Y GENÉRICOS
+                r"\bsi[,.]?\s*(he tomado medicacion|tome pastillas|me recetaron algo)\b",
+                r"\bsi[,.]?\s*(tome|tomaba|he tomado) (antidepresivos|ansioliticos|somniferos|tranquilizantes)\b",
+                r"\bme recetaron algo para (los nervios|dormir|el animo|descansar)\b",
+                
+                # ANTIDEPRESIVOS (Nombres comunes)
+                r"\b(tome|estuve con) (prozac|sertralina|escitalopram|fluoxetina|paroxetina|venlafaxina)\b",
+                r"\bpastillas para (la depresion|el animo)\b",
+                
+                # ANSIOLÍTICOS / NERVIOS (Nombres comunes)
+                r"\b(tome|tomaba) (diazepam|lorazepam|alprazolam|trankimazin|lexatin|orfidal)\b",
+                r"\bpastillas para (los nervios|la ansiedad)\b",
+                
+                # MEDICACIÓN PARA DORMIR
+                r"\b(tome|me dieron) (zolpidem|lormetazepam|noctamid|somniferos)\b",
+                r"\balgo para (el insomnio|poder dormir)\b",
+                
+                # REFERENCIAS PSIQUIÁTRICAS
+                r"\bhe estado medicad[oa]\b",
+                r"\btome algo que me receto el (psiquiatra|medico)\b",
+                r"\btratamiento farmacologico\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|exacto|varias veces|durante un tiempo)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca he tomado nada|no he tomado medicacion|no me han recetado nada)\b",
+                r"\bnunca me han dado pastillas (para eso|asi)\b",
+                r"\bno tomo (psicofarmacos|medicamentos)\b",
+                
+                # DIFERENCIAR AUTOMEDICACIÓN O NATURAL
+                r"\btome (cosas por mi cuenta|hierbas|valeriana) pero no (recetadas|medico)\b",
+                r"\b(solo |tome )?melatonina\b",
+                r"\bsolo medicacion para (el dolor|otras cosas|temas fisicos)\b",
+                r"\bno es mi caso\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Sin antecedentes de medicación psiquiátrica)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2E_2_prior_medication"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "2E.3" 
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Antecedentes de medicación detectados)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2E_2_prior_medication"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "2E.3" 
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2E.2"
+                    return (phase, state, variant)
+        
+        elif state == "2E.3":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(he estado ingresad[oa]|me ingresaron|estuve en un centro)\b",
+                r"\bme tuvieron que ingresar\b",
+                r"\bestuve ingresad[oa] (varios dias|semanas|un tiempo)\b",
+                
+                # INGRESO PSIQUIÁTRICO / SALUD MENTAL
+                r"\bestuve en el (hospital psiquiatrico|psiquiatrico)\b",
+                r"\bme ingresaron en (psiquiatria|salud mental)\b",
+                r"\bpase tiempo en una (clinica mental|clinica psiquiatrica)\b",
+                r"\bestuve hospitalizad[oa] por (mi estado de animo|depresion|ansiedad|salud mental)\b",
+                
+                # URGENCIAS Y UNIDADES ESPECÍFICAS
+                r"\bestuve en urgencias y me (dejaron|quede) ingresad[oa]\b",
+                r"\bestuve en la unidad de agudos\b",
+                r"\bme ingresaron en una unidad de (salud mental|agudos)\b",
+                r"\bcentro (especializado|de reposo)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|exacto|efectivamente|si estuve)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA
+                r"\bno[,.]?\s*(nunca he estado ingresad[oa]|no he necesitado hospitalizacion|nunca me han ingresado)\b",
+                r"\bno he pisado un psiquiatrico\b",
+                r"\bnunca he llegado a ese (punto|extremo)\b",
+                
+                # DIFERENCIAR OTROS INGRESOS / URGENCIAS SIN INGRESO
+                r"\bhe estado en el hospital pero (por otras cosas|por temas fisicos|no por mi estado)\b",
+                r"\bestuve ingresad[oa] por una (operacion|enfermedad) pero no por salud mental\b",
+                r"\bfui a urgencias pero no me ingresaron\b",
+                r"\bme dieron el alta (el mismo dia|enseguida)\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca|no es mi caso)\b",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Sin antecedentes de ingreso psiquiátrico)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.2E_3_prior_hospitalization"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                # Mirar las otras respuestas de 2E
+                e1 = db.get_user_info(telephone, "DEP_EVAL", "2E.1")
+                e2 = db.get_user_info(telephone, "DEP_EVAL", "2E.2")
+                results = [e1, e2]
+                
+                if sum(1 for x in results if x) >= 1:
+                    phase, state = "DEP_EVAL", "3A"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    phase, state = "CHAT", ""    # seria OTR
+                    db.save_flow(telephone, phase, state)
+                    key = "SCREENING.DEP"
+                    value = "others"
+                    db.add_user_info(telephone, key, value)
+                    return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Antecedentes de ingreso detectados)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.2E_3_prior_hospitalization"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "3A"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "2E.3"
+                    return (phase, state, variant)
+        
+        elif state == "3A":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL Y FRECUENCIA
+                r"\bsi[,.]?\s*(bebo|tomo|consumo) (alcohol|habitualmente|con frecuencia|bastante)\b",
+                r"\b(bebo|tomo) (casi )?todos los dias\b",
+                r"\btomo algo (todas las noches|a diario)\b",
+                r"\bsuelo beber a menudo\b",
+                r"\b(es parte de mi rutina|es mi costumbre)\b",
+                
+                # CANTIDAD / TIPO DE BEBIDA REGULAR
+                r"\b(bebo|me tomo) varias (copas|cervezas|latas) al dia\b",
+                r"\b(tomo|bebo) (cerveza|vino|licor|cubatas) con regularidad\b",
+                
+                # USO COMO ESTRATEGIA DE AFRONTAMIENTO (AUTOMEDICACIÓN)
+                r"\b(necesito|tengo que) beber para (relajarme|dormir|calmarme|desconectar)\b",
+                r"\bbebo cuando me siento mal\b",
+                r"\bel alcohol me ayuda a (sobrellevar|aguantar|olvidar)\b",
+                r"\bbebo para olvidarme de (los problemas|todo)\b",
+                
+                # DEPENDENCIA / PREOCUPACIÓN
+                r"\bcreo que bebo demasiado\b",
+                r"\bme preocupa cuanto bebo\b",
+                r"\bno puedo (pasar|estar) sin beber\b",
+                r"\bhe intentado dejarlo pero no puedo\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|asi es|exacto|bastante|a diario|todos los dias)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA Y ABSTINENCIA
+                r"\bno[,.]?\s*(no bebo|no tomo alcohol|rara vez|casi nunca)\b",
+                r"\bno bebo nada\b",
+                r"\bdeje de beber\b",
+                r"\bno consumo alcohol\b",
+                r"\bsoy (abstemio|abstemia)\b",
+                r"\bno me gusta el alcohol\b",
+                
+                # CONSUMO OCASIONAL / SOCIAL NO PROBLEMÁTICO
+                r"\bbebo (de vez en cuando|muy de vez en cuando|poco)\b",
+                r"\ben (ocasiones|eventos|fiestas) especiales\b",
+                r"\bsolo (bebo )?(socialmente|los fines de semana|esporadicamente)\b",
+                r"\btomo (una cerveza|algo) (de vez en cuando|a veces) pero no es habitual\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca|cero|nada)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (Abstemio o bebedor social ocasional)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.3A_concurrent_alcohol"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "DEP_EVAL", "3B"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Consumo de alcohol habitual o problemático)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.3A_concurrent_alcohol"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_EVAL", "3B"
+                    db.save_flow(telephone, phase, state) 
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "3A"
+                    return (phase, state, variant)
+        
+        elif state == "3B":
+            
+            PATTERNS_YES: list[str] = [
+                # AUTO-RECONOCIMIENTO GENERAL
+                r"\bsi[,.]?\s*(consumo|tomo|uso) (sustancias|drogas|estupefacientes)\b",
+                r"\b(tomo|consumo) de vez en cuando\b",
+                
+                # CANNABIS (Muy común en contexto de ansiedad/insomnio)
+                r"\b(fumo|consumo) (porros|marihuana|hachis|hierba|cannabis|weed)\b",
+                r"\bme fumo (algo|un porro) para (relajarme|dormir)\b",
+                
+                # COCAÍNA Y ESTIMULANTES
+                r"\b(consumo|tomo|uso) (cocaina|coca|rayas|nieve|farlopa)\b",
+                r"\b(tomo|uso) (speed|anfetaminas|estimulantes|pastis|pastillas para activarme)\b",
+                
+                # OTRAS SUSTANCIAS (MDMA, Psicodélicos, Opiáceos)
+                r"\b(consumo|tomo) (extasis|mdma|m|ketamina|keta|lsd|tripi|setas|alucinogenos)\b",
+                r"\b(tomo|uso) (opiaceos|heroina|caballo)\b",
+                
+                # USO COMO AFRONTAMIENTO
+                r"\b(consumo|tomo) para (sentirme mejor|aguantar|olvidar|evadirme)\b",
+                r"\buso sustancias cuando (estoy mal|estoy bajo)\b",
+                r"\bme ayuda a (sobrellevar|aguantar|pasar el dia)\b",
+                
+                # RECONOCIMIENTO DE DEPENDENCIA
+                r"\bcreo que (consumo|tomo) demasiado\b",
+                r"\bno puedo dejarlo\b",
+                r"\bdependo de (ello|eso)\b",
+
+                # RESPUESTAS AFIRMATIVAS BREVES
+                r"^(si|exacto|asi es|algunas cosas|varias)$"
+            ]
+                
+            PATTERNS_NO: list[str] = [
+                # NEGACIÓN DIRECTA Y ABSTINENCIA
+                r"\bno[,.]?\s*(no consumo|no tomo|nada de eso|ni hablar)\b",
+                r"\bno (tomo|consumo) (drogas|sustancias)\b",
+                r"\bno (consumo|tomo) nada\b",
+                r"\bsoy (limpio|limpia)\b",
+                
+                # CONSUMO PASADO (Importante para el protocolo actual)
+                r"\blo (probe|use) (alguna vez|hace tiempo) pero ya no\b",
+                r"\b(ya )?deje de (consumir|tomar)\b",
+                r"\b(ya )?no (tomo|consumo) (sustancias|nada)\b",
+                r"\bestoy rehabilitado\b",
+
+                # RESPUESTAS BREVES
+                r"^(no|para nada|en absoluto|que va|nunca|no es mi caso)$",
+                r"\bno\b"
+            ]
+            
+            # 1 - Negación (No consume o consumo pasado finalizado)
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "DEP_EVAL.3B_concurrent_substances"
+                value = False
+                db.add_user_info(telephone, key, value)
+
+                phase, state = "DEP_PROTOCOLS", "1"
+                db.save_flow(telephone, phase, state)
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Afirmación (Consumo actual detectado)
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "DEP_EVAL.3B_concurrent_substances"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "DEP_PROTOCOLS", "1"
+                    db.save_flow(telephone, phase, state)
+                    return (phase, state, variant)
+                
+                else:
+                    # 3 - No entiende / Respuesta ambigua
+                    variant = variant_search(n_user_input)
+                    phase, state = "DEP_EVAL", "3B"
+                    return (phase, state, variant)
             
             
     elif phase == "SUI_EVAL":
@@ -1440,8 +2788,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase = "SUI_EVAL"
-                state = "2A"
+                phase, state = "SUI_EVAL", "2A"
                 return (phase, state, variant)
             
             else:
@@ -1452,15 +2799,16 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_PROTOCOLS"
-                    state = "1"
+                    phase, state = "SUI_PROTOCOLS", "1"
+                    key = "SCREENING.SUI"
+                    value = "self_harm"
+                    db.add_user_info(telephone, key, value)
                     return (phase, state, variant)
                 
                 else:
                     # 3 - Variant activation
                     variant = variant_search(n_user_input)
-                    phase = "SUI_EVAL"
-                    state = "1"
+                    phase = "SUI_EVAL", "1"
                     return (phase, state, variant)
         
         elif state == "2A":
@@ -1613,8 +2961,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = "no"
                 db.add_user_info(telephone, key, value)
                 
-                phase = "SUI_EVAL"
-                state = "2B.1"
+                phase, state = "SUI_EVAL", "2B.1"
                 return (phase, state, variant)
         
             else:
@@ -1624,9 +2971,10 @@ def StateMachine(telephone, phase, state, user_input):
                     key = "SUI_EVAL.2_A_active_ideation"
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
+                    key = "SCREENING.SUI"
+                    db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_PROTOCOLS"
-                    state = "2"
+                    phase, state = "SUI_PROTOCOLS", "2"
                     return (phase, state, variant) 
                 
                 else:
@@ -1636,17 +2984,16 @@ def StateMachine(telephone, phase, state, user_input):
                         key = "SUI_EVAL.2_A_active_ideation"
                         value = "ideation"
                         db.add_user_info(telephone, key, value)
+                        key = "SCREENING.SUI"
+                        db.add_user_info(telephone, key, value)
                         
-                        
-                        phase = "SUI_PROTOCOLS"
-                        state = "2"
+                        phase, state = "SUI_PROTOCOLS", "2"
                         return (phase, state, variant)
                     
                     # 4 - Variant activation
                     else:
                         variant = variant_search(n_user_input)
-                        phase = "SUI_EVAL"
-                        state = "2A"
+                        phase, state = "SUI_EVAL", "2A"
                         return (phase, state, variant)
                 
         elif state == "2B.1":
@@ -1756,10 +3103,8 @@ def StateMachine(telephone, phase, state, user_input):
                 key = "SUI_EVAL.2_B1_last_month_ideation"
                 value = "no"
                 db.add_user_info(telephone, key, value)
-                
-                
-                phase = "SUI_EVAL"
-                state = "2B.2"
+                               
+                phase, state = "SUI_EVAL", "2B.2"
                 return (phase, state, variant)
         
             else:
@@ -1769,10 +3114,11 @@ def StateMachine(telephone, phase, state, user_input):
                     key = "SUI_EVAL.2_B1_last_month_ideation"
                     value = "concrete_plan"
                     db.add_user_info(telephone, key, value)
-                    
-                    
-                    phase = "SUI_PROTOCOLS"
-                    state = "3"
+                    key = "SCREENING.SUI"
+                    value = "improbable"
+                    db.add_user_info(telephone, key, value)
+                                        
+                    phase, state = "SUI_PROTOCOLS", "3"
                     return (phase, state, variant) 
                 
                 else:
@@ -1782,17 +3128,17 @@ def StateMachine(telephone, phase, state, user_input):
                         key = "SUI_EVAL.2_B1_last_month_ideation"
                         value = "ideation"
                         db.add_user_info(telephone, key, value)
-                        
-                        
-                        phase = "SUI_PROTOCOLS"
-                        state = "3"
+                        key = "SCREENING.SUI"
+                        value = "improbable"
+                        db.add_user_info(telephone, key, value)
+                                                
+                        phase, state = "SUI_PROTOCOLS", "3"
                         return (phase, state, variant)
                     
                     # 4 - Variant activation
                     else:
                         variant = variant_search(n_user_input)
-                        phase = "SUI_EVAL"
-                        state = "2B.1"
+                        phase, state = "SUI_EVAL", "2B.1"
                         return (phase, state, variant)
         
         elif state == "2B.2":
@@ -1927,8 +3273,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase = "SUI_EVAL"
-                state = "3"
+                phase, state = "SUI_EVAL", "3"
                 return (phase, state, variant)
             
             else:
@@ -1938,16 +3283,17 @@ def StateMachine(telephone, phase, state, user_input):
                     key = "SUI_EVAL.2_B2_last_year_self_harm"
                     value = True
                     db.add_user_info(telephone, key, value)
+                    key = "SCREENING.SUI"
+                    value = "improbable"
+                    db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_PROTOCOLS"
-                    state = "3"
+                    phase, state = "SUI_PROTOCOLS", "3"
                     return (phase, state, variant)
                 
                 else:
                     # 3 - Variant activation
                     variant = variant_search(n_user_input)
-                    phase = "SUI_EVAL"
-                    state = "2B.2"
+                    phase, state = "SUI_EVAL", "2B.2"
                     return (phase, state, variant)
     
         elif state == "3":
@@ -2104,9 +3450,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                
-                phase = "SUI_EVAL"
-                state = "4"
+                phase, state = "SUI_EVAL", "4"
                 return (phase, state, variant)
 
             else:
@@ -2126,17 +3470,14 @@ def StateMachine(telephone, phase, state, user_input):
                             key = f"SUI_EVAL.3_MNS_disorder.{category}"
                             value = True
                             db.add_user_info(telephone, key, value)
-                    
-                    
-                    phase = "SUI_EVAL"
-                    state = "4"
+                                       
+                    phase, state = "SUI_EVAL", "4"
                     return (phase, state, variant)
                 
                 # 3 - Variant activation
                 else:
                     variant = variant_search(n_user_input)
-                    phase = "SUI_EVAL"
-                    state = "3"
+                    phase, state = "SUI_EVAL", "3"
                     return (phase, state, variant)
                 
         elif state == "4":
@@ -2265,8 +3606,7 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase = "SUI_EVAL"
-                state = "5"
+                phase, state = "SUI_EVAL", "5"
                 return (phase, state, variant)
             
             else:
@@ -2277,15 +3617,13 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase = "SUI_EVAL"
-                    state = "5"
+                    phase, state = "SUI_EVAL", "5"
                     return (phase, state, variant)
                 
                 else:
                     # 3 - Variant activation
                     variant = variant_search(n_user_input)
-                    phase = "SUI_EVAL"
-                    state = "4"
+                    phase, state = "SUI_EVAL", "4"
                     return (phase, state, variant)
                 
         elif state == "5":
@@ -2373,7 +3711,10 @@ def StateMachine(telephone, phase, state, user_input):
                 value = False
                 db.add_user_info(telephone, key, value)
                 
-                phase, state = "FAREWELL", "normal"
+                phase, state = "CHAT", ""
+                key = "SCREENING.SUI"
+                value = "others"
+                db.add_user_info(telephone, key, value)
                 return (phase, state, variant)
             
             else:
@@ -2384,7 +3725,7 @@ def StateMachine(telephone, phase, state, user_input):
                     value = True
                     db.add_user_info(telephone, key, value)
                     
-                    phase, state = "FAREWELL", "normal"
+                    phase, state = "CHAT", ""
                     return (phase, state, variant)
                 
                 else:
@@ -2393,21 +3734,123 @@ def StateMachine(telephone, phase, state, user_input):
                     phase, state = "SUI_EVAL", "5"
                     return (phase, state, variant)
         
-  
-            
-    elif phase == "SUI_PROTOCOLS":
         
-        if state == "1":
-            phase, state = "FAREWELL", "normal"
-            return (phase, state, variant)
+    elif phase == "FOLLOWUP":
+        
+        print("\n[FASE DE SEGUIMIENTO]\n")
+        
+        if state == "contact_verification":
             
-        elif state == "2":
-            phase, state = "FAREWELL", "normal"
+            PATTERNS_YES = [
+                r"\b(si+s?|sip|sisi+|claro|ok|vale|listo|hecho|afirma|afirmativo)\b",
+                r"\b(pude|logre|hable|llame|contacte|atendieron|atendido)\b",
+                r"\b(lo hice|ya esta|ya hable|ya llame)\b"
+            ]
+            
+            PATTERNS_NO = [
+                r"\b(no+|nop|nanay|ninguno|para nada|que va)\b",
+                r"\b(no (pude|logre|llame|hable|me atrevi|contesto|contestan|respondieron))\b",
+                r"\b(ocupado|comunicaba|nadie|fallo|error|corto|espera|colgue)\b",
+                r"\b(miedo|temor|duda|ansiedad|verguenza)\b",
+                r"\b(todavia no|aun no|luego lo hago)\b"
+            ]
+            
+            # 1 - Negation
+            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            if match_no:
+                key = "ctx.contact_verification"
+                value = False
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "FOLLOWUP", "non_contact_reason"
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Contact
+                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                if match_yes:
+                    key = "ctx.contact_verification"
+                    value = True
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "FOLLOWUP", "post_help"
+                    return (phase, state, variant)
+                
+                else:
+                    key = "ctx.contact_verification"
+                    value = None
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "FOLLOWUP", "family"
+                    return (phase, state, variant)
+                
+        elif state == "non_contact_reason":
+            
+            DIFFICULTY_PATTERNS = [
+                r"\b(ocupado|comunicaba|comunicando|espera|larga|cola)\b",
+                r"\b(no (contestan|contesto|respondieron|responde|atendieron))\b",
+                r"\b(fallo|error|corto|se corto|linea|caida|funciona|numero equivocado)\b",
+                r"\b(mucho tiempo|tardaron|nadie respondio)\b"
+            ]
+            
+            DECISION_PATTERNS = [
+                r"\b(decidi|preferi|pense|crei|quise|atrevi|dude|arrepenti)\b",
+                r"\b(miedo|temor|pavor|panico|verguenza|corte|pena|nervios)\b",
+                r"\b(no (quería|quise|pude hacerlo|me salia|me dio))\b",
+                r"\b(colgue|no llame|lo deje|pase|otro momento)\b",
+                r"\b(no se que decir|me bloquee|ansiedad)\b"
+            ]
+            
+            # 1 - Decision
+            match_decision = pattern_search(n_user_input, DECISION_PATTERNS) 
+            if match_decision:
+                key = f"ctx.non_contact_reason"
+                value = "personal_decision"
+                db.add_user_info(telephone, key, value)
+                
+                phase, state = "FOLLOWUP", "second_try"
+                return (phase, state, variant)
+            
+            else:
+                # 2 - Difficulty
+                match_diff = pattern_search(n_user_input, DIFFICULTY_PATTERNS) 
+                if match_diff:
+                    key = "ctx.non_contact_reason"
+                    value = "difficulty"
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "FOLLOWUP", "second_try"
+                    return (phase, state, variant)
+                
+                else:
+                    key = "ctx.non_contact_reason"
+                    value = None
+                    db.add_user_info(telephone, key, value)
+                    
+                    phase, state = "FOLLOWUP", "second_try"
+                    return (phase, state, variant)
+                    
+        elif state == "second_try":
+            phase, state = "FOLLOWUP", "family"
+            return (phase, state, variant)
+               
+        elif state == "post_help":
+            phase, state = "FOLLOWUP", "continuity_plan"
+            return (phase, state, variant)
+                 
+        elif state == "continuity_plan":
+            phase, state = "FOLLOWUP", "family"
+            return (phase, state, variant)
+                
+        elif state == "family":
+            phase, state = "CHAT", ""
             return (phase, state, variant)
         
         else:
+            phase, state = "CHAT", ""
             return (phase, state, variant)
-    
+            
+                         
 
 def security_control(phase, state, variant, user_input):
     
@@ -2522,15 +3965,13 @@ def security_control(phase, state, variant, user_input):
     
     # En caso de detectar un trigger pasa a evaluacion de suicidio
     if match_emergency:
-        new_phase = "SUI_EVAL"
-        new_state = "1"
         new_variant = 0
+        new_phase, new_state = "SUI_EVAL", "1"
         print("\n[CONTROL DE SEGURIDAD HA DETECTADO UNA ALERTA!]\n")
         return (new_phase, new_state, new_variant)
     
     # En caso contrario se queda igual        
     else:
-        new_phase = phase
-        new_state = state
         new_variant = variant
+        new_phase, new_state = phase, state
         return (new_phase, new_state, new_variant)
