@@ -9,7 +9,7 @@ class ReportPDF(FPDF):
     def header(self):
         # Logo o Título
         self.set_font("Arial", "B", 15)
-        self.cell(0, 10, "Informe de Evaluación Psicológica", 0, 1, "C")
+        self.cell(0, 10, "Informe de Evaluación: Guía de Intervención mhGAP v2.0", 0, 1, "C")
         # Fecha de generación
         self.set_font("Arial", "", 10)
         self.cell(0, 10, f"Fecha de generación: {datetime.datetime.now().strftime('%d/%m/%Y')}", 0, 1, "C")
@@ -61,7 +61,7 @@ def generate_report(user_id_str, output_path=None):
 
         # Sección: Evaluación de Suicidio (SUI_EVAL)
         sui_eval = user_doc.get("SUI_EVAL", {})
-        pdf.section_title("Resultados evaluación riesgo de suicidio (SUI mhGAP)")
+        pdf.section_title("Resultados evaluación riesgo de suicidio (SUI p.133)")
         
         if not sui_eval:
             pdf.set_font("Arial", "I", 10)
@@ -185,7 +185,7 @@ def generate_report(user_id_str, output_path=None):
 
         # Sección: Evaluación de Depresión (DEP_EVAL)
         dep_eval = user_doc.get("DEP_EVAL", {})
-        pdf.section_title("Resultados evaluación de depressión (DEP mhGAP)")
+        pdf.section_title("Resultados evaluación de depressión (DEP p.21)")
         
         if not dep_eval:
             pdf.set_font("Arial", "I", 10)

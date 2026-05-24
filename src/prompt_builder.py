@@ -121,6 +121,7 @@ def prompt_bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
    5. Devuelve la salida en un único bloque de texto.
    6. No añadas ninguna pregunta dentro de la introducción, la pregunta debe ir al final 
    después de la introducción.
+   8. Si en el nucleo de detecta o/a seleccionar según género del nombre registrado en la memoria.
    7. No menciones nada sobre ser un asistente virtual o tener memoria.
    8. Si en el `nucleo` se detecta `[parafrasear]`, reemplaza ese fragmento por una 
    paráfrasis de la respuesta del usuario almacenada en `user_input`.

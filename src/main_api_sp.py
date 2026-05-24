@@ -264,6 +264,13 @@ def get_patients_for_specialist(center_name: str) -> list:
             except Exception:
                 status = "activo" if session_count > 0 else "inactivo"
 
+        # ── Nº Seguridad Social (CIRCLE.privacy.socialSecurityNumber) ───────────
+        ssn = (
+            u.get("CIRCLE", {})
+             .get("privacy", {})
+             .get("socialSecurityNumber", "") or ""
+        ).strip()
+
         patients.append({
             "id":         str(u["_id"]),
             "name":       _anonymize_name(u.get("name", "Usuario")),
@@ -273,9 +280,10 @@ def get_patients_for_specialist(center_name: str) -> list:
             "risk":       risk,
             "status":     status,
             "emergency":  has_emergency,
-            "reg":        "",          # no se guarda createdAt en users
-            "notes":      "",          # las notas se cargan por separado si se necesitan
-            "sessionLog": session_log,         # todas las sesiones, ordenadas cronologicamente
+            "reg":        "",
+            "notes":      "",
+            "ssn":        ssn,         # Nº Seguridad Social (vacío si no aportado)
+            "sessionLog": session_log,
         })
 
     return patients
