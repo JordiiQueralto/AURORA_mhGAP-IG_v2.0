@@ -37,8 +37,8 @@ flowchart TD
         GEN_RESP["main_api.py<br/><b>_generate_response</b><br/>━━━━━<br/>despacha según new_phase"]:::module
         RUN_FW["main_api.py<br/><b>_run_farewell</b><br/>━━━━━<br/>cierra sesión + resumen + riesgo"]:::module
 
-        D_PRES{¿phase ==<br/>PRESENTATION?}:::decision
-        D_RES{¿phase ==<br/>RESUMING?}:::decision
+        D_PRES{phase ==<br/>PRESENTATION?}:::decision
+        D_RES{phase ==<br/>RESUMING?}:::decision
 
         PRES_FLOW["Flujo PRESENTATION<br/>━━━━━<br/>onboarding + consentimiento<br/>+ verificación de edad"]:::flowblock
         RES_FLOW["Flujo RESUMING<br/>━━━━━<br/>recupera memoria de<br/>sesión anterior"]:::flowblock
@@ -51,8 +51,8 @@ flowchart TD
         NORM["state_machine.py<br/><b>normalize_text</b><br/>━━━━━<br/>lowercase, sin acentos,<br/>sin puntuación"]:::module
         FSM["state_machine.py<br/><b>StateMachine</b><br/>━━━━━<br/>FSM mhGAP v2.0<br/>retorna (new_phase, new_state, variant)"]:::module
         SEC["state_machine.py<br/><b>security_control</b><br/>━━━━━<br/>REGEX patrones de riesgo<br/>(autolesión, ideación activa)"]:::module
-        D_SEC_GATE{¿new_phase ∈<br/>{DEP_EVAL, CHAT}?}:::decision
-        D_RISK{¿REGEX<br/>detecta riesgo?}:::decision
+        D_SEC_GATE{new_phase in<br/>DEP_EVAL or CHAT?}:::decision
+        D_RISK{REGEX<br/>detecta riesgo?}:::decision
         SUI_PROT["<b>SUI_PROTOCOLS</b><br/>━━━━━<br/>override de new_phase<br/>activa derivación 112/024"]:::emergency
     end
 
@@ -60,16 +60,16 @@ flowchart TD
     %% CAPA DE GENERACIÓN DE RESPUESTA (generate_output.py + phrase_dictionary.py)
     %% ════════════════════════════════════════════════════════════════
     subgraph RESPGEN["💡 CAPA DE GENERACIÓN — generate_output.py + phrase_dictionary.py"]
-        D_USECASE{¿new_phase ==<br/>USE_CASE_EVAL?}:::decision
-        D_CHAT{¿new_phase ==<br/>CHAT?}:::decision
-        D_FAREWELL{¿new_phase ==<br/>FAREWELL?}:::decision
+        D_USECASE{new_phase ==<br/>USE_CASE_EVAL?}:::decision
+        D_CHAT{new_phase ==<br/>CHAT?}:::decision
+        D_FAREWELL{new_phase ==<br/>FAREWELL?}:::decision
 
         UC_CLASS["generate_output.py<br/><b>use_case_class</b><br/>━━━━━<br/>clasifica en EMERGENCY/<br/>ASSISTANCE/TALK/MISENSE"]:::module
         TALK["generate_output.py<br/><b>talk_mode</b><br/>━━━━━<br/>oyente activo (últimos 8 turnos)"]:::module
         FAREWELL["generate_output.py<br/><b>farewell</b><br/>━━━━━<br/>despedida (normal/exit/age)"]:::module
         BOT_OUT["generate_output.py<br/><b>bot_output</b><br/>━━━━━<br/>puente conversacional + núcleo"]:::module
 
-        D_VARIANT{¿variant != 0?}:::decision
+        D_VARIANT{variant != 0?}:::decision
         PHRASE_VAR["phrase_dictionary.py<br/><b>variant_dict</b>[phase][state][variant]<br/>━━━━━<br/>núcleo alternativo"]:::module
         PHRASE_BASE["phrase_dictionary.py<br/><b>bot_output_info</b>[phase][state]<br/>━━━━━<br/>núcleo clínico base mhGAP"]:::module
 
