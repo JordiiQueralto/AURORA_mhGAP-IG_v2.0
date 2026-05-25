@@ -10,49 +10,52 @@ Visión de alto nivel de las seis capas del backend y los flujos de datos entre 
 
 ```mermaid
 flowchart TD
-    FE([Frontend HTML\nchat_13.html]):::external
+    FE([FRONTEND]):::external
 
-    subgraph API["API REST — Flask"]
-        APP["app.py\nPuerto 5000"]:::module
+    subgraph API["API REST (Flask)"]
+        APP["app.py"]:::module
     end
 
-    subgraph ORCH["Orquestación"]
-        MAIN["main_api.py\nprocess_message\n_generate_response\n_run_farewell"]:::module
+    subgraph ORCH["ORCHESTATION"]
+        MAIN["main_api.py"]:::module
     end
 
-    subgraph CLINICAL["Lógica Clínica"]
-        FSM_MOD["state_machine.py\nStateMachine\nsecurity_control\nnormalize_text"]:::module
-        PHRASE["phrase_dictionary.py\nbot_output_info\nvariant_dict"]:::module
+    subgraph CLINICAL["CLINICAL LOGIC"]
+        FSM_MOD["state_machine.py"]:::module
+        PHRASE["phrase_dictionary.py"]:::module
     end
 
-    subgraph GENOUT["Generación de Respuesta"]
-        GEN["generate_output.py\nuse_case_class\ntalk_mode\nbot_output\nfarewell\nsession_summary"]:::module
+    subgraph GENOUT["RESPONSE GENERATION"]
+        GEN["generate_output.py"]:::module
     end
 
-    subgraph LLM_L["Capa LLM"]
-        PB["prompt_builder.py\nprompts especializados"]:::prompt
-        LLM["llm.py\nGemini 2.5 Flash API"]:::llm
+    subgraph LLM_L["LLM LAYER"]
+        PB["prompt_builder.py"]:::prompt
+        LLM["llm.py\n(Gemini API)"]:::llm
     end
 
-    subgraph DB_L["Capa de Datos"]
-        DB["db.py\nget / add / update\nuser_info, memory\nnotifications"]:::dbmod
+    subgraph DB_L["DATA LAYER"]
+        DB["db.py"]:::dbmod
         MONGO[("MongoDB\nCHATBOT_mhGAP")]:::db
     end
 
-    FE -->|"POST /api/message"| APP
+    FE ==>|"POST /api/message"| APP
     APP -->|"telephone, message"| MAIN
-    MAIN <-->|"ctx lectura/escritura"| DB
-    MAIN --> FSM_MOD
-    MAIN --> GEN
-    FSM_MOD -->|"nucleo clinico"| PHRASE
-    PHRASE -->|"nucleo"| GEN
+    MAIN <-->|"fn: _ctx_set / \n_ctx_get"| DB
+    MAIN -->|"conversation\nhistory"| DB
+    MAIN <-.->|"save / get \ndata"| DB
+    MAIN <--> FSM_MOD
+    MAIN --> |"alternative\nfunctionalities\n(summaryze...)"| GEN
+    FSM_MOD -->|"phase, state, variant"| PHRASE
+    PHRASE -->|"question nucleus"| GEN
     GEN --> PB
     PB -->|"prompt"| LLM
-    LLM -->|"respuesta generada"| GEN
-    GEN -->|"bot_message"| MAIN
+    LLM -->|"generated output"| GEN
+    GEN -->|"bot output"| MAIN
     DB <--> MONGO
     MAIN -->|"JSON response"| APP
-    APP -->|"HTTP 200"| FE
+    APP ==>|"HTTP == 200<br/>{bot_message, image_url, ended, emergency_flags}"| FE
+    FSM_MOD -.-> |"data storage<br/>(flags...)"|DB
 
     classDef external fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
     classDef module  fill:#fff3e0,stroke:#e65100,color:#bf360c
