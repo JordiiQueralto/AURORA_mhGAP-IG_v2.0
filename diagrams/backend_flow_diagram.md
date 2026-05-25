@@ -1,275 +1,311 @@
-# Backend Flow — Chatbot de prevención del suicidio (mhGAP v2.0)
+# Arquitectura del Backend — Chatbot mhGAP v2.0
 
-Diagrama de flujo del **happy path completo** de `POST /api/message`, incluyendo el flujo transversal de emergencia (`security_control` → `SUI_PROTOCOLS`) y el flujo de cierre de sesión (`_run_farewell`).
-
-## Leyenda
-
-| Forma | Significado |
-|---|---|
-| `[Rectángulo]` | Módulo / función Python |
-| `{Rombo}` | Decisión condicional |
-| `[(Cilindro)]` | Acceso a MongoDB |
-| `{{Hexágono}}` | Llamada al LLM (Gemini API) |
-| `([Pastilla])` | Entrada / salida HTTP |
+Este documento presenta el flujo del backend en cuatro niveles de detalle progresivo, siguiendo el enfoque C4 (Context → Container → Component → Code). Cada diagrama puede ser referenciado de forma independiente en el texto del TFG.
 
 ---
 
-## Diagrama
+## Figura 1 — Vista general del sistema
+
+Visión de alto nivel de las seis capas del backend y los flujos de datos entre ellas. Muestra qué módulo llama a quién, sin entrar en la lógica interna de cada uno.
 
 ```mermaid
 flowchart TD
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA DE PRESENTACIÓN (app.py)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph PRESENTATION["🌐 CAPA DE PRESENTACIÓN — app.py (puerto 5000)"]
-        START([POST /api/message<br/>desde frontend]):::endpoint
-        APP["app.py<br/><b>handle_message</b><br/>━━━━━<br/>parsea telephone + message"]:::module
-        RESP_OUT([HTTP JSON Response<br/>bot_message, image_url,<br/>ended, emergency_112,<br/>emergency_024]):::endpoint
+    FE([Frontend HTML\nchat_13.html]):::external
+
+    subgraph API["API REST — Flask"]
+        APP["app.py\nPuerto 5000"]:::module
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA DE ORQUESTACIÓN (main_api.py)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph ORCHESTRATION["🎯 CAPA DE ORQUESTACIÓN — main_api.py"]
-        PROC["main_api.py<br/><b>process_message</b><br/>━━━━━<br/>orquestador central de sesión"]:::module
-        CTX_GET[("<b>_ctx_get</b><br/>lee phase, state, variant,<br/>flags, session_path<br/>de MongoDB")]:::db
-        CTX_SET[("<b>_ctx_set</b><br/>persiste nuevo estado<br/>y log de conversación<br/>en MongoDB")]:::db
-        GEN_RESP["main_api.py<br/><b>_generate_response</b><br/>━━━━━<br/>despacha según new_phase"]:::module
-        RUN_FW["main_api.py<br/><b>_run_farewell</b><br/>━━━━━<br/>cierra sesión + resumen + riesgo"]:::module
-
-        D_PRES{phase ==<br/>PRESENTATION?}:::decision
-        D_RES{phase ==<br/>RESUMING?}:::decision
-
-        PRES_FLOW["Flujo PRESENTATION<br/>━━━━━<br/>onboarding + consentimiento<br/>+ verificación de edad"]:::flowblock
-        RES_FLOW["Flujo RESUMING<br/>━━━━━<br/>recupera memoria de<br/>sesión anterior"]:::flowblock
+    subgraph ORCH["Orquestación"]
+        MAIN["main_api.py\nprocess_message\n_generate_response\n_run_farewell"]:::module
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA CLÍNICA (state_machine.py)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph CLINICAL["🩺 CAPA CLÍNICA — state_machine.py"]
-        NORM["state_machine.py<br/><b>normalize_text</b><br/>━━━━━<br/>lowercase, sin acentos,<br/>sin puntuación"]:::module
-        FSM["state_machine.py<br/><b>StateMachine</b><br/>━━━━━<br/>FSM mhGAP v2.0<br/>retorna (new_phase, new_state, variant)"]:::module
-        SEC["state_machine.py<br/><b>security_control</b><br/>━━━━━<br/>REGEX patrones de riesgo<br/>(autolesión, ideación activa)"]:::module
-        D_SEC_GATE{new_phase in<br/>DEP_EVAL or CHAT?}:::decision
-        D_RISK{REGEX<br/>detecta riesgo?}:::decision
-        SUI_PROT["<b>SUI_PROTOCOLS</b><br/>━━━━━<br/>override de new_phase<br/>activa derivación 112/024"]:::emergency
+    subgraph CLINICAL["Lógica Clínica"]
+        FSM_MOD["state_machine.py\nStateMachine\nsecurity_control\nnormalize_text"]:::module
+        PHRASE["phrase_dictionary.py\nbot_output_info\nvariant_dict"]:::module
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA DE GENERACIÓN DE RESPUESTA (generate_output.py + phrase_dictionary.py)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph RESPGEN["💡 CAPA DE GENERACIÓN — generate_output.py + phrase_dictionary.py"]
-        D_USECASE{new_phase ==<br/>USE_CASE_EVAL?}:::decision
-        D_CHAT{new_phase ==<br/>CHAT?}:::decision
-        D_FAREWELL{new_phase ==<br/>FAREWELL?}:::decision
-
-        UC_CLASS["generate_output.py<br/><b>use_case_class</b><br/>━━━━━<br/>clasifica en EMERGENCY/<br/>ASSISTANCE/TALK/MISENSE"]:::module
-        TALK["generate_output.py<br/><b>talk_mode</b><br/>━━━━━<br/>oyente activo (últimos 8 turnos)"]:::module
-        FAREWELL["generate_output.py<br/><b>farewell</b><br/>━━━━━<br/>despedida (normal/exit/age)"]:::module
-        BOT_OUT["generate_output.py<br/><b>bot_output</b><br/>━━━━━<br/>puente conversacional + núcleo"]:::module
-
-        D_VARIANT{variant != 0?}:::decision
-        PHRASE_VAR["phrase_dictionary.py<br/><b>variant_dict</b>[phase][state][variant]<br/>━━━━━<br/>núcleo alternativo"]:::module
-        PHRASE_BASE["phrase_dictionary.py<br/><b>bot_output_info</b>[phase][state]<br/>━━━━━<br/>núcleo clínico base mhGAP"]:::module
-
-        SUMMARY["generate_output.py<br/><b>session_summary</b><br/><b>session_valoration</b><br/><b>session_risk</b>"]:::module
+    subgraph GENOUT["Generación de Respuesta"]
+        GEN["generate_output.py\nuse_case_class\ntalk_mode\nbot_output\nfarewell\nsession_summary"]:::module
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA LLM (prompt_builder.py + llm.py)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph LLM_LAYER["🧠 CAPA LLM — prompt_builder.py + llm.py"]
-        PB_USE["prompt_builder.py<br/><b>use_case_prompt</b>"]:::prompt
-        PB_TALK["prompt_builder.py<br/><b>prompt_talk_mode</b>"]:::prompt
-        PB_BOT["prompt_builder.py<br/><b>prompt_bot_output</b>"]:::prompt
-        PB_PRES["prompt_builder.py<br/><b>presentation_prompt</b>"]:::prompt
-        PB_SUM["prompt_builder.py<br/><b>session_summary_prompt</b><br/><b>session_valoration_prompt</b><br/><b>risk_level_prompt</b>"]:::prompt
-        GEMINI{{"llm.py<br/><b>send_prompt</b><br/>━━━━━<br/>Gemini 2.5 Flash API<br/>temperature=1.0 / 0.0"}}:::llm
+    subgraph LLM_L["Capa LLM"]
+        PB["prompt_builder.py\nprompts especializados"]:::prompt
+        LLM["llm.py\nGemini 2.5 Flash API"]:::llm
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% CAPA DE PERSISTENCIA (db.py + MongoDB)
-    %% ════════════════════════════════════════════════════════════════
-    subgraph PERSISTENCE["💾 CAPA DE PERSISTENCIA — db.py + MongoDB"]
-        DB_INFO[("db.py<br/><b>get_user_info</b>")]:::db
-        DB_ADD[("db.py<br/><b>add_user_info</b>")]:::db
-        DB_HIST[("db.py<br/><b>conversation_history</b>")]:::db
-        DB_MEM[("db.py<br/><b>user_memory</b>")]:::db
-        DB_EMERG[("db.py<br/><b>add_emergency_instance</b>")]:::db
-        DB_NOTIF[("db.py<br/><b>save_notification</b>")]:::db
-        MONGODB[("🗄️ <b>MongoDB</b><br/>CHATBOT_mhGAP<br/>users · specialists ·<br/>notifications · medicalCenters")]:::dbCore
+    subgraph DB_L["Capa de Datos"]
+        DB["db.py\nget / add / update\nuser_info, memory\nnotifications"]:::dbmod
+        MONGO[("MongoDB\nCHATBOT_mhGAP")]:::db
     end
 
-    %% ════════════════════════════════════════════════════════════════
-    %% ARISTAS — FLUJO PRINCIPAL
-    %% ════════════════════════════════════════════════════════════════
+    FE -->|"POST /api/message"| APP
+    APP -->|"telephone, message"| MAIN
+    MAIN <-->|"ctx lectura/escritura"| DB
+    MAIN --> FSM_MOD
+    MAIN --> GEN
+    FSM_MOD -->|"nucleo clinico"| PHRASE
+    PHRASE -->|"nucleo"| GEN
+    GEN --> PB
+    PB -->|"prompt"| LLM
+    LLM -->|"respuesta generada"| GEN
+    GEN -->|"bot_message"| MAIN
+    DB <--> MONGO
+    MAIN -->|"JSON response"| APP
+    APP -->|"HTTP 200"| FE
 
-    %% Entrada
-    START --> APP
-    APP -->|telephone, user_message| PROC
-    PROC --> CTX_GET
-    CTX_GET --> MONGODB
-    CTX_GET -->|"ctx = {phase, state,<br/>variant, session_path}"| D_PRES
+    classDef external fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef module  fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef prompt  fill:#ede7f6,stroke:#4527a0,color:#311b92
+    classDef llm     fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef dbmod   fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db      fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
 
-    %% Rama PRESENTATION
-    D_PRES -->|Sí| PRES_FLOW
-    PRES_FLOW --> PB_PRES
-    PB_PRES --> GEMINI
-    PRES_FLOW -.->|datos demográficos| DB_ADD
-    DB_ADD -.-> MONGODB
-    PRES_FLOW --> CTX_SET
-
-    %% Rama RESUMING
-    D_PRES -->|No| D_RES
-    D_RES -->|Sí| RES_FLOW
-    RES_FLOW --> DB_MEM
-    DB_MEM --> MONGODB
-    DB_MEM -->|memoria + summary última sesión| PB_PRES
-    RES_FLOW --> CTX_SET
-
-    %% Rama NORMAL — FSM
-    D_RES -->|No| NORM
-    NORM -->|texto normalizado| FSM
-    FSM -->|"(new_phase,<br/>new_state,<br/>variant)"| D_SEC_GATE
-
-    %% Control de seguridad transversal
-    D_SEC_GATE -->|Sí| SEC
-    SEC --> D_RISK
-    D_RISK -->|Sí — riesgo| SUI_PROT
-    SUI_PROT --> DB_EMERG
-    DB_EMERG --> MONGODB
-    SUI_PROT --> DB_NOTIF
-    DB_NOTIF --> MONGODB
-    SUI_PROT -.->|override phase = SUI_PROTOCOLS| GEN_RESP
-    D_RISK -->|No| GEN_RESP
-    D_SEC_GATE -->|No| GEN_RESP
-
-    %% Despacho en _generate_response
-    GEN_RESP --> D_USECASE
-
-    %% USE_CASE_EVAL
-    D_USECASE -->|Sí| DB_HIST
-    DB_HIST --> MONGODB
-    DB_HIST -->|histórico de conversación| UC_CLASS
-    UC_CLASS --> PB_USE
-    PB_USE --> GEMINI
-    GEMINI -->|"EMERGENCY /<br/>ASSISTANCE /<br/>TALK / MISENSE"| CTX_SET
-
-    %% CHAT
-    D_USECASE -->|No| D_CHAT
-    D_CHAT -->|Sí| TALK
-    TALK --> PB_TALK
-    PB_TALK --> GEMINI
-    GEMINI -->|"respuesta de oyente activo"| CTX_SET
-
-    %% FAREWELL
-    D_CHAT -->|No| D_FAREWELL
-    D_FAREWELL -->|Sí| RUN_FW
-    RUN_FW --> FAREWELL
-    RUN_FW --> SUMMARY
-    SUMMARY --> PB_SUM
-    PB_SUM --> GEMINI
-    GEMINI -->|"summary + valoration + risk"| DB_ADD
-    DB_ADD --> MONGODB
-    RUN_FW --> CTX_SET
-
-    %% Flujo normal mhGAP (DEP_EVAL, SUI_EVAL, SUI_PROTOCOLS, DEP_PROTOCOLS...)
-    D_FAREWELL -->|No| BOT_OUT
-    BOT_OUT --> D_VARIANT
-    D_VARIANT -->|Sí| PHRASE_VAR
-    D_VARIANT -->|No| PHRASE_BASE
-    PHRASE_VAR -->|núcleo| PB_BOT
-    PHRASE_BASE -->|núcleo| PB_BOT
-    DB_INFO --> MONGODB
-    DB_INFO -.->|memoria del usuario<br/>name, age, PROFILE| PB_BOT
-    PB_BOT --> GEMINI
-    GEMINI -->|"puente empático<br/>+ núcleo clínico literal"| CTX_SET
-
-    %% Persistencia final y retorno
-    CTX_SET --> MONGODB
-    CTX_SET -->|"bot_message, image_path,<br/>ended, emergency flags"| APP
-    APP --> RESP_OUT
-
-    %% ════════════════════════════════════════════════════════════════
-    %% ESTILOS
-    %% ════════════════════════════════════════════════════════════════
-    classDef endpoint fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
-    classDef module fill:#fff3e0,stroke:#e65100,stroke-width:1.5px,color:#bf360c
-    classDef flowblock fill:#fffde7,stroke:#f57f17,stroke-width:1.5px,color:#e65100
-    classDef decision fill:#fce4ec,stroke:#ad1457,stroke-width:1.5px,color:#880e4f
-    classDef db fill:#e8f5e9,stroke:#2e7d32,stroke-width:1.5px,color:#1b5e20
-    classDef dbCore fill:#a5d6a7,stroke:#1b5e20,stroke-width:3px,color:#1b5e20
-    classDef llm fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#4a148c
-    classDef prompt fill:#ede7f6,stroke:#4527a0,stroke-width:1.5px,color:#311b92
-    classDef emergency fill:#ffcdd2,stroke:#b71c1c,stroke-width:3px,color:#b71c1c
-
-    %% Estilos de subgrafos
-    style PRESENTATION fill:#f5faff,stroke:#1565c0,stroke-width:2px
-    style ORCHESTRATION fill:#fff8f0,stroke:#e65100,stroke-width:2px
-    style CLINICAL fill:#fff5f8,stroke:#ad1457,stroke-width:2px
-    style RESPGEN fill:#fffef0,stroke:#f57f17,stroke-width:2px
-    style LLM_LAYER fill:#f7f3ff,stroke:#4527a0,stroke-width:2px
-    style PERSISTENCE fill:#f0faf0,stroke:#2e7d32,stroke-width:2px
+    style API      fill:#f5faff,stroke:#1565c0
+    style ORCH     fill:#fff8f0,stroke:#e65100
+    style CLINICAL fill:#fff5f8,stroke:#ad1457
+    style GENOUT   fill:#fffef0,stroke:#f9a825
+    style LLM_L    fill:#f7f3ff,stroke:#4527a0
+    style DB_L     fill:#f0faf0,stroke:#2e7d32
 ```
 
 ---
 
-## Notas sobre el flujo
+## Figura 2 — Flujo de orquestación (`process_message`)
 
-### 1. Punto de entrada (`POST /api/message`)
-`app.py:handle_message` recibe el JSON con `telephone` y `message`, valida los campos obligatorios y delega en `main_api.process_message()`.
+Detalle del flujo principal de `main_api.py`: cómo se recupera el contexto de sesión, qué rama se toma según la fase actual y cómo se persiste el nuevo estado tras cada turno.
 
-### 2. Recuperación de contexto (`_ctx_get`)
-Antes de cualquier decisión, `main_api` consulta el documento del usuario en MongoDB (colección `users`) para reconstruir el estado de sesión: fase actual de la FSM, sub-estado, variante de pregunta, e identificador de sesión activa (`YYYY-MM-DD HH:MM:SS_session`).
+```mermaid
+flowchart TD
+    START([POST /api/message]):::endpoint
 
-### 3. Tres ramas de entrada
-- **PRESENTATION** → primera interacción de la sesión: onboarding, validación de edad, consentimiento informado.
-- **RESUMING** → usuario que vuelve tras una sesión previa: se inyecta como contexto el `summary` de la última sesión almacenada.
-- **Flujo normal** → se ejecuta la FSM clínica.
+    APP["app.py\nhandle_message"]:::module
 
-### 4. Control transversal de seguridad (`security_control`)
-Durante las fases `DEP_EVAL` y `CHAT`, cada mensaje se evalúa con un conjunto de **REGEX deterministas** que detectan patrones de ideación activa, plan suicida o autolesión inminente. Si hay match → `SUI_PROTOCOLS` sobreescribe la fase devuelta por la FSM. Esta arquitectura cumple el requisito de **explicabilidad** del sistema: cada activación es trazable a una expresión concreta (justificable bajo el AI Act).
+    CTX_GET[("db.py — _ctx_get\nlee phase, state, variant,\nsession_path desde MongoDB")]:::db
 
-### 5. Despacho en `_generate_response`
-Cuatro vías mutuamente excluyentes según `new_phase`:
+    D_PRES{phase ==\nPRESENTATION?}:::decision
 
-| Vía | Trigger | Estrategia |
-|---|---|---|
-| `USE_CASE_EVAL` | clasificación inicial | LLM clasifica → `{EMERGENCY, ASSISTANCE, TALK, MISENSE}` |
-| `CHAT` | usuario en modo conversación libre | LLM puro como oyente activo (últimos 8 turnos) |
-| `FAREWELL` | cierre de sesión | `_run_farewell` genera `summary` + `valoration` + `risk` y los persiste |
-| Resto (flujo mhGAP) | evaluación clínica | Núcleo fijo desde `phrase_dictionary` + puente generado por LLM |
+    D_RES{phase ==\nRESOURCE?}:::decision
 
-### 6. Arquitectura híbrida (núcleo + puente)
-En el flujo clínico, el **núcleo** de la pregunta es **literal e inmutable** (validado por mhGAP v2.0). El LLM solo genera la **introducción de transición** (≤ 20 palabras) para suavizar el cambio de tema. Esto garantiza:
-- Seguridad clínica: las preguntas sensibles no las redacta el LLM.
-- Fluidez conversacional: el LLM aporta naturalidad sin tocar contenido validado.
+    PRES["Flujo PRESENTATION\nonboarding — nombre — edad\nconsentimiento informado\naceptacion de terminos"]:::flowblock
 
-### 7. Variantes (`variant_dict` vs `bot_output_info`)
-Cuando la FSM detecta una respuesta ambigua o necesita reformular, devuelve `variant != 0` → se usa una versión alternativa del núcleo desde `variant_dict[phase][state][variant]`.
+    RES["Flujo RESUMING\nrecupera summary de\nla ultima sesion\ncomo contexto de memoria"]:::flowblock
 
-### 8. Persistencia final (`_ctx_set`)
-Cada turno termina con un `_ctx_set` que actualiza el documento del usuario en MongoDB: nuevo estado de la FSM, nuevo par `user_input_N` / `bot_output_N` dentro de `conversation_history`, y flags (`emergency_112`, `emergency_024`, `ended`) que `app.py` devuelve al frontend.
+    NORM["state_machine.py\nnormalize_text\nlowercase — sin acentos\nsin puntuacion"]:::module
+
+    FSM["state_machine.py\nStateMachine\nFSM clinica mhGAP v2.0\nretorna: new_phase, new_state, variant"]:::module
+
+    SEC_GATE{new_phase in\nDEP_EVAL or CHAT?}:::decision
+
+    SEC["security_control\nREGEX sobre texto\ndetecta riesgo activo"]:::module
+
+    RISK{Riesgo\ndetectado?}:::decision
+
+    EMERGENCY["SUI_PROTOCOLS\nsobreescribe new_phase\nactiva flags 112 y 024"]:::emergency
+
+    GEN_RESP["main_api.py\n_generate_response\nnew_phase, new_state, variant"]:::module
+
+    CTX_SET[("db.py — _ctx_set\npersiste new_phase, new_state\nlog user_input_N, bot_output_N\nflags de emergencia")]:::db
+
+    RESP_OUT([HTTP JSON Response\nbot_message, image_url\nended, emergency flags]):::endpoint
+
+    START --> APP --> CTX_GET --> D_PRES
+
+    D_PRES -->|Si| PRES --> CTX_SET
+    D_PRES -->|No| D_RES
+    D_RES  -->|Si| RES  --> CTX_SET
+    D_RES  -->|No| NORM --> FSM --> SEC_GATE
+
+    SEC_GATE -->|Si| SEC --> RISK
+    RISK -->|Si| EMERGENCY --> GEN_RESP
+    RISK -->|No| GEN_RESP
+    SEC_GATE -->|No| GEN_RESP
+
+    GEN_RESP --> CTX_SET --> APP --> RESP_OUT
+
+    classDef endpoint  fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
+    classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef db        fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef emergency fill:#ffcdd2,stroke:#b71c1c,color:#b71c1c
+```
 
 ---
 
-## Cómo exportar el diagrama
+## Figura 3 — Generación de respuesta (`_generate_response`)
 
-Para generar un SVG/PNG de alta resolución para incluir en el PDF del TFG:
+Detalle interno de `_generate_response`: las cuatro ramas mutuamente excluyentes según `new_phase` y la arquitectura híbrida de nucleo clínico fijo + puente generado por LLM.
+
+```mermaid
+flowchart TD
+    ENTRY(["_generate_response\nnew_phase, new_state, variant"]):::entry
+
+    D_UC{new_phase ==\nUSE_CASE_EVAL?}:::decision
+    D_CH{new_phase ==\nCHAT?}:::decision
+    D_FW{new_phase ==\nFAREWELL?}:::decision
+
+    subgraph BRANCH_UC["Rama A — Clasificacion de caso de uso"]
+        DB_H[("db.py\nconversation_history\nhistorico de sesion")]:::db
+        UC["generate_output.py\nuse_case_class"]:::module
+        PB_UC["prompt_builder.py\nuse_case_prompt"]:::prompt
+        LLM_UC{{"llm.py — Gemini\ntemp = 0.0\nretorna: EMERGENCY /\nASSISTANCE / TALK / MISENSE"}}:::llm
+    end
+
+    subgraph BRANCH_CH["Rama B — Conversacion libre TALK"]
+        TALK["generate_output.py\ntalk_mode\nultimos 8 turnos"]:::module
+        PB_TK["prompt_builder.py\nprompt_talk_mode"]:::prompt
+        LLM_TK{{"llm.py — Gemini\ntemp = 1.0\noyente activo empático"}}:::llm
+    end
+
+    subgraph BRANCH_FW["Rama C — Cierre de sesion FAREWELL"]
+        FW["generate_output.py\nfarewell\nnormal / exit / age"]:::module
+        RUN_FW["main_api.py\n_run_farewell"]:::module
+    end
+
+    subgraph BRANCH_NM["Rama D — Flujo clinico mhGAP (DEP_EVAL, SUI_EVAL, etc.)"]
+        D_VAR{variant != 0?}:::decision
+        PVAR["phrase_dictionary.py\nvariant_dict\nnucleo alternativo"]:::phrase
+        PBASE["phrase_dictionary.py\nbot_output_info\nnucleo clinico base mhGAP"]:::phrase
+        MEM[("db.py\nuser_memory\nnombre, edad, PROFILE\nsummary ultima sesion")]:::db
+        BOUT["generate_output.py\nbot_output"]:::module
+        PB_BO["prompt_builder.py\nprompt_bot_output\nnucleo + contexto + memoria"]:::prompt
+        LLM_BO{{"llm.py — Gemini\ntemp = 1.0\ngenerada: puente empatico\n+ nucleo clinico literal"}}:::llm
+    end
+
+    RESULT(["bot_message\nimage_url\nis_ended, is_emergency"]):::entry
+
+    ENTRY --> D_UC
+
+    D_UC -->|Si| DB_H --> UC --> PB_UC --> LLM_UC --> RESULT
+    D_UC -->|No| D_CH
+
+    D_CH -->|Si| TALK --> PB_TK --> LLM_TK --> RESULT
+    D_CH -->|No| D_FW
+
+    D_FW -->|Si| FW & RUN_FW --> RESULT
+    D_FW -->|No| D_VAR
+
+    D_VAR -->|Si| PVAR --> BOUT
+    D_VAR -->|No| PBASE --> BOUT
+    MEM -->|memoria de usuario| BOUT
+    BOUT --> PB_BO --> LLM_BO --> RESULT
+
+    classDef entry    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef decision fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef db       fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef llm      fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef prompt   fill:#ede7f6,stroke:#4527a0,color:#311b92
+    classDef phrase   fill:#e8eaf6,stroke:#283593,color:#1a237e
+
+    style BRANCH_UC fill:#e3f2fd,stroke:#1565c0
+    style BRANCH_CH fill:#e8f5e9,stroke:#2e7d32
+    style BRANCH_FW fill:#fce4ec,stroke:#ad1457
+    style BRANCH_NM fill:#fffde7,stroke:#f57f17
+```
+
+---
+
+## Figura 4 — Seguridad y cierre de sesión
+
+### 4a — Control de seguridad transversal (`security_control`)
+
+Flujo del módulo REGEX de detección de riesgo activo que actúa de forma transversal durante las fases `DEP_EVAL` y `CHAT`.
+
+```mermaid
+flowchart TD
+    IN(["Texto del usuario\nnormalizado"]):::entry
+
+    SEC["state_machine.py\nsecurity_control\nbusca patrones de riesgo\nmediante REGEX"]:::module
+
+    D_R1{Patron de\nautolesion?}:::decision
+    D_R2{Patron de\nideacion activa?}:::decision
+    D_R3{Patron de\nplan o metodo?}:::decision
+
+    SUI1["SUI_PROTOCOLS\nstado: 1 — Emergencia\nprotocolo 112"]:::emergency
+    SUI2["SUI_PROTOCOLS\nstado: 2 — Psicoeducacion\nprotocolo 024"]:::emergency
+
+    DB_E[("db.py\nadd_emergency_instance\nsession_path, trigger_hour\nprotocol, referral")]:::db
+    DB_N[("db.py\nsave_notification\nalerta a familiares\ndel circulo de apoyo")]:::db
+
+    IMG["generate_output.py\nbot_output_image\nselecciona imagen\nsegun estado SUI"]:::module
+
+    OUT(["new_phase = SUI_PROTOCOLS\nnew_state, image_path_user\nimage_path_family\nis_emergency = True"]):::entry
+
+    IN --> SEC
+    SEC --> D_R1
+    D_R1 -->|Si| SUI1
+    D_R1 -->|No| D_R2
+    D_R2 -->|Si| SUI2
+    D_R2 -->|No| D_R3
+    D_R3 -->|Si| SUI1
+    D_R3 -->|No| OUT
+
+    SUI1 & SUI2 --> DB_E & DB_N & IMG --> OUT
+
+    classDef entry    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef decision fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef db       fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef emergency fill:#ffcdd2,stroke:#b71c1c,color:#b71c1c
+```
+
+### 4b — Cierre de sesión (`_run_farewell`)
+
+Flujo completo del proceso de cierre: generación de resumen clínico, valoración de la sesión y nivel de riesgo, con persistencia en MongoDB.
+
+```mermaid
+flowchart TD
+    IN(["_run_farewell\ntelephone, session_path"]):::entry
+
+    CONV[("db.py\nget_user_info\nconversation_history\nde la sesion activa")]:::db
+
+    subgraph PARALLEL["Procesamiento paralelo — llm.py Gemini temp 0.0"]
+        PB_S["prompt_builder.py\nsession_summary_prompt\n150-300 palabras\npunto de entrada, temas clave\nestado emocional, recursos"]:::prompt
+        PB_V["prompt_builder.py\nsession_valoration_prompt\nclasifica: BUENA / REGULAR / MALA\ntrayectoria emocional del usuario"]:::prompt
+        PB_R["prompt_builder.py\nrisk_level_prompt\nclasifica: ESTABLE / BAJO /\nMODERADO / ALTO"]:::prompt
+        LLM_S{{"llm.py\nsession_summary"}}:::llm
+        LLM_V{{"llm.py\nsession_valoration"}}:::llm
+        LLM_R{{"llm.py\nsession_risk"}}:::llm
+    end
+
+    DB_SAVE[("db.py — add_user_info\nguarda en session_path:\nsummary, valoration, risk_level\ntimestamp de cierre")]:::db
+
+    FW["generate_output.py\nfarewell\nmensaje de despedida\nsegun estado: normal / exit / age"]:::module
+
+    OUT(["bot_message = farewell_text\nis_ended = True\nsesion cerrada en MongoDB"]):::entry
+
+    IN --> CONV
+    CONV --> PB_S & PB_V & PB_R
+    PB_S --> LLM_S
+    PB_V --> LLM_V
+    PB_R --> LLM_R
+    LLM_S & LLM_V & LLM_R --> DB_SAVE
+    DB_SAVE --> FW --> OUT
+
+    classDef entry    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef prompt   fill:#ede7f6,stroke:#4527a0,color:#311b92
+    classDef llm      fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef db       fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+
+    style PARALLEL fill:#f7f3ff,stroke:#4527a0
+```
+
+---
+
+## Cómo exportar a imagen
 
 ```bash
-# Instala mermaid-cli
 npm install -g @mermaid-js/mermaid-cli
 
-# Exporta a SVG (recomendado para LaTeX/Word)
-mmdc -i backend_flow_diagram.md -o backend_flow.svg
+# Un SVG por figura (recomendado para incluir en LaTeX o Word)
+mmdc -i backend_flow_diagram.md -o fig1_overview.svg
+mmdc -i backend_flow_diagram.md -o fig2_orchestration.svg
 
-# Exporta a PNG de alta resolución
-mmdc -i backend_flow_diagram.md -o backend_flow.png -w 3000 -H 4000
+# PNG de alta resolución
+mmdc -i backend_flow_diagram.md -o fig1_overview.png -w 2400
 ```
 
-O bien, copia el bloque `mermaid` en:
-- **Mermaid Live Editor**: https://mermaid.live → exporta SVG/PNG directamente.
-- **VS Code**: extensión *Markdown Preview Mermaid Support*.
-- **Notion / GitHub / GitLab**: renderizan Mermaid de forma nativa.
+O pega cada bloque de código en **https://mermaid.live** para previsualizar y exportar de forma individual.
