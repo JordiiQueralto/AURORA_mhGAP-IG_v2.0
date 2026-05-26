@@ -4,7 +4,7 @@ Este documento presenta el flujo del backend en cuatro niveles de detalle progre
 
 ---
 
-## Figura 1 — Vista general del sistema
+## Figura 0 — Vista general del sistema
 
 Visión de alto nivel de las seis capas del backend y los flujos de datos entre ellas. Muestra qué módulo llama a quién, sin entrar en la lógica interna de cada uno.
 
@@ -72,6 +72,54 @@ flowchart TD
     style DB_L     fill:#f0faf0,stroke:#2e7d32
 ```
 
+---
+## Figura 1 — Inicialización de usuario (`init_user`)
+ 
+Flujo ejecutado desde `POST /api/verify` antes de cualquier sesión de chat. Comprueba si el usuario existe en la base de datos y, si no, crea su documento. Devuelve `is_new` al frontend para que sepa si debe mostrar el onboarding.
+ 
+```mermaid
+flowchart TD
+ 
+    START(( )):::circle
+    FINISH(( )):::circle
+ 
+    START -->|"POST /api/verify\ntelephone"| IS_NEW
+ 
+    subgraph INIT_FLOW["main_api.py — init_user()"]
+ 
+        IS_NEW["<b>db.py</b><br/>────────────────────<br/>is_new()<br/>· · · · · · · · · ·<br/>→ True / False"]:::dbmod
+ 
+        D_NEW{is_new ?}:::decision
+ 
+        CREATE["<b>db.py</b><br/>────────────────────<br/>create_user()<br/>· · · · · · · · · ·<br/>→ inserts user document<br/>with telephone field"]:::dbmod
+ 
+        SKIP["User already exists<br/>— skip creation"]:::flowblock
+ 
+        MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
+ 
+        BOTTOM[ ]:::phantom
+ 
+        IS_NEW --> D_NEW
+        D_NEW -->|True| CREATE --> BOTTOM
+        D_NEW -->|False| SKIP --> BOTTOM
+ 
+        IS_NEW <-.-> MONGO
+        CREATE <-.-> MONGO
+ 
+    end
+ 
+    BOTTOM -->|"is_new: True / False"| FINISH
+ 
+    classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef phantom   fill:#ffffff,stroke:#ffffff,color:#ffffff
+    classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
+    classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef dbmod     fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db        fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
+ 
+    style INIT_FLOW fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
+```
 ---
 
 ## Figura 2 — Flujo de orquestación (`process_message`)
