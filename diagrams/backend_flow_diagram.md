@@ -123,6 +123,7 @@ flowchart TD
  
     style INIT_FLOW fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
 ```
+
 ---
 ## Figura 2 - Empezar conversación
 
