@@ -16,16 +16,16 @@ flowchart TD
         APP["app.py"]:::module
     end
 
-    subgraph ORCH["<b>ORCHESTATION</b>"]
-        MAIN["main_api.py"]:::module
+    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ORCHESTATION</b>"]
+        MAIN["services_user.py"]:::module
     end
 
-    subgraph CLINICAL["<b>CLINICAL LOGIC</b>"]
+    subgraph CLINICAL["<b>CLINICAL LOGIC &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;</b>"]
         FSM_MOD["state_machine.py"]:::module
         PHRASE["phrase_dictionary.py"]:::module
     end
 
-    subgraph GENOUT["<b>RESPONSE GENERATION</b>"]
+    subgraph GENOUT["<b>RESPONSE GENERATION &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;</b>"]
         GEN["generate_output.py"]:::module
     end
 
@@ -34,7 +34,7 @@ flowchart TD
         LLM["llm.py\n(Gemini API)"]:::llm
     end
 
-    subgraph DB_L["<b>DATA LAYER</b>"]
+    subgraph DB_L["<b>DATA LAYER &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;</b>"]
         DB["db.py"]:::dbmod
         MONGO[("MongoDB\nCHATBOT_mhGAP")]:::db
     end
@@ -141,7 +141,7 @@ flowchart TD
 
         INIT["<b>db.py</b><br/>───────────<br/>user_memory()<br/>user_status()"]:::dbmod
 
-        SP["<b>main_api.py</b><br/>─────────────────────────────<br/>session_path = datetime.now() + '_session'"]:::module
+        SP["<b>services_user.py</b><br/>─────────────────────────────<br/>session_path = datetime.now() + '_session'"]:::module
 
         SESSION["<b>db.py</b><br/>───────────────────────────<br/>add_user_info()<br/>· · · · · · · · · ·<br/>→ session_path.summary = ''<br/>→ session_path.valoration = ''<br/>→ session_path.risk_level = ''<br/>→ session_path.conversation_history = {}"]:::dbmod
 
@@ -149,11 +149,7 @@ flowchart TD
 
         D_STATUS{status ==<br/>'rejected' ?}:::decision
 
-        PRESENTATION["<b>main_api.py</b><br/>────────────────<br/>phase = PRESENTATION<br/>(onboarding: name, age,<br/>reason, terms...)"]:::module
-
-        RESUMING["<b>main_api.py</b><br/>────────────────<br/>phase = RESUMING<br/>(restore last session<br/>checkpoint)"]:::module
-
-        CTX["<b>main_api.py</b><br/>────────────────<br/>_ctx_set()<br/>· · · · · · · · · ·<br/>→ session_path<br/>→ j = 0, k = 0<br/>→ bot_output<br/>→ phase, state = ''<br/>→ variant = 0"]:::module
+        CTX["<b>services_user.py</b><br/>────────────────<br/>_ctx_set()<br/>· · · · · · · · · ·<br/>→ session_path<br/>→ j = 0, k = 0<br/>→ bot_output<br/>→ phase, state = ''<br/>→ variant = 0"]:::module
 
         BOTTOM(( )):::junction
 
@@ -188,7 +184,7 @@ flowchart TD
 ---
 ## Figura 3 — Flujo de orquestación (`process_message`)
 
-Detalle del flujo principal de `main_api.py`: cómo se recupera el contexto de sesión, qué rama se toma según la fase actual y cómo se persiste el nuevo estado tras cada turno.
+Detalle del flujo principal de `services_user.py`: cómo se recupera el contexto de sesión, qué rama se toma según la fase actual y cómo se persiste el nuevo estado tras cada turno.
 
 ```mermaid
 flowchart TD
@@ -200,8 +196,8 @@ flowchart TD
 
     subgraph PROCESS_MSG[" "]
 
-        CTX_GET["<b>db.py</b><br/>────────────────────────────────────────<br/>_ctx_get()<br/>→ session_path, last_bot_output, j, k, phase, state, variant"]:::dbmod
-        HIST["<b>db.py</b><br/>────────────────────────────────────<br/>add_user_info()"]:::dbmod
+        CTX_GET["<b>db.py</b><br/>──────────<br/>_ctx_get()"]:::dbmod
+        HIST["<b>db.py</b><br/>─────────────<br/>add_user_info()"]:::dbmod
 
         D_PRES{phase ==<br/>PRESENTATION ?}:::decision
         D_RES{phase ==<br/>RESUMING ?}:::decision
@@ -210,7 +206,7 @@ flowchart TD
 
         RES["<b>RESUMING flow:</b><br/>— recovers last session summary<br/>— recovers phase, state"]:::flowblock
 
-        FSM["<b>state_machine.py</b><br/>───────────────────────<br/>StateMachine()<br/>→ new_phase, new_state, variant"]:::module
+        FSM["<b>state_machine.py</b><br/>─────────────<br/>StateMachine()"]:::module
 
         SEC_GATE{new_phase in<br/>DEP_EVAL or CHAT?}:::decision
 
@@ -220,42 +216,42 @@ flowchart TD
 
         EMERGENCY["<b>SUI_EVAL !!!</b>"]:::emergency
 
-        GEN_RESP["<b>_generate_response()</b>"]:::module
+        GEN_RESP[["<b>_generate_response()</b>"]]:::module
 
         CTX_SET["<b>db.py</b><br/>───────────<br/>_ctx_set()"]:::dbmod
 
         MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
 
-        BOTTOM[ ]:::phantom
+        BOTTOM(( )):::junction
 
         CTX_GET --> HIST
-        HIST --> D_PRES
+        HIST -->|"j += 1"| D_PRES
 
         D_PRES -->|True| PRES ==> GEN_RESP
         D_PRES -->|False| D_RES
         D_RES  -->|True| RES  ==> GEN_RESP
-        D_RES  -->|False| FSM --> SEC_GATE
+        D_RES  -->|False| FSM
 
+        FSM -->|"(new_phase, new_state, variant)"| SEC_GATE
         SEC_GATE -->|True| SEC --> RISK
         RISK -->|True| EMERGENCY ==> GEN_RESP
         RISK ==>|False| GEN_RESP
         SEC_GATE ==>|False| GEN_RESP
 
-        GEN_RESP ==> CTX_SET
+        GEN_RESP ==>|"*generation_args"| CTX_SET
 
-        CTX_GET <-.-> MONGO
-        HIST -.->|"bot_output_{j}<br/>user_input_{j}<br/>j += 1"| MONGO
-        GEN_RESP <-.-> MONGO
+        MONGO -.->|"session_path<br/>last_bot_output<br/>j, k<br/>phase, state, variant"| CTX_GET
+        HIST -.->|"bot_output_{j}<br/>user_input_{j}"| MONGO
+        CTX_SET --> BOTTOM
         CTX_SET -.->|"j, k, bot_output,<br/>phase, state, variant"| MONGO
-
-        CTX_SET -->|"bot_message, image_path,<br/>is_ended, is_emergency"| BOTTOM
+        GEN_RESP <-.-> MONGO
 
     end
 
-    BOTTOM --> FINISH
+    BOTTOM -->|"(bot_output, image_path, is_ended, emergency_112, emergency_024)"| FINISH
 
     classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
-    classDef phantom   fill:#ffffff,stroke:#ffffff,color:#ffffff
+    classDef junction  fill:#000000,stroke:#000000,color:#000000
     classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
     classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
     classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
@@ -274,62 +270,72 @@ Detalle interno de `_generate_response`: las cuatro ramas mutuamente excluyentes
 
 ```mermaid
 flowchart TD
-    ENTRY(["_generate_response\nnew_phase, new_state, variant"]):::entry
 
-    D_UC{new_phase ==\nUSE_CASE_EVAL?}:::decision
-    D_CH{new_phase ==\nCHAT?}:::decision
-    D_FW{new_phase ==\nFAREWELL?}:::decision
+    START(( )):::circle
+    JUNCTION(( )):::junction
+    FINISH(( )):::circle
 
-    subgraph BRANCH_UC["Rama A — Clasificacion de caso de uso"]
-        DB_H[("db.py\nconversation_history\nhistorico de sesion")]:::db
-        UC["generate_output.py\nuse_case_class"]:::module
-        PB_UC["prompt_builder.py\nuse_case_prompt"]:::prompt
-        LLM_UC{{"llm.py — Gemini\ntemp = 0.0\nretorna: EMERGENCY /\nASSISTANCE / TALK / MISENSE"}}:::llm
+    MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
+
+    D_UC{new_phase ==<br/>USE_CASE_EVAL?}:::decision
+    D_CH{new_phase ==<br/>CHAT?}:::decision
+    D_FW{new_phase ==<br/>FAREWELL?}:::decision
+
+    subgraph BRANCH_UC["Rama A — Use case classification"]
+        DB_H["<b>db.py</b><br/>───────────<br/>conversation_history()"]:::dbmod
+        UC["<b>generate_output.py</b><br/>───────────<br/>use_case_class()"]:::module
+        PB_UC["<b>prompt_builder.py</b><br/>───────────<br/>use_case_prompt()"]:::prompt
+        LLM_UC{{"<b>llm.py</b><br/>───────────<br/>temp = 0.0<br/>→ EMERGENCY / ASSISTANCE<br/>/ TALK / MISENSE"}}:::llm
     end
 
-    subgraph BRANCH_CH["Rama B — Conversacion libre TALK"]
-        TALK["generate_output.py\ntalk_mode\nultimos 8 turnos"]:::module
-        PB_TK["prompt_builder.py\nprompt_talk_mode"]:::prompt
-        LLM_TK{{"llm.py — Gemini\ntemp = 1.0\noyente activo empático"}}:::llm
+    subgraph BRANCH_CH["Rama B — Free conversation TALK"]
+        TALK["<b>generate_output.py</b><br/>───────────<br/>talk_mode()<br/>last 8 turns"]:::module
+        PB_TK["<b>prompt_builder.py</b><br/>───────────<br/>prompt_talk_mode()"]:::prompt
+        LLM_TK{{"<b>llm.py</b><br/>───────────<br/>temp = 1.0<br/>active listener"}}:::llm
     end
 
-    subgraph BRANCH_FW["Rama C — Cierre de sesion FAREWELL"]
-        FW["generate_output.py\nfarewell\nnormal / exit / age"]:::module
-        RUN_FW["main_api.py\n_run_farewell"]:::module
+    subgraph BRANCH_FW["Rama C — Session closing FAREWELL"]
+        FW["<b>generate_output.py</b><br/>───────────<br/>farewell()<br/>normal / exit / age"]:::module
+        RUN_FW["<b>services_user.py</b><br/>───────────<br/>_run_farewell()"]:::module
     end
 
-    subgraph BRANCH_NM["Rama D — Flujo clinico mhGAP (DEP_EVAL, SUI_EVAL, etc.)"]
+    subgraph BRANCH_NM["Rama D — Clinical flow mhGAP"]
         D_VAR{variant != 0?}:::decision
-        PVAR["phrase_dictionary.py\nvariant_dict\nnucleo alternativo"]:::phrase
-        PBASE["phrase_dictionary.py\nbot_output_info\nnucleo clinico base mhGAP"]:::phrase
-        MEM[("db.py\nuser_memory\nnombre, edad, PROFILE\nsummary ultima sesion")]:::db
-        BOUT["generate_output.py\nbot_output"]:::module
-        PB_BO["prompt_builder.py\nprompt_bot_output\nnucleo + contexto + memoria"]:::prompt
-        LLM_BO{{"llm.py — Gemini\ntemp = 1.0\ngenerada: puente empatico\n+ nucleo clinico literal"}}:::llm
+        PVAR["<b>phrase_dictionary.py</b><br/>───────────<br/>variant_dict()<br/>· · · · · · · · · ·<br/>→ alternative nucleus"]:::phrase
+        PBASE["<b>phrase_dictionary.py</b><br/>───────────<br/>bot_output_info()<br/>· · · · · · · · · ·<br/>→ base clinical nucleus"]:::phrase
+        MEM["<b>db.py</b><br/>───────────<br/>user_memory()<br/>· · · · · · · · · ·<br/>→ name, age,<br/>PROFILE, summary"]:::dbmod
+        BOUT["<b>generate_output.py</b><br/>───────────<br/>bot_output()"]:::module
+        PB_BO["<b>prompt_builder.py</b><br/>───────────<br/>prompt_bot_output()"]:::prompt
+        LLM_BO{{"<b>llm.py</b><br/>───────────<br/>temp = 1.0<br/>→ empathic bridge<br/>+ clinical nucleus"}}:::llm
     end
 
-    RESULT(["bot_message\nimage_url\nis_ended, is_emergency"]):::entry
+    START -->|"new_phase, new_state, variant"| D_UC
 
-    ENTRY --> D_UC
-
-    D_UC -->|Si| DB_H --> UC --> PB_UC --> LLM_UC --> RESULT
+    D_UC -->|Si| DB_H --> UC --> PB_UC --> LLM_UC --> JUNCTION
     D_UC -->|No| D_CH
 
-    D_CH -->|Si| TALK --> PB_TK --> LLM_TK --> RESULT
+    D_CH -->|Si| TALK --> PB_TK --> LLM_TK --> JUNCTION
     D_CH -->|No| D_FW
 
-    D_FW -->|Si| FW & RUN_FW --> RESULT
+    D_FW -->|Si| FW & RUN_FW --> JUNCTION
     D_FW -->|No| D_VAR
 
     D_VAR -->|Si| PVAR --> BOUT
     D_VAR -->|No| PBASE --> BOUT
-    MEM -->|memoria de usuario| BOUT
-    BOUT --> PB_BO --> LLM_BO --> RESULT
+    MEM -.->|"user memory"| BOUT
+    BOUT --> PB_BO --> LLM_BO --> JUNCTION
 
-    classDef entry    fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    DB_H <-.-> MONGO
+    MEM <-.-> MONGO
+
+    JUNCTION -->|"bot_message, is_ended,<br/>is_emergency"| FINISH
+
+    classDef circle   fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef junction fill:#000000,stroke:#000000,color:#000000
     classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
     classDef decision fill:#fce4ec,stroke:#ad1457,color:#880e4f
-    classDef db       fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef dbmod    fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db       fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
     classDef llm      fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
     classDef prompt   fill:#ede7f6,stroke:#4527a0,color:#311b92
     classDef phrase   fill:#e8eaf6,stroke:#283593,color:#1a237e

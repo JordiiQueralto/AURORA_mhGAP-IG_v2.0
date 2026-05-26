@@ -6,16 +6,16 @@ flowchart TD
         APP["app.py"]:::module
     end
 
-    subgraph ORCH["<b>ORCHESTATION</b>"]
-        MAIN["main_api.py"]:::module
+    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ORCHESTATION</b>"]
+        MAIN["services_user.py"]:::module
     end
 
-    subgraph CLINICAL["<b>CLINICAL LOGIC</b>"]
+    subgraph CLINICAL["<b>CLINICAL LOGIC &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;</b>"]
         FSM_MOD["state_machine.py"]:::module
         PHRASE["phrase_dictionary.py"]:::module
     end
 
-    subgraph GENOUT["<b>RESPONSE GENERATION</b>"]
+    subgraph GENOUT["<b>RESPONSE GENERATION &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;</b>"]
         GEN["generate_output.py"]:::module
     end
 
@@ -24,7 +24,7 @@ flowchart TD
         LLM["llm.py\n(Gemini API)"]:::llm
     end
 
-    subgraph DB_L["<b>DATA LAYER</b>"]
+    subgraph DB_L["<b>DATA LAYER &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;</b>"]
         DB["db.py"]:::dbmod
         MONGO[("MongoDB\nCHATBOT_mhGAP")]:::db
     end

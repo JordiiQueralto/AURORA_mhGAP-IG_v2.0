@@ -1,4 +1,4 @@
-mermaid```
+```mermaid
 flowchart TD
 
     START(( )):::circle
@@ -10,7 +10,7 @@ flowchart TD
 
         INIT["<b>db.py</b><br/>───────────<br/>user_memory()<br/>user_status()"]:::dbmod
 
-        SP["<b>main_api.py</b><br/>─────────────────────────────<br/>session_path = datetime.now() + '_session'"]:::module
+        SP["<b>services_user.py</b><br/>─────────────────────────────<br/>session_path = datetime.now() + '_session'"]:::module
 
         SESSION["<b>db.py</b><br/>───────────────────────────<br/>add_user_info()<br/>· · · · · · · · · ·<br/>→ session_path.summary = ''<br/>→ session_path.valoration = ''<br/>→ session_path.risk_level = ''<br/>→ session_path.conversation_history = {}"]:::dbmod
 
@@ -18,7 +18,7 @@ flowchart TD
 
         D_STATUS{status ==<br/>'rejected' ?}:::decision
 
-        CTX["<b>main_api.py</b><br/>────────────────<br/>_ctx_set()<br/>· · · · · · · · · ·<br/>→ session_path<br/>→ j = 0, k = 0<br/>→ bot_output<br/>→ phase, state = ''<br/>→ variant = 0"]:::module
+        CTX["<b>services_user.py</b><br/>────────────────<br/>_ctx_set()<br/>· · · · · · · · · ·<br/>→ session_path<br/>→ j = 0, k = 0<br/>→ bot_output<br/>→ phase, state = ''<br/>→ variant = 0"]:::module
 
         BOTTOM(( )):::junction
 
