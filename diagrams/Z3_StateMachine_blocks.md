@@ -156,33 +156,33 @@ flowchart TD
 
     subgraph VARIANT_SEARCH[" "]
 
-        DEFS["<b>Definición local de patrones</b><br/>· · · · · · · · · ·<br/>PATTERNS_AMBIGUITY<br/>PATTERNS_EVASION<br/>PATTERNS_DIRECT_REFUSAL<br/>PATTERNS_HOSTILITY"]:::flowblock
+        DEFS["<b>Pattern definition (depends on each state)</b><br/>────────────────────────────<br/>PATTERNS_AMBIGUITY = [regex,...]<br/>PATTERNS_EVASION = [regex,...]<br/>PATTERNS_DIRECT_REFUSAL = [regex,...]<br/>PATTERNS_HOSTILITY = [regex,...]"]:::flowblock
 
-        PS1["<b>state_machine.py</b><br/>───────────────<br/>pattern_search(<br/>&nbsp;&nbsp;n_user_input,<br/>&nbsp;&nbsp;PATTERNS_AMBIGUITY )"]:::module
+        PS1["_pattern_search()"]:::module
 
-        D1{¿match?}:::decision
+        D1{AMBIGUITY\nmatch ?}:::decision
 
-        PS2["<b>state_machine.py</b><br/>───────────────<br/>pattern_search(<br/>&nbsp;&nbsp;n_user_input,<br/>&nbsp;&nbsp;PATTERNS_EVASION )"]:::module
+        PS2["_pattern_search()"]:::module
 
-        D2{¿match?}:::decision
+        D2{EVASION\nmatch ?}:::decision
 
-        PS3["<b>state_machine.py</b><br/>───────────────<br/>pattern_search(<br/>&nbsp;&nbsp;n_user_input,<br/>&nbsp;&nbsp;PATTERNS_<br/>DIRECT_REFUSAL )"]:::module
+        PS3["_pattern_search()"]:::module
 
-        D3{¿match?}:::decision
+        D3{DIRECT REFUSAL\nmatch ?}:::decision
 
-        PS4["<b>state_machine.py</b><br/>───────────────<br/>pattern_search(<br/>&nbsp;&nbsp;n_user_input,<br/>&nbsp;&nbsp;PATTERNS_HOSTILITY )"]:::module
+        PS4["_pattern_search()"]:::module
 
-        D4{¿match?}:::decision
+        D4{HOSTILITY\nmatch ?}:::decision
 
-        R1["<b>variant = 'ambiguity'</b><br/>· · · · · · · · · ·<br/>'no sé', 'tal vez',<br/>'quizás', 'depende',<br/>'no entiendo'"]:::variant_amb
+        R1["<b>variant = 'ambiguity'</b>"]:::variant_amb
 
-        R2["<b>variant = 'evasion'</b><br/>· · · · · · · · · ·<br/>'cambio de tema',<br/>'no es nada',<br/>'no pasa nada',<br/>'cuéntame un chiste'"]:::variant_eva
+        R2["<b>variant = 'evasion'"]:::variant_eva
 
-        R3["<b>variant = 'refusal'</b><br/>· · · · · · · · · ·<br/>'no quiero hablar',<br/>'no es asunto tuyo',<br/>'déjame en paz',<br/>'no me apetece'"]:::variant_ref
+        R3["<b>variant = 'refusal'"]:::variant_ref
 
-        R4["<b>variant = 'hostility'</b><br/>· · · · · · · · · ·<br/>'eres inútil',<br/>'qué pregunta tonta',<br/>'no me fío de ti',<br/>'no confío en ti'"]:::variant_hos
+        R4["<b>variant = 'hostility'"]:::variant_hos
 
-        R5["<b>variant = 'non_class'</b><br/>· · · · · · · · · ·<br/>(default: ninguno<br/>de los anteriores)"]:::variant_def
+        R5["<b>variant = 'non_class'"]:::variant_def
 
         BOTTOM(( )):::junction
 
@@ -198,7 +198,7 @@ flowchart TD
 
     end
 
-    BOTTOM -->|"variant (str)"| FINISH
+    BOTTOM -->|"variant"| FINISH
 
     classDef circle      fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
     classDef junction    fill:#000000,stroke:#000000,color:#000000
@@ -211,7 +211,7 @@ flowchart TD
     classDef variant_hos fill:#ffcdd2,stroke:#b71c1c,color:#b71c1c
     classDef variant_def fill:#f5f5f5,stroke:#616161,color:#212121
 
-    style VARIANT_SEARCH fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
+    style VARIANT_SEARCH fill:#fff5f8,stroke:#ad1457,stroke-width:2px,stroke-dasharray: 6 3
 ```
 
 ---
