@@ -12,29 +12,29 @@ Visión de alto nivel de las seis capas del backend y los flujos de datos entre 
 flowchart TD
     FE([FRONTEND]):::external
 
-    subgraph API["API REST (Flask)"]
+    subgraph API["<b>API REST (Flask)</b>"]
         APP["app.py"]:::module
     end
 
-    subgraph ORCH["ORCHESTATION"]
+    subgraph ORCH["<b>ORCHESTATION</b>"]
         MAIN["main_api.py"]:::module
     end
 
-    subgraph CLINICAL["CLINICAL LOGIC"]
+    subgraph CLINICAL["<b>CLINICAL LOGIC</b>"]
         FSM_MOD["state_machine.py"]:::module
         PHRASE["phrase_dictionary.py"]:::module
     end
 
-    subgraph GENOUT["RESPONSE GENERATION"]
+    subgraph GENOUT["<b>RESPONSE GENERATION</b>"]
         GEN["generate_output.py"]:::module
     end
 
-    subgraph LLM_L["LLM LAYER"]
+    subgraph LLM_L["<b>LLM LAYER</b>"]
         PB["prompt_builder.py"]:::prompt
         LLM["llm.py\n(Gemini API)"]:::llm
     end
 
-    subgraph DB_L["DATA LAYER"]
+    subgraph DB_L["<b>DATA LAYER</b>"]
         DB["db.py"]:::dbmod
         MONGO[("MongoDB\nCHATBOT_mhGAP")]:::db
     end
@@ -83,35 +83,38 @@ flowchart TD
     START(( )):::circle
     FINISH(( )):::circle
  
-    START -->|"POST /api/verify\ntelephone"| IS_NEW
+    START -->|"telephone"| IS_NEW
  
-    subgraph INIT_FLOW["main_api.py — init_user()"]
+    subgraph INIT_FLOW[" "]
  
-        IS_NEW["<b>db.py</b><br/>────────────────────<br/>is_new()<br/>· · · · · · · · · ·<br/>→ True / False"]:::dbmod
+        IS_NEW["<b>db.py</b><br/>───────────<br/>is_new()"]:::dbmod
  
         D_NEW{is_new ?}:::decision
  
-        CREATE["<b>db.py</b><br/>────────────────────<br/>create_user()<br/>· · · · · · · · · ·<br/>→ inserts user document<br/>with telephone field"]:::dbmod
+        CREATE["<b>db.py</b><br/>──────────<br/>create_user()"]:::dbmod
+
+        ADD["<b>db.py</b><br/>─────────────────────────<br/>add_user_info()<br/>· · · · · · · · · ·<br/>→ name = ''<br/>→ age = ''<br/>→ USER_TERMS.status = 'rejected'<br/>→ CIRCLE = {}<br/>→ PROFILE = {}<br/>→ DEP_EVAL = {}<br/>→ SUI_EVAL = {}<br/>→ SCREENING = {}<br/>→ EMERGENCY = []<br/>→ FOLLOWUP.history = []<br/>→ FOLLOWUP.last_check = ''<br/>→ checkpoint.phase = ''<br/>→ checkpoint.state = ''<br/>→ ctx = {}"]:::dbmod
  
-        SKIP["User already exists<br/>— skip creation"]:::flowblock
+        SKIP["User already exists<br/>(skip creation)"]:::flowblock
  
         MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
- 
-        BOTTOM[ ]:::phantom
+
+        BOTTOM(( )):::junction
  
         IS_NEW --> D_NEW
-        D_NEW -->|True| CREATE --> BOTTOM
+        D_NEW -->|True| CREATE --> ADD --> BOTTOM
         D_NEW -->|False| SKIP --> BOTTOM
  
-        IS_NEW <-.-> MONGO
-        CREATE <-.-> MONGO
+        MONGO -.->|find_one: telephone| IS_NEW
+        CREATE -.-> MONGO
+        ADD -.-> MONGO
  
     end
  
     BOTTOM -->|"is_new: True / False"| FINISH
  
     classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
-    classDef phantom   fill:#ffffff,stroke:#ffffff,color:#ffffff
+    classDef junction  fill:#000000,stroke:#000000,color:#000000
     classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
     classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
     classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
@@ -121,8 +124,61 @@ flowchart TD
     style INIT_FLOW fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
 ```
 ---
+## Figura 2 - Empezar conversación
+mermaid```
+flowchart TD
 
-## Figura 2 — Flujo de orquestación (`process_message`)
+    START(( )):::circle
+    FINISH(( )):::circle
+
+    START -->|"telephone"| INIT
+
+    subgraph START_CONV[" "]
+
+        INIT["<b>db.py</b><br/>───────────<br/>user_memory()<br/>user_status()"]:::dbmod
+
+        SP["<b>main_api.py</b><br/>─────────────────────────────<br/>session_path = datetime.now() + '_session'"]:::module
+
+        SESSION["<b>db.py</b><br/>───────────────────────────<br/>add_user_info()<br/>· · · · · · · · · ·<br/>→ session_path.summary = ''<br/>→ session_path.valoration = ''<br/>→ session_path.risk_level = ''<br/>→ session_path.conversation_history = {}"]:::dbmod
+
+        WELCOME["<b>generate_output.py</b><br/>─────────────────<br/>welcome()"]:::module
+
+        D_STATUS{status ==<br/>'rejected' ?}:::decision
+
+        CTX["<b>main_api.py</b><br/>────────────────<br/>_ctx_set()<br/>· · · · · · · · · ·<br/>→ session_path<br/>→ j = 0, k = 0<br/>→ bot_output<br/>→ phase, state = ''<br/>→ variant = 0"]:::module
+
+        BOTTOM(( )):::junction
+
+        MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
+
+        INIT -->|"memory, status"| SP
+        SP -->|"session_path"| SESSION
+        SESSION --> WELCOME -->|"bot_output"| D_STATUS
+        D_STATUS -->|"True"| PRESENTATION -->|"phase"| CTX
+        D_STATUS -->|"False"| RESUMING -->|"phase"| CTX
+
+        MONGO -.-> INIT
+        CTX -.-> MONGO
+        SESSION -.-> MONGO
+        CTX --> BOTTOM
+
+    end
+
+    BOTTOM -->|"bot_output"| FINISH
+
+    classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef junction  fill:#000000,stroke:#000000,color:#000000
+    classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
+    classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef dbmod     fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db        fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
+
+    style START_CONV fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
+```
+
+---
+## Figura 3 — Flujo de orquestación (`process_message`)
 
 Detalle del flujo principal de `main_api.py`: cómo se recupera el contexto de sesión, qué rama se toma según la fase actual y cómo se persiste el nuevo estado tras cada turno.
 
@@ -204,7 +260,7 @@ flowchart TD
 
 ---
 
-## Figura 3 — Generación de respuesta (`_generate_response`)
+## Figura 4 — Generación de respuesta (`_generate_response`)
 
 Detalle interno de `_generate_response`: las cuatro ramas mutuamente excluyentes según `new_phase` y la arquitectura híbrida de nucleo clínico fijo + puente generado por LLM.
 
@@ -278,9 +334,7 @@ flowchart TD
 
 ---
 
-## Figura 4 — Seguridad y cierre de sesión
-
-### 4a — Control de seguridad transversal (`security_control`)
+## Figura 5 — Seguridad 
 
 Flujo del módulo REGEX de detección de riesgo activo que actúa de forma transversal durante las fases `DEP_EVAL` y `CHAT`.
 
@@ -322,7 +376,7 @@ flowchart TD
     classDef emergency fill:#ffcdd2,stroke:#b71c1c,color:#b71c1c
 ```
 
-### 4b — Cierre de sesión (`_run_farewell`)
+### 6 — Cierre de sesión (`_run_farewell`)
 
 Flujo completo del proceso de cierre: generación de resumen clínico, valoración de la sesión y nivel de riesgo, con persistencia en MongoDB.
 
