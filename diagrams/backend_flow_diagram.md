@@ -82,7 +82,7 @@ Detalle del flujo principal de `main_api.py`: cómo se recupera el contexto de s
 flowchart TD
 
     START(( )):::circle
-    END(( )):::circle
+    FINISH(( )):::circle
 
     START -->|"telephone, user_input"| CTX_GET
 
@@ -132,18 +132,18 @@ flowchart TD
         GEN_RESP ==> CTX_SET
 
         CTX_GET <-.-> MONGO
-        HIST -.->|"bot_output_{j}\nuser_input_{j}\n\nj += 1"| MONGO
+        HIST -.->|"bot_output_{j}<br/>user_input_{j}<br/>j += 1"| MONGO
         GEN_RESP <-.-> MONGO
-        CTX_SET -.->|"j, k, bot_output, phase, state, variant"| MONGO
+        CTX_SET -.->|"j, k, bot_output,<br/>phase, state, variant"| MONGO
 
         CTX_SET -->|"bot_message, image_path,<br/>is_ended, is_emergency"| BOTTOM
 
     end
 
-    BOTTOM --> END
+    BOTTOM --> FINISH
 
     classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
-    classDef phantom   fill:#ffffff,stroke:#ffffff,color:#ffffff,width:0px
+    classDef phantom   fill:#ffffff,stroke:#ffffff,color:#ffffff
     classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
     classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
     classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
