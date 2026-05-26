@@ -6,7 +6,7 @@ flowchart TD
         APP["app.py"]:::module
     end
 
-    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;ORCHESTATION</b>"]
+    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;APPLICATION SERVICES (ORCHESTATION)</b>"]
         MAIN["services_user.py"]:::module
     end
 
@@ -21,7 +21,8 @@ flowchart TD
 
     subgraph LLM_L["<b>LLM LAYER</b>"]
         PB["prompt_builder.py"]:::prompt
-        LLM["llm.py\n(Gemini API)"]:::llm
+        %% CAMBIO AQUÍ: Uso de llaves { } para generar el rombo y <br/> para el salto de línea
+        LLM{{"llm.py<br/>(Gemini API)"}}:::llm
     end
 
     subgraph DB_L["<b>DATA LAYER &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;</b>"]
