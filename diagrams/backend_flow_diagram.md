@@ -125,6 +125,9 @@ flowchart TD
 ```
 ---
 ## Figura 2 - Empezar conversación
+
+Inició session detallado
+
 mermaid```
 flowchart TD
 
