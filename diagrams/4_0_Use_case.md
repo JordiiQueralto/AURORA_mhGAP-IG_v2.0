@@ -9,9 +9,9 @@ flowchart TD
 
     CTX["<b>db.py</b><br/>──────────────<br/>conversation_history()<br/>"]:::dbmod
 
-    subgraph UC_BLOCK["<b>generate_output.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>"]
+    subgraph UC_BLOCK["&nbsp;&nbsp;<b>generate_output.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>— use_case_class()&nbsp;&nbsp;"]
         PB["<b>prompt_builder.py</b><br/>──────────────────<br/>use_case_prompt()"]:::prompt
-        LLM{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0<br/>use_case_class()"}}:::llm
+        LLM{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0<br/>send_prompt()"}}:::llm
     end
 
     SWITCH{use_case == ?}:::decision

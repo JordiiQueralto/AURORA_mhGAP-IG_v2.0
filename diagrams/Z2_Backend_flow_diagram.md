@@ -271,9 +271,7 @@ flowchart TD
 
 ---
 
-## Figura 4 — Generación de respuesta (`_generate_response`)
-
-Detalle interno de `_generate_response`: las cuatro ramas mutuamente excluyentes según `new_phase` y la arquitectura híbrida de nucleo clínico fijo + puente generado por LLM.
+## Figura 4.0 - USE CASE EVAL
 
 ```mermaid
 flowchart TD
@@ -284,73 +282,131 @@ flowchart TD
 
     MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
 
-    D_UC{new_phase ==<br/>USE_CASE_EVAL?}:::decision
-    D_CH{new_phase ==<br/>CHAT?}:::decision
-    D_FW{new_phase ==<br/>FAREWELL?}:::decision
+    CTX["<b>db.py</b><br/>──────────────<br/>conversation_history()<br/>"]:::dbmod
 
-    subgraph BRANCH_UC["Rama A — Use case classification"]
-        DB_H["<b>db.py</b><br/>───────────<br/>conversation_history()"]:::dbmod
-        UC["<b>generate_output.py</b><br/>───────────<br/>use_case_class()"]:::module
-        PB_UC["<b>prompt_builder.py</b><br/>───────────<br/>use_case_prompt()"]:::prompt
-        LLM_UC{{"<b>llm.py</b><br/>───────────<br/>temp = 0.0<br/>→ EMERGENCY / ASSISTANCE<br/>/ TALK / MISENSE"}}:::llm
+    subgraph UC_BLOCK["&nbsp;&nbsp;<b>generate_output.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>— use_case_class()&nbsp;&nbsp;"]
+        PB["<b>prompt_builder.py</b><br/>──────────────────<br/>use_case_prompt()"]:::prompt
+        LLM{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0<br/>send_prompt()"}}:::llm
     end
 
-    subgraph BRANCH_CH["Rama B — Free conversation TALK"]
-        TALK["<b>generate_output.py</b><br/>───────────<br/>talk_mode()<br/>last 8 turns"]:::module
-        PB_TK["<b>prompt_builder.py</b><br/>───────────<br/>prompt_talk_mode()"]:::prompt
-        LLM_TK{{"<b>llm.py</b><br/>───────────<br/>temp = 1.0<br/>active listener"}}:::llm
+    SWITCH{use_case == ?}:::decision
+
+    EM["new_phase = 'SUI_EVAL'<br/>new_state = '1'"]:::emergency
+
+    AS["new_phase = 'DEP_EVAL'<br/>new_state = '1A.1'<br/>· · · · · · · · · ·<br/><b>db.py</b> — save_flow()"]:::dbmod
+
+    TK["new_phase = 'CHAT'<br/>new_state = ''"]:::flowblock
+
+    MS["new_phase = 'FAREWELL'<br/>new_state = 'misuse'"]:::farewell
+
+    START -->|"telephone, phase, state"| CTX
+    CTX -->|"conversation_transcript"| PB
+    PB -->|"prompt"| LLM
+    LLM -->|"use_case label"| SWITCH
+
+    SWITCH -->|"EMERGENCY"| EM --> JUNCTION
+    SWITCH -->|"TALK"| TK --> JUNCTION
+    SWITCH -->|"ASSISTANCE"| AS --> JUNCTION 
+    SWITCH -->|"else"| MS --> JUNCTION
+
+    MONGO -.-> CTX
+    AS -.->|"checkpoint.phase\ncheckpoint.state"| MONGO
+
+    JUNCTION -->|"(new_phase, new_state)"| FINISH
+
+    classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef junction  fill:#000000,stroke:#000000,color:#000000
+    classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef dbmod     fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db        fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
+    classDef prompt    fill:#ede7f6,stroke:#4527a0,color:#311b92
+    classDef llm       fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
+    classDef emergency fill:#ffcdd2,stroke:#b71c1c,color:#b71c1c
+    classDef farewell  fill:#fce4ec,stroke:#880e4f,color:#880e4f
+
+    style UC_BLOCK fill:#f7f3ff,stroke:#4527a0,stroke-width:2px
+```
+
+---
+
+## Figura 4 — Generación de respuesta (`_generate_response`)
+
+Detalle interno de `_generate_response`: las cuatro ramas mutuamente excluyentes según `new_phase` y la arquitectura híbrida de nucleo clínico fijo + puente generado por LLM.
+
+CHAT: Periodic re-evaluation?\n(every 5 turns)
+
+```mermaid
+flowchart TD
+
+    START(( )):::circle
+    JUNCTION(( )):::junction
+    FINISH(( )):::circle
+
+    MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
+
+    D_UC{phase ==<br/>USE_CASE_EVAL?}:::decision
+    D_CH{*_phase ==<br/>CHAT?}:::decision
+    D_FW{*_phase ==<br/>FAREWELL?}:::decision
+
+    BRANCH_UC[["<b>Branch A:\nUSE CASE classification</b>"]]:::external
+
+    subgraph BRANCH_CH["<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Branch B: Free conversation TALK</b>"]
+        TALK["<b>generate_output.py</b><br/>───────────<br/>talk_mode()"]:::module
+        LLM_TK{{"temp = 1.0"}}:::llm
+        KCHAT{"k is multiple \nof 5 ?"}:::decision
     end
 
-    subgraph BRANCH_FW["Rama C — Session closing FAREWELL"]
-        FW["<b>generate_output.py</b><br/>───────────<br/>farewell()<br/>normal / exit / age"]:::module
-        RUN_FW["<b>services_user.py</b><br/>───────────<br/>_run_farewell()"]:::module
+    subgraph BRANCH_FW["<b>Branch C: Session closing FAREWELL</b>"]
+        FW["<b>generate_output.py</b><br/>───────────<br/>farewell()"]:::module
+        LLM_FW{{"temp = 1.0"}}:::llm
     end
 
-    subgraph BRANCH_NM["Rama D — Clinical flow mhGAP"]
-        D_VAR{variant != 0?}:::decision
-        PVAR["<b>phrase_dictionary.py</b><br/>───────────<br/>variant_dict()<br/>· · · · · · · · · ·<br/>→ alternative nucleus"]:::phrase
-        PBASE["<b>phrase_dictionary.py</b><br/>───────────<br/>bot_output_info()<br/>· · · · · · · · · ·<br/>→ base clinical nucleus"]:::phrase
-        MEM["<b>db.py</b><br/>───────────<br/>user_memory()<br/>· · · · · · · · · ·<br/>→ name, age,<br/>PROFILE, summary"]:::dbmod
-        BOUT["<b>generate_output.py</b><br/>───────────<br/>bot_output()"]:::module
-        PB_BO["<b>prompt_builder.py</b><br/>───────────<br/>prompt_bot_output()"]:::prompt
-        LLM_BO{{"<b>llm.py</b><br/>───────────<br/>temp = 1.0<br/>→ empathic bridge<br/>+ clinical nucleus"}}:::llm
+    subgraph BRANCH_NM["<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Branch D: Clinical flow mhGAP</b>"]
+        D_VAR{Variant\nrequired ?}:::decision
+        PVAR["<b>phrase_dictionary.py</b><br/>───────────────<br/>variant_dict()"]:::phrase
+        PBASE["<b>phrase_dictionary.py</b><br/>───────────────<br/>bot_output_info()"]:::phrase
+        BOUT["<b>generate_output.py</b><br/>──────────────<br/>bot_output()"]:::module
+        LLM_BO{{"temp = 1.0"}}:::llm
     end
 
-    START -->|"new_phase, new_state, variant"| D_UC
+    START -->|"(telephone, phase, state, variant, k, *memory_args)"| D_UC
+    
+    D_UC -->|True| BRANCH_UC
+    D_UC -->|False| D_CH
 
-    D_UC -->|Si| DB_H --> UC --> PB_UC --> LLM_UC --> JUNCTION
-    D_UC -->|No| D_CH
+    KCHAT -->|True| BRANCH_UC
+    D_CH -->|False| D_FW
+    D_CH -->|True| KCHAT
 
-    D_CH -->|Si| TALK --> PB_TK --> LLM_TK --> JUNCTION
-    D_CH -->|No| D_FW
+    KCHAT -->|False| TALK
+    TALK --> LLM_TK -->|"bot_output\nk += 1"| JUNCTION
 
-    D_FW -->|Si| FW & RUN_FW --> JUNCTION
-    D_FW -->|No| D_VAR
+    BRANCH_UC -->|"(new_phase, new_state)"| D_CH
 
-    D_VAR -->|Si| PVAR --> BOUT
-    D_VAR -->|No| PBASE --> BOUT
-    MEM -.->|"user memory"| BOUT
-    BOUT --> PB_BO --> LLM_BO --> JUNCTION
+    D_FW -->|True| FW --> LLM_FW -->|"bot_output"| JUNCTION
+    D_FW -->|False| D_VAR
 
-    DB_H <-.-> MONGO
-    MEM <-.-> MONGO
+    D_VAR -->|True| PVAR -->|"nucleus"| BOUT
+    D_VAR -->|False| PBASE -->|"nucleus"| BOUT
+    MONGO -.->|"user memory"| BOUT
+    BOUT --> LLM_BO -->|"bot_output"| JUNCTION
 
-    JUNCTION -->|"bot_message, is_ended,<br/>is_emergency"| FINISH
+    JUNCTION -->|"(bot_output, k, *output_args)"| FINISH
 
-    classDef circle   fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
-    classDef junction fill:#000000,stroke:#000000,color:#000000
-    classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
-    classDef decision fill:#fce4ec,stroke:#ad1457,color:#880e4f
-    classDef dbmod    fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    classDef db       fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
-    classDef llm      fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
-    classDef prompt   fill:#ede7f6,stroke:#4527a0,color:#311b92
-    classDef phrase   fill:#e8eaf6,stroke:#283593,color:#1a237e
+    classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef junction  fill:#000000,stroke:#000000,color:#000000
+    classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
+    classDef dbmod     fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db        fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
+    classDef phrase    fill:#e8eaf6,stroke:#283593,color:#1a237e
+    classDef llm       fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef external  fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
 
-    style BRANCH_UC fill:#e3f2fd,stroke:#1565c0
-    style BRANCH_CH fill:#e8f5e9,stroke:#2e7d32
-    style BRANCH_FW fill:#fce4ec,stroke:#ad1457
-    style BRANCH_NM fill:#fffde7,stroke:#f57f17
+    style BRANCH_CH fill:#e8f5e9,stroke:#2e7d32,stroke-dasharray: 6 3
+    style BRANCH_FW fill:#fce4ec,stroke:#ad1457,stroke-dasharray: 6 3
+    style BRANCH_NM fill:#fffde7,stroke:#f57f17,stroke-dasharray: 6 3
 ```
 
 ---
@@ -416,9 +472,9 @@ flowchart TD
             PB_S["<b>prompt_builder.py</b><br/>──────────────────<br/>session_summary_prompt()"]:::prompt
             PB_V["<b>prompt_builder.py</b><br/>──────────────────<br/>session_valoration_prompt()"]:::prompt
             PB_R["<b>prompt_builder.py</b><br/>───────────────<br/>risk_level_prompt()"]:::prompt
-            LLM_S{{"<b>llm.py</b><br/>──────────────<br/>session_summary()"}}:::llm
-            LLM_V{{"<b>llm.py</b><br/>──────────────<br/>session_valoration()"}}:::llm
-            LLM_R{{"<b>llm.py</b><br/>──────────────<br/>session_risk()"}}:::llm
+            LLM_S{{"<b>llm.py</b><br/>──────────────<br/>temp = 1.0\nsend_prompt()"}}:::llm
+            LLM_V{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
+            LLM_R{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
         end
 
         DB_SAVE["<b>db.py</b><br/>─────────────<br/>add_user_info()<br/>get_user_info()"]:::dbmod

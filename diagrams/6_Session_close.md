@@ -13,9 +13,9 @@ flowchart TD
             PB_S["<b>prompt_builder.py</b><br/>──────────────────<br/>session_summary_prompt()"]:::prompt
             PB_V["<b>prompt_builder.py</b><br/>──────────────────<br/>session_valoration_prompt()"]:::prompt
             PB_R["<b>prompt_builder.py</b><br/>───────────────<br/>risk_level_prompt()"]:::prompt
-            LLM_S{{"<b>llm.py</b><br/>──────────────<br/>session_summary()"}}:::llm
-            LLM_V{{"<b>llm.py</b><br/>──────────────<br/>session_valoration()"}}:::llm
-            LLM_R{{"<b>llm.py</b><br/>──────────────<br/>session_risk()"}}:::llm
+            LLM_S{{"<b>llm.py</b><br/>──────────────<br/>temp = 1.0\nsend_prompt()"}}:::llm
+            LLM_V{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
+            LLM_R{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
         end
 
         DB_SAVE["<b>db.py</b><br/>─────────────<br/>add_user_info()<br/>get_user_info()"]:::dbmod
