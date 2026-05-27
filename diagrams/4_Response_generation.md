@@ -13,7 +13,7 @@ flowchart TD
 
     BRANCH_UC[["<b>Branch A:\nUSE CASE classification</b>"]]:::external
 
-    subgraph BRANCH_CH["<b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Branch B: Free conversation TALK</b>"]
+    subgraph BRANCH_CH["<b>Branch B: Free conversation TALK</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
         TALK["<b>generate_output.py</b><br/>───────────<br/>talk_mode()"]:::module
         LLM_TK{{"temp = 1.0"}}:::llm
         KCHAT{"k is multiple \nof 5 ?"}:::decision
