@@ -13,6 +13,7 @@ Este documento contiene tres diagramas de bloques complementarios que capturan e
 Captura el rol de la función como **dispatcher determinista**: recibe la tupla de contexto desde `services_user.py`, normaliza el texto, identifica la fase actual y delega a uno de los cinco sub-bloques internos. La salida es siempre la tripleta `(new_phase, new_state, variant)`, sin generación de texto.
 
 ```mermaid
+
 flowchart TD
 
     START(( )):::circle
@@ -22,26 +23,23 @@ flowchart TD
 
     subgraph FSM_CORE[" "]
 
-        NORM["<b>state_machine.py</b><br/>───────────────<br/>normalize_text(user_input)<br/>· · · · · · · · · ·<br/>→ lowercase<br/>→ strip_accents<br/>→ remove punctuation<br/>→ collapse whitespace"]:::module
+        NORM["_normalize_text()"]:::module
 
-        INIT["<b>Inicialización</b><br/>· · · · · · · · · ·<br/>variant = 0"]:::flowblock
+        DISPATCH{phase == ?}:::decision
 
-        DISPATCH{<b>Dispatcher</b><br/>if / elif<br/>phase == ?}:::decision
+        PROFILE["<b>PROFILE block</b><br/>───────────────────<br/>Clinical onboarding<br/>· · · · · · · · · ·<br/>name → age → reason →<br/>expectation → commitment"]:::flowblock
 
-        PROFILE["<b>Bloque PROFILE</b><br/>───────────────<br/>Onboarding clínico<br/>· · · · · · · · · ·<br/>name → age → reason →<br/>expectation → commitment"]:::flowblock
+        CHAT["<b>CHAT block</b><br/>───────────────<br/>Passthrough"]:::flowblock
 
-        CHAT["<b>Bloque CHAT</b><br/>───────────────<br/>Passthrough<br/>· · · · · · · · · ·<br/>return (phase, state, 0)<br/>(la FSM no decide)"]:::flowblock
+        DEP["<b>DEP_EVAL block</b><br/>───────────────<br/>mhGAP depression screening<br/>· · · · · · · · · ·<br/>1A.x → 1B.x → 1C →<br/>2A.x → 2B.x → 2C →<br/>2D.x → 2E.x → 3A → 3B"]:::flowblock
 
-        DEP["<b>Bloque DEP_EVAL</b><br/>───────────────<br/>Cribado depresión mhGAP<br/>· · · · · · · · · ·<br/>1A.* → 1B.* → 1C →<br/>2A.* → 2B.* → 2C →<br/>2D.* → 2E.* → 3A / 3B"]:::flowblock
+        SUI["<b>SUI_EVAL block</b><br/>───────────────<br/>mhGAP suicide risk\nscreening<br/>· · · · · · · · · ·<br/>1 → 2A → 2B.1 → 2B.2 →<br/>3 → 4 → 5"]:::flowblock
 
-        SUI["<b>Bloque SUI_EVAL</b><br/>───────────────<br/>Riesgo suicida estructurado<br/>· · · · · · · · · ·<br/>1 → 2A → 2B.1 → 2B.2 →<br/>3 → 4 → 5"]:::flowblock
-
-        FU["<b>Bloque FOLLOWUP</b><br/>───────────────<br/>Seguimiento post-emergencia<br/>· · · · · · · · · ·<br/>emergency_followup →<br/>non_contact_reason →<br/>second_try → post_help →<br/>continuity_plan → family"]:::flowblock
+        FU["<b>FOLLOWUP block</b><br/>───────────────<br/>Post-emergency follow-up<br/>· · · · · · · · · ·<br/>emergency_followup →<br/>non_contact_reason →<br/>second_try → post_help →<br/>continuity_plan → family"]:::flowblock
 
         BOTTOM(( )):::junction
 
-        NORM -->|"n_user_input"| INIT
-        INIT --> DISPATCH
+        NORM -->|"n_user_input"| DISPATCH
 
         DISPATCH -->|"'PROFILE'"| PROFILE
         DISPATCH -->|"'CHAT'"| CHAT
@@ -65,7 +63,7 @@ flowchart TD
     classDef flowblock fill:#fffde7,stroke:#f57f17,color:#e65100
     classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
 
-    style FSM_CORE fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
+    style FSM_CORE fill:#fff5f8,stroke:#ad1457,stroke-width:2px,stroke-dasharray: 6 3
 ```
 
 ---

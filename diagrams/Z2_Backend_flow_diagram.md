@@ -198,24 +198,27 @@ flowchart TD
     subgraph PROCESS_MSG[" "]
 
         CTX_GET["<b>db.py</b><br/>──────────<br/>_ctx_get()"]:::dbmod
-        HIST["<b>db.py</b><br/>─────────────<br/>add_user_info()"]:::dbmod
+        HIST["<b>db.py</b><br/>─────────────<br/>add_user_info()<br/>· · · · · · · · · ·<br/>bot_output_{j}<br/>user_input_{j}<br/>j += 1"]:::dbmod
 
-        D_PRES{phase ==<br/>PRESENTATION ?}:::decision
-        D_RES{phase ==<br/>RESUMING ?}:::decision
+        SWITCH{phase == ?}:::decision
 
-        PRES["<b>PRESENTATION flow:</b><br/>— informed consent"]:::flowblock
+        PRES["<b>PRESENTATION</b><br/>───────────<br/>— informed consent"]:::flowblock
 
-        RES["<b>RESUMING flow:</b><br/>— recovers last session summary<br/>— recovers phase, state"]:::flowblock
+        PRES_ASK["<b>PRESENTATION_ASKED</b><br/>────────────────<br/>— continues with PROFILE"]:::flowblock
+
+        RES["<b>RESUMING</b><br/>─────────────────────<br/>— recovers last session summary<br/>— recovers phase, state"]:::flowblock
 
         FSM["<b>state_machine.py</b><br/>─────────────<br/>StateMachine()"]:::module
 
-        SEC_GATE{new_phase in<br/>DEP_EVAL or CHAT?}:::decision
+        FSM_GATE{new_phase == ?}:::decision
 
         SEC["<b>state_machine.py</b><br/>───────────<br/>security_control()"]:::module
 
         RISK{Risk<br/>detected ?}:::decision
 
         EMERGENCY["<b>SUI_EVAL !!!</b>"]:::emergency
+
+        SUI_PROT["<b>SUI_PROTOCOLS !!!</b>"]:::emergency
 
         GEN_RESP[["<b>_generate_response()</b>"]]:::module
 
@@ -226,18 +229,20 @@ flowchart TD
         BOTTOM(( )):::junction
 
         CTX_GET --> HIST
-        HIST -->|"j += 1"| D_PRES
+        HIST -->|"j += 1"| SWITCH
 
-        D_PRES -->|True| PRES ==> GEN_RESP
-        D_PRES -->|False| D_RES
-        D_RES  -->|True| RES  ==> GEN_RESP
-        D_RES  -->|False| FSM
+        SWITCH -->|"PRESENTATION"| PRES ==> GEN_RESP
+        SWITCH -->|"PRESENTATION_ASKED"| PRES_ASK ==> GEN_RESP
+        SWITCH -->|"RESUMING"| RES ==> GEN_RESP
+        SWITCH -->|"else"| FSM
 
-        FSM -->|"(new_phase, new_state, variant)"| SEC_GATE
-        SEC_GATE -->|True| SEC --> RISK
+        FSM -->|"(new_phase, new_state, variant)"| FSM_GATE
+        FSM_GATE -->|"DEP_EVAL or CHAT"| SEC --> RISK
+        FSM_GATE ==>|"else"| GEN_RESP
+        FSM_GATE -->|"SUI_PROTOCOLS"| SUI_PROT -->|"*generation_args"| BOTTOM
+        
         RISK -->|True| EMERGENCY ==> GEN_RESP
         RISK ==>|False| GEN_RESP
-        SEC_GATE ==>|False| GEN_RESP
 
         GEN_RESP ==>|"*generation_args"| CTX_SET
 
@@ -246,6 +251,7 @@ flowchart TD
         CTX_SET --> BOTTOM
         CTX_SET -.->|"j, k, bot_output,<br/>phase, state, variant"| MONGO
         GEN_RESP <-.-> MONGO
+        SUI_PROT -.->|"emergency_instance<br/>family notifications"| MONGO
 
     end
 
