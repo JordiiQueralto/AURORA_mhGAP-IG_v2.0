@@ -138,7 +138,6 @@ chatbot/
 │
 ├── diagrams/                    # Diagramas Mermaid de arquitectura y flujo
 ├── .env                         # Variables de entorno (no subir a repositorio)
-├── CLAUDE.md                    # Instrucciones para Claude Code
 └── README.md                    # Este archivo
 ```
 
