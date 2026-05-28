@@ -13,7 +13,7 @@ specialists = db["specialists"]
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# USERS (sin cambios respecto al original)
+# USERS
 # ══════════════════════════════════════════════════════════════════════════════
 
 def is_new(telephone: str) -> bool:

@@ -1,4 +1,4 @@
-import main_api
+import services_user
 import state_machine
 
 telephone = "+3477"
@@ -18,7 +18,7 @@ if phase == "DEP_EVAL":
         new_phase, new_state, new_variant, user_input)
 
 # Generar la pregunta del BOT para el NUEVO estado
-bot_output, image_path, is_ended, new_phase, new_state, new_variant = main_api._generate_response(
+bot_output, image_path, is_ended, new_phase, new_state, new_variant = services_user._generate_response(
     telephone, new_phase, new_state, new_variant, user_input, last_bot_output, memory)
 
 print("\n" + "="*50)

@@ -3739,7 +3739,7 @@ def StateMachine(telephone, phase, state, user_input):
         
         print("\n[FASE DE SEGUIMIENTO]\n")
         
-        if state == "contact_verification":
+        if state == "emergency_followup":
             
             PATTERNS_YES = [
                 r"\b(si+s?|sip|sisi+|claro|ok|vale|listo|hecho|afirma|afirmativo)\b",
@@ -3758,7 +3758,7 @@ def StateMachine(telephone, phase, state, user_input):
             # 1 - Negation
             match_no = pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
-                key = "ctx.contact_verification"
+                key = "ctx.emergency_followup"
                 value = False
                 db.add_user_info(telephone, key, value)
                 
@@ -3769,7 +3769,7 @@ def StateMachine(telephone, phase, state, user_input):
                 # 2 - Contact
                 match_yes = pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
-                    key = "ctx.contact_verification"
+                    key = "ctx.emergency_followup"
                     value = True
                     db.add_user_info(telephone, key, value)
                     
@@ -3777,7 +3777,7 @@ def StateMachine(telephone, phase, state, user_input):
                     return (phase, state, variant)
                 
                 else:
-                    key = "ctx.contact_verification"
+                    key = "ctx.emergency_followup"
                     value = None
                     db.add_user_info(telephone, key, value)
                     
@@ -3975,3 +3975,24 @@ def security_control(phase, state, variant, user_input):
         new_variant = variant
         new_phase, new_state = phase, state
         return (new_phase, new_state, new_variant)
+    
+
+def bot_output_image(phase, state) -> str:
+    image_path_user = None 
+    image_path_family = None
+    
+    if phase == "DEP_PROTOCOLS":
+        return image_path_user, image_path_family
+    
+    elif phase == "SUI_PROTOCOLS":
+        if state == "1":
+            image_path_user = None
+            image_path_family = "images/SUI/Emergency/family_esp.png"
+        elif state == "2":
+            image_path_user = "images/SUI/Psicoeducation/user_esp.png"
+            image_path_family = "images/SUI/Emergency/family_esp.png"
+        else: # state == "3"
+            image_path_user = "images/SUI/Psicoeducation/user_esp.png"
+            image_path_family = "images/SUI/Psicoeducation/family_esp.png"
+
+    return image_path_user, image_path_family

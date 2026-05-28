@@ -179,7 +179,7 @@ def bot_output_info(phase, state):
         },
         
         "FOLLOWUP": {
-        "contact_verification": {
+        "emergency_followup": {
             "nucleo": """¿Lograste contactar con el número que te proporcioné anteriormente o 
             has buscado algún tipo de ayuda?"""
         },

@@ -1,5 +1,5 @@
 import db
-import main_api_sp
+import services_specialist
 
 data = {
     "collegiateNumber": "133-666",
@@ -15,4 +15,4 @@ data = {
 
 coll_number = data["collegiateNumber"]
 
-main_api_sp.handle_registration(data)
+services_specialist.handle_registration(data)

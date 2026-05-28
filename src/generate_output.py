@@ -74,24 +74,6 @@ def bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
     return bot_output
 
 
-def bot_output_image(phase, state) -> str:
-    image_path_user = None 
-    image_path_family = None
-    
-    if phase == "DEP_PROTOCOLS":
-        return image_path_user, image_path_family
-    
-    elif phase == "SUI_PROTOCOLS":
-        if state == "1":
-            image_path_user = None
-            image_path_family = "images/SUI/Emergency/family_esp.png"
-        elif state == "2":
-            image_path_user = "images/SUI/Psicoeducation/user_esp.png"
-            image_path_family = "images/SUI/Psicoeducation/family_esp.png"
-
-    return image_path_user, image_path_family
-
-
 def talk_mode(conversation: dict, n: int=8) -> str:
     """
     Keep up to the last n messages (including bot_output_{i} and user_input_{i}) and 
