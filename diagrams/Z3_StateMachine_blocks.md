@@ -1,19 +1,22 @@
-# Diagramas de bloques de la función `StateMachine()`
+# Block diagrams of the `StateMachine()` function
 
-Este documento contiene tres diagramas de bloques complementarios que capturan el comportamiento de la función `StateMachine()` del módulo `state_machine.py`, desde la vista de conjunto hasta el patrón interno que se replica en cada uno de sus estados.
+This document presents three complementary block diagrams that capture the behavior of the `StateMachine()` function in `state_machine.py` — the **clinical brain** of the mhGAP chatbot. Because the function is large (roughly fifty states distributed across five phases) and the same internal pattern repeats inside every state, a single diagram would either lose detail or become unreadable. The chosen decomposition therefore moves from the most abstract view (what the function does as a whole) to the most concrete (how individual decisions are made), with each figure focusing on one level of granularity.
 
-- **Figura 1** — Comportamiento general: firma, normalización, dispatcher de fases y salida.
-- **Figura 2** — Patrón canónico de decisión por estado: cómo se determina cada transición.
-- **Figura 3** — Cascada interna de `variant_search()`.
+- **Figure 1** — General behavior: signature, normalization, phase dispatcher, and output.
+- **Figure 2** — Canonical decision pattern per state: how each transition is determined.
+- **Figure 3** — Internal cascade of `variant_search()`.
+
+A summary table at the end consolidates the meaning of every `variant` value and how it is consumed downstream by `phrase_dictionary.py`.
 
 ---
 
-## Figura 1 — Comportamiento general de `StateMachine()`
+## Figure 1 — General behavior of `StateMachine()`
 
-Captura el rol de la función como **dispatcher determinista**: recibe la tupla de contexto desde `services_user.py`, normaliza el texto, identifica la fase actual y delega a uno de los cinco sub-bloques internos. La salida es siempre la tripleta `(new_phase, new_state, variant)`, sin generación de texto.
+Captures the role of the function as a **deterministic dispatcher**: it receives the session context tuple from `services_user.py`, normalizes the user input, identifies the current phase, and delegates execution to one of five internal sub-blocks. The output is always the triple `(new_phase, new_state, variant)` — never a string of natural language. This separation is deliberate: by isolating clinical decisions in a function that produces only structured data, the system guarantees that every transition is auditable and reproducible, leaving the unpredictability of natural language confined to the downstream generation layer.
+
+The function begins with `_normalize_text()`, which lowercases the input, strips accents, removes punctuation, and collapses whitespace. This normalization is essential because the REGEX patterns used by downstream blocks would otherwise fail on trivial orthographic variations ("Sí, claro", "si claro!", "SI") that all express the same semantic content. After normalization, a single switch on `phase` dispatches the execution to the corresponding block. Each block is responsible for advancing through its own internal sequence of states, applying the canonical decision pattern described in Figure 2.
 
 ```mermaid
-
 flowchart TD
 
     START(( )):::circle
@@ -66,13 +69,17 @@ flowchart TD
     style FSM_CORE fill:#fff5f8,stroke:#ad1457,stroke-width:2px,stroke-dasharray: 6 3
 ```
 
+The five blocks correspond to the five phases of the conversation lifecycle. **PROFILE** is the clinical onboarding sequence — name, age, reason for contacting, expectation, and commitment to screening — and acts as a gate to the rest of the system: users under 18 are redirected to `FAREWELL`, while users who decline screening are redirected to `USE_CASE_EVAL`. **CHAT** is a pure passthrough: when the conversation is in free-talk mode, the FSM has no decision to make and simply returns the same phase and state, letting the LLM handle the conversation downstream. **DEP_EVAL** is the most complex block, implementing the mhGAP depression screening protocol with three sections and roughly thirty states. **SUI_EVAL** handles the structured suicide risk evaluation. **FOLLOWUP** manages the post-emergency check-ins that occur in subsequent sessions after a suicide-risk emergency has been registered.
+
 ---
 
-## Figura 2 — Patrón canónico de decisión por estado
+## Figure 2 — Canonical decision pattern per state
 
-Diagrama del comportamiento que se repite, con pequeñas variantes, en **cada uno de los estados** dentro de los bloques `PROFILE`, `DEP_EVAL`, `SUI_EVAL` y `FOLLOWUP`. Captura la lógica de evaluación de patrones REGEX, persistencia en MongoDB y decisión de transición.
+This diagram captures the behavior that repeats, with minor variations, in **every state** within the `PROFILE`, `DEP_EVAL`, `SUI_EVAL`, and `FOLLOWUP` blocks. It abstracts the logic of REGEX pattern evaluation, MongoDB persistence, and transition decision into a single reusable template.
 
-Es importante notar que la persistencia ocurre **solo cuando hay match positivo** (es decir, cuando la respuesta del usuario se ha podido interpretar). Si la respuesta es ambigua, evasiva o no clasificable, no se guarda ningún dato clínico y el estado se mantiene para reformular la pregunta.
+The pattern is structured as a **two-stage cascade**: first, the user input is tested against the negative pattern set (`PATTERNS_NO`), and only if that fails is it tested against the positive set (`PATTERNS_YES`). The order matters because negations in Spanish often contain words that would also match affirmation patterns (for example "no me siento bien" contains "bien" which could match a positive pattern), so testing `NO` first prevents false positives. If neither matcher succeeds, the system falls back to `_variant_search()` to classify the type of unexpected response.
+
+It is critical to note that **persistence occurs only when a positive match is found** (either YES or NO branch). If the response is ambiguous, evasive, or unclassifiable, no clinical data is saved and the state remains unchanged so that the next turn can reformulate the question. This design guarantees that the MongoDB record reflects only **interpreted** answers, never assumptions made by the system.
 
 ```mermaid
 flowchart TD
@@ -134,15 +141,17 @@ flowchart TD
     style STATE_LOGIC fill:#fff5f8,stroke:#ad1457,stroke-width:2px,stroke-dasharray: 6 3
 ```
 
-> **Nota** — Algunos estados específicos (por ejemplo `PROFILE.name`, `PROFILE.age`, `FOLLOWUP.non_contact_reason`) usan un único bloque de patrones específico en lugar del par `YES`/`NO` clásico, pero la lógica subyacente es idéntica: si hay match, se persiste y se avanza; si no, se llama a `variant_search()` (o se devuelve `variant = "repeat"` en los casos más simples) y se mantiene el estado.
+> **Note** — Some specific states (for example `PROFILE.name`, `PROFILE.age`, `FOLLOWUP.non_contact_reason`) use a single specialized pattern block instead of the classical `YES` / `NO` pair, but the underlying logic is identical: if a match exists, persist and advance; otherwise, call `variant_search()` (or assign `variant = "repeat"` in the simplest cases) and keep the current state.
+
+The dual persistence on positive matches — saving the clinical data via `add_user_info()` and the FSM checkpoint via `save_flow()` — is what enables **session resumption**. If the user disconnects mid-screening, the next time they open the conversation the orchestrator (Figure 2 of the architecture document) will retrieve the checkpoint and continue exactly where they left off, without re-asking questions that have already been answered. This is one of the most important guarantees of the design: clinical progress is never lost.
 
 ---
 
-## Figura 3 — Cascada interna de `variant_search()`
+## Figure 3 — Internal cascade of `variant_search()`
 
-Esta función auxiliar se invoca **únicamente cuando los patrones principales del estado actual no han dado match**, es decir, cuando la respuesta del usuario no se ha podido interpretar como afirmación o negación clara. Su rol es **clasificar el tipo de respuesta no esperada** en una de cinco categorías, para que el resto del sistema (en particular `phrase_dictionary.variant_dict()`) pueda elegir una repregunta adecuada al contexto.
+This auxiliary function is invoked **only when the main patterns of the current state have failed to match**, that is, when the user's response could not be interpreted as a clear affirmation or negation. Its role is to **classify the type of unexpected response** into one of five categories, so that the rest of the system — specifically `phrase_dictionary.variant_dict()` — can choose a follow-up message appropriate to the context. A user who answered "I don't know" needs a gentler reformulation, while a user who insulted the bot needs a de-escalation; the variant label is what allows the response generator to make this distinction without any LLM call.
 
-Internamente es una **cascada estricta**: las cuatro listas de patrones se evalúan en orden de prioridad clínica (ambigüedad primero, hostilidad al final) y la función retorna en cuanto encuentra el primer match. Si ninguna lista coincide, devuelve `non_class` como categoría por defecto.
+Internally the function is a **strict cascade**: the four pattern lists are evaluated in order of clinical priority (ambiguity first, hostility last), and the function returns as soon as it finds the first match. The order is not arbitrary — it follows from the observation that the categories are not mutually exclusive at the surface level (an evasive answer may also be ambiguous), so the priority must reflect what the system should prioritize attending to. Ambiguity is most common and least concerning; hostility is rarest but most disruptive, so it is checked last only as a final filter before the catchall.
 
 ```mermaid
 flowchart TD
@@ -212,34 +221,40 @@ flowchart TD
     style VARIANT_SEARCH fill:#fff5f8,stroke:#ad1457,stroke-width:2px,stroke-dasharray: 6 3
 ```
 
+The five output categories are visually color-coded by severity. **Ambiguity** (blue) covers vague answers such as "no sé", "tal vez", "depende"; the system treats these as honest uncertainty and reformulates the question in simpler terms. **Evasion** (green) catches topic shifts or minimization, where the user is steering the conversation away from the clinical question; the bot redirects amicably without confronting the deflection. **Refusal** (orange) is an explicit unwillingness to answer ("no quiero hablar de eso"); the bot validates the refusal before gently reattempting. **Hostility** (red) covers insults or distrust directed at the bot itself; the bot de-escalates rather than confronting. The catchall **non_class** (gray) is the default returned when nothing matched, and triggers a neutral reformulation.
+
 ---
 
-## Tabla resumen — Etiquetas de `variant` y su uso aguas abajo
+## Summary table — `variant` labels and downstream consumption
 
-| Etiqueta | Origen | Significado clínico | Consumo posterior |
+The `variant` field is the **bridge** between the deterministic FSM and the response generation layer. The FSM produces it as one of seven possible values; `phrase_dictionary.py` consumes it to decide which clinical nucleus or alternative phrasing to retrieve. The table below consolidates the meaning of each value, where it originates, and what response strategy it triggers.
+
+| Label | Origin | Clinical meaning | Downstream consumption |
 |---|---|---|---|
-| `0` | Default tras match exitoso | Respuesta interpretada, la FSM avanza | `phrase_dictionary.bot_output_info()` → núcleo clínico base |
-| `"repeat"` | Asignación directa en estados simples | Matcher principal sin coincidencia | `phrase_dictionary.bot_output_info()` → se repite la misma pregunta |
-| `"ambiguity"` | `variant_search()` | Vaguedad, duda, "no sé" | `phrase_dictionary.variant_dict()` → reformulación más simple |
-| `"evasion"` | `variant_search()` | Cambio de tema o minimización | `phrase_dictionary.variant_dict()` → redirección amable |
-| `"refusal"` | `variant_search()` | Negativa explícita a responder | `phrase_dictionary.variant_dict()` → validación + reintento |
-| `"hostility"` | `variant_search()` | Insulto o desconfianza hacia el bot | `phrase_dictionary.variant_dict()` → desescalada |
-| `"non_class"` | `variant_search()` (default) | No encaja en ningún patrón conocido | `phrase_dictionary.variant_dict()` → repregunta neutra |
+| `0` | Default after successful match | Response interpreted; FSM advances | `phrase_dictionary.bot_output_info()` → base clinical nucleus |
+| `"repeat"` | Direct assignment in simple states | Main matcher failed | `phrase_dictionary.bot_output_info()` → same question repeated |
+| `"ambiguity"` | `variant_search()` | Vagueness, doubt, "I don't know" | `phrase_dictionary.variant_dict()` → simpler reformulation |
+| `"evasion"` | `variant_search()` | Topic shift or minimization | `phrase_dictionary.variant_dict()` → gentle redirection |
+| `"refusal"` | `variant_search()` | Explicit refusal to answer | `phrase_dictionary.variant_dict()` → validation + retry |
+| `"hostility"` | `variant_search()` | Insult or distrust toward the bot | `phrase_dictionary.variant_dict()` → de-escalation |
+| `"non_class"` | `variant_search()` (default) | Does not match any known pattern | `phrase_dictionary.variant_dict()` → neutral reformulation |
+
+This design ensures that **no user response is ever ignored**: even when the answer is unintelligible to the FSM, the system produces an appropriate clinical response rather than failing silently or generating a generic LLM hallucination. The combination of deterministic classification (`variant`) and templated phrasing (`phrase_dictionary`) guarantees that every bot turn is clinically grounded, regardless of how unexpected the user's input was.
 
 ---
 
-## Cómo exportar a imagen
+## How to export to image
 
 ```bash
 npm install -g @mermaid-js/mermaid-cli
 
-# Un SVG por figura
+# One SVG per figure
 mmdc -i StateMachine_blocks.md -o fig1_overview.svg
 mmdc -i StateMachine_blocks.md -o fig2_state_pattern.svg
 mmdc -i StateMachine_blocks.md -o fig3_variant_search.svg
 
-# PNG de alta resolución
+# High-resolution PNG
 mmdc -i StateMachine_blocks.md -o fig1_overview.png -w 2400
 ```
 
-O pega cada bloque en **https://mermaid.live** para previsualizar individualmente.
+Alternatively, paste each block into **https://mermaid.live** for individual preview and export.
