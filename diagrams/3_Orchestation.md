@@ -40,17 +40,17 @@ flowchart TD
         BOTTOM(( )):::junction
 
         CTX_GET --> HIST
-        HIST -->|"j += 1"| SWITCH
+        HIST --> SWITCH
 
-        SWITCH -->|"PRESENTATION"| PRES ==> GEN_RESP
-        SWITCH -->|"PRESENTATION_ASKED"| PRES_ASK ==> GEN_RESP
-        SWITCH -->|"RESUMING"| RES ==> GEN_RESP
+        SWITCH -->|"PRESENTATION"| PRES 
+        SWITCH -->|"PRESENTATION_ASKED"| PRES_ASK ==>|new_phase\nnew_state| GEN_RESP
+        SWITCH -->|"RESUMING"| RES ==>|new_phase\nnew_state| GEN_RESP
         SWITCH -->|"else"| FSM
 
         FSM -->|"(new_phase, new_state, variant)"| FSM_GATE
         FSM_GATE -->|"DEP_EVAL or CHAT"| SEC --> RISK
         FSM_GATE ==>|"else"| GEN_RESP
-        FSM_GATE -->|"SUI_PROTOCOLS"| SUI_PROT -->|"*generation_args"| BOTTOM
+        FSM_GATE -->|"SUI_PROTOCOLS"| SUI_PROT 
         
         RISK -->|True| EMERGENCY ==> GEN_RESP
         RISK ==>|False| GEN_RESP
@@ -59,10 +59,13 @@ flowchart TD
 
         MONGO -.->|"session_path<br/>last_bot_output<br/>j, k<br/>phase, state, variant"| CTX_GET
         HIST -.->|"bot_output_{j}<br/>user_input_{j}"| MONGO
+        SUI_PROT -->|"*generation_args"| BOTTOM
+        CTX_SET -.->|"j, k, bot_output,<br/>new_phase, new_state, variant"| MONGO
         CTX_SET --> BOTTOM
-        CTX_SET -.->|"j, k, bot_output,<br/>phase, state, variant"| MONGO
+        
         GEN_RESP <-.-> MONGO
         SUI_PROT -.->|"emergency_instance<br/>family notifications"| MONGO
+        PRES -->|"bot_output"| BOTTOM
 
     end
 

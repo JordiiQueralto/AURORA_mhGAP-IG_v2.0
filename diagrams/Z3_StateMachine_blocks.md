@@ -22,7 +22,7 @@ flowchart TD
     START(( )):::circle
     FINISH(( )):::circle
 
-    START -->|"telephone, phase,<br/>state, user_input"| NORM
+    START -->|"(telephone, phase,<br/>state, user_input)"| NORM
 
     subgraph FSM_CORE[" "]
 

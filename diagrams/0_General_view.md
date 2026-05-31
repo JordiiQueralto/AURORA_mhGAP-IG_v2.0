@@ -2,7 +2,7 @@
 flowchart TD
     FE([FRONTEND]):::external
 
-    subgraph API["<b>API REST (Flask)</b>"]
+    subgraph API["<b>&nbsp;&nbsp;API REST (Flask)</b>"]
         APP["app.py"]:::module
     end
 
@@ -33,7 +33,7 @@ flowchart TD
     FE ==>|"POST /api/message"| APP
     APP -->|"telephone, message"| MAIN
     MAIN <-->|"fn: _ctx_set / \n_ctx_get"| DB
-    MAIN -->|"conversation\nhistory"| DB
+    MAIN -->|"conversation\ntranscript"| DB
     MAIN <-.->|"save / get \ndata"| DB
     MAIN <--> FSM_MOD
     MAIN --> |"alternative\nfunctionalities\n(summaryze...)"| GEN
@@ -61,4 +61,5 @@ flowchart TD
     style GENOUT   fill:#fffef0,stroke:#f9a825
     style LLM_L    fill:#f7f3ff,stroke:#4527a0
     style DB_L     fill:#f0faf0,stroke:#2e7d32
+
 ```

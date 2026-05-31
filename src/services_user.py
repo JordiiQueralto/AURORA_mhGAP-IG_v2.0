@@ -101,7 +101,7 @@ def start_conversation(telephone):
 # ─────────────────────────────────────────────────────────────────────────────
 def process_message(telephone, user_input):
     telephone = str(telephone).replace(" ", "")
-    n_user_input = state_machine.normalize_text(user_input)
+    n_user_input = state_machine._normalize_text(user_input)
 
     # 1. Recuperar el contexto íntegro de la BD
     memory = db.user_memory(telephone)
@@ -437,9 +437,9 @@ def get_circle_data(telephone):
     return circle_data
 
 # ─────────────────────────────────────────────────────────────────────────────
-# run_farewell  –  Tareas de cierre de sesión
+# _run_farewell  –  Tareas de cierre de sesión
 # ─────────────────────────────────────────────────────────────────────────────
-def run_farewell(telephone):
+def _run_farewell(telephone):
     """Guarda resumen, valoración y nivel de riesgo de crisis de la sesión en 
     MongoDB al terminar."""
     try:
@@ -519,7 +519,7 @@ def reset_session(telephone):
     resumen y valoración de la sesión."""
     telephone = str(telephone).replace(" ", "")
     # Guardar resumen de sesión antes de borrar el contexto
-    run_farewell(telephone)
+    _run_farewell(telephone)
     for key in [_CTX_J, _CTX_VARIANT,_CTX_BOT_OUT, _CTX_SESSION_PATH, 
                 _CTX_PHASE, _CTX_STATE, _CTX_K]:
         try:

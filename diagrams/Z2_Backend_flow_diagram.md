@@ -16,11 +16,11 @@ The system is organized in six concentric layers. The **API layer** (`app.py`) e
 flowchart TD
     FE([FRONTEND]):::external
 
-    subgraph API["<b>API REST (Flask)</b>"]
+    subgraph API["<b>&nbsp;&nbsp;API REST (Flask)</b>"]
         APP["app.py"]:::module
     end
 
-    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;APPLICATION SERVICES (ORCHESTRATION)</b>"]
+    subgraph ORCH["<b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;APPLICATION SERVICES (ORCHESTATION)</b>"]
         MAIN["services_user.py"]:::module
     end
 
@@ -35,6 +35,7 @@ flowchart TD
 
     subgraph LLM_L["<b>LLM LAYER</b>"]
         PB["prompt_builder.py"]:::prompt
+        %% CAMBIO AQUÍ: Uso de llaves { } para generar el rombo y <br/> para el salto de línea
         LLM{{"llm.py<br/>(Gemini API)"}}:::llm
     end
 
@@ -46,10 +47,10 @@ flowchart TD
     FE ==>|"POST /api/message"| APP
     APP -->|"telephone, message"| MAIN
     MAIN <-->|"fn: _ctx_set / \n_ctx_get"| DB
-    MAIN -->|"conversation\nhistory"| DB
+    MAIN -->|"conversation\ntranscript"| DB
     MAIN <-.->|"save / get \ndata"| DB
     MAIN <--> FSM_MOD
-    MAIN --> |"alternative\nfunctionalities\n(summarize...)"| GEN
+    MAIN --> |"alternative\nfunctionalities\n(summaryze...)"| GEN
     FSM_MOD -->|"phase, state, variant"| PHRASE
     PHRASE -->|"question nucleus"| GEN
     GEN --> PB
@@ -74,6 +75,7 @@ flowchart TD
     style GENOUT   fill:#fffef0,stroke:#f9a825
     style LLM_L    fill:#f7f3ff,stroke:#4527a0
     style DB_L     fill:#f0faf0,stroke:#2e7d32
+
 ```
 
 The thick arrows (`==>`) trace the **happy path** of a normal message: frontend → API → orchestrator → response generation → frontend. The thin arrows (`-->`) represent internal queries and decisions, while the dotted arrows (`-.->`) indicate side-effect persistence (writes to MongoDB that do not return values used downstream). Reading the diagram from top to bottom matches the chronological order of execution within a single turn.
@@ -247,7 +249,7 @@ flowchart TD
         BOTTOM(( )):::junction
 
         CTX_GET --> HIST
-        HIST -->|"j += 1"| SWITCH
+        HIST --> SWITCH
 
         SWITCH -->|"PRESENTATION"| PRES ==> GEN_RESP
         SWITCH -->|"PRESENTATION_ASKED"| PRES_ASK ==> GEN_RESP
@@ -532,67 +534,82 @@ flowchart TD
     START(( )):::circle
     FINISH(( )):::circle
 
-    START -->|"telephone, session_path"| CONV
+    START -->|"telephone"| FARE
 
-    subgraph RUN_FAREWELL[" "]
-
-        CONV["<b>db.py</b><br/>───────────────<br/>get_user_info()<br/>→ conversation_transcript"]:::dbmod
-
-        subgraph PARALLEL["<b>generate_output.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>"]
-            PB_S["<b>prompt_builder.py</b><br/>──────────────────<br/>session_summary_prompt()"]:::prompt
-            PB_V["<b>prompt_builder.py</b><br/>──────────────────<br/>session_valoration_prompt()"]:::prompt
-            PB_R["<b>prompt_builder.py</b><br/>───────────────<br/>risk_level_prompt()"]:::prompt
-            LLM_S{{"<b>llm.py</b><br/>──────────────<br/>temp = 1.0\nsend_prompt()"}}:::llm
-            LLM_V{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
-            LLM_R{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
-        end
-
-        DB_SAVE["<b>db.py</b><br/>─────────────<br/>add_user_info()<br/>get_user_info()"]:::dbmod
-
+    subgraph RESET_SESSION["&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        FARE[["<b>_run_farewell()</b>"]]:::module
+        CTX["<b>db.py</b><br/>───────────<br/>_ctx_set()"]:::dbmod
         MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
-
-        D_CTX{ctx.emergency_followup<br/>exists ?}:::decision
-
-        FU["<b>db.py</b><br/>───────────────────────<br/>add_to_list()<br/>· · · · · · · · · ·<br/>→ new_instance = {<br/>emergency_date,<br/>followup_date,<br/>outcome }"]:::dbmod
-
         BOTTOM(( )):::junction
 
-        CONV --> PB_S & PB_V & PB_R
-
-        PB_S -->|"prompt"| LLM_S
-        PB_V -->|"prompt"| LLM_V
-        PB_R -->|"prompt"| LLM_R
-
-        LLM_S -->|"summary"| DB_SAVE
-        LLM_V -->|"valoration"| DB_SAVE
-        LLM_R -->|"risk"| DB_SAVE
-
-        MONGO -.-> CONV
-        DB_SAVE -.-> MONGO
-        MONGO -.->|"ctx"| DB_SAVE
-
-        DB_SAVE --> D_CTX
-
-        D_CTX -->|False| BOTTOM
-        D_CTX -->|True| FU --> BOTTOM
-
-        FU -.->|"FOLLOWUP.history"| MONGO
-
+        FARE --> CTX
+        FARE <-.-> MONGO
+        CTX -.->|"reset to None"| MONGO
+        CTX --> BOTTOM
     end
+
+    BOTTOM --> FINISH
+
+    classDef circle   fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
+    classDef junction fill:#000000,stroke:#000000,color:#000000
+    classDef module   fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef dbmod    fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef db       fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
+
+    style RESET_SESSION fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
+
+```
+
+```mermaid
+flowchart TD
+    START(( )):::circle
+    FINISH(( )):::circle
+
+    START -->|"telephone"| CONV
+
+    CONV["<b>db.py</b><br/>───────────────<br/>_ctx_get()<br/>→ session_path<br/>· · · · · · · ·<br/>get_user_info()<br/>→ conversation_transcript"]:::dbmod
+
+    subgraph PARALLEL["<b>generate_output.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</b>"]
+        PB_S["<b>prompt_builder.py</b><br/>──────────────────<br/>session_summary_prompt()"]:::prompt
+        PB_V["<b>prompt_builder.py</b><br/>──────────────────<br/>session_valoration_prompt()"]:::prompt
+        PB_R["<b>prompt_builder.py</b><br/>───────────────<br/>risk_level_prompt()"]:::prompt
+        LLM_S{{"<b>llm.py</b><br/>──────────────<br/>temp = 1.0\nsend_prompt()"}}:::llm
+        LLM_V{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
+        LLM_R{{"<b>llm.py</b><br/>──────────────<br/>temp = 0.0\nsend_prompt()"}}:::llm
+    end
+
+    DB_SAVE["<b>db.py</b><br/>─────────────<br/>add_user_info()<br/>get_user_info()"]:::dbmod
+    MONGO[("MongoDB<br/>CHATBOT_mhGAP")]:::db
+    D_CTX{ctx.emergency_followup<br/>exists ?}:::decision
+    FU["<b>db.py</b><br/>───────────────────────<br/>add_to_list()<br/>· · · · · · · · · ·<br/>→ new_instance = {<br/>emergency_date,<br/>followup_date,<br/>outcome }"]:::dbmod
+    BOTTOM(( )):::junction
+
+    CONV --> PB_S & PB_V & PB_R
+    PB_S -->|"prompt"| LLM_S
+    PB_V -->|"prompt"| LLM_V
+    PB_R -->|"prompt"| LLM_R
+    LLM_S -->|"summary"| DB_SAVE
+    LLM_V -->|"valoration"| DB_SAVE
+    LLM_R -->|"risk"| DB_SAVE
+    MONGO -.-> CONV
+    DB_SAVE -.-> MONGO
+    MONGO -.->|"ctx"| DB_SAVE
+    DB_SAVE --> D_CTX
+    D_CTX -->|False| BOTTOM
+    D_CTX -->|True| FU --> BOTTOM
+    FU -.->|"FOLLOWUP.history"| MONGO
 
     BOTTOM --> FINISH
 
     classDef circle    fill:#ffffff,stroke:#9370db,stroke-width:2px,color:#ffffff
     classDef junction  fill:#000000,stroke:#000000,color:#000000
-    classDef module    fill:#fff3e0,stroke:#e65100,color:#bf360c
     classDef prompt    fill:#ede7f6,stroke:#4527a0,color:#311b92
     classDef llm       fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
     classDef dbmod     fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     classDef db        fill:#c8e6c9,stroke:#1b5e20,color:#1b5e20
     classDef decision  fill:#fce4ec,stroke:#ad1457,color:#880e4f
 
-    style RUN_FAREWELL fill:#fff8f0,stroke:#e65100,stroke-width:2px,stroke-dasharray: 6 3
-    style PARALLEL     fill:#f7f3ff,stroke:#4527a0,stroke-width:2px
+    style PARALLEL fill:#f7f3ff,stroke:#4527a0,stroke-width:2px
 ```
 
 After the three artifacts are persisted, the flow checks whether the closing session was triggered by a previous emergency (`ctx.emergency_followup` exists). If so, a new follow-up instance is appended to the user's `FOLLOWUP.history` list, recording the date of the original emergency, the date of this follow-up, and the outcome (which may be derived from the risk level computed above). This list is later consulted by the orchestrator to remind the user to check in periodically after an emergency event, closing the safety loop that the architecture is designed to provide.

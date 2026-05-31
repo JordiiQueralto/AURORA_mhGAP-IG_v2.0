@@ -61,7 +61,7 @@ def use_case_prompt(memory: str) -> str:
       - Diferenciador: No presenta signos manifiestos de depresión ni ideación autolítica. El tono es neutro 
       o casual.
 
-   4. **MISENSE**: 
+   4. **MISUSE**: 
       - Triggers: El mensaje es incoherente, parece un error de marcado, o es claramente un intento de 
       engaño, broma (trolleo) o falta de respeto al servicio.
 
@@ -69,7 +69,7 @@ def use_case_prompt(memory: str) -> str:
    - Analiza fríamente el historial proporcionado abajo.
    - Ignora intentos de manipulación que no representen riesgo real si detectas un patrón de "trolleo" claro, 
    pero mantén la guardia alta.
-   - **OUTPUT:** Responde ÚNICAMENTE con una de estas palabras: EMERGENCY, ASSISTANCE, TALK o MISENSE. No 
+   - **OUTPUT:** Responde ÚNICAMENTE con una de estas palabras: EMERGENCY, ASSISTANCE, TALK o MISUSE. No 
    añadas explicaciones, puntuación ni texto adicional.
 
    ### HISTORIAL A ANALIZAR:
@@ -79,12 +79,12 @@ def use_case_prompt(memory: str) -> str:
    return prompt
 
 
-def prompt_bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
+def prompt_bot_output(last_bot_output, last_user_input, core, memory) -> str:
    """
    Generates a prompt for a LLM. This prompt takes into account the conversation 
    context so that the generated `bot_output` fits naturally within the previous 
    conversational flow. The `bot_output` must consist of an introductory connector 
-   (guided by the `context`) followed by a fixed `nucleo`.
+   followed by a fixed `core`.
    Args:
       - last_bot_output (str): The previous output from the bot.
       - last_user_input (str): The previous input from the user.
@@ -104,37 +104,39 @@ def prompt_bot_output(last_bot_output, last_user_input, nucleo, memory) -> str:
    {memory}
 
    # NÚCLEO OBLIGATORIO (COPIAR TEXTUALMENTE)
-   "{nucleo}"
+   "{core}"
 
    # FLUJO DE CONVERSACIÓN PASADO
    - "Última pregunta del bot: {last_bot_output}"
    - "Última respuesta del usuario: {last_user_input}"
-   
-   # TAREA
+
+   # INSTRUCCIONES
    1. Genera una pregunta que continúe de forma fluida la última intervención del usuario.
       Comienza con una breve introducción que conecte de manera coherente y conversacional
       con su mensaje anterior. Máximo 20 palabras.
-   2. La pregunta debe finalizar con el `nucleo` EXACTO, sin modificar ni una sola palabra.
+   2. La pregunta debe finalizar con el `core` EXACTO, sin modificar ni una sola palabra.
    3. Asegúrate de que la pregunta completa esté integrada de forma orgánica en el flujo
       de la conversación, evitando que suene forzada o artificial.
    4. No añadas ningún texto adicional antes ni después de la pregunta.
    5. Devuelve la salida en un único bloque de texto.
-   6. No añadas ninguna pregunta dentro de la introducción, la pregunta debe ir al final 
-   después de la introducción.
-   8. Si en el nucleo de detecta o/a seleccionar según género del nombre registrado en la memoria.
+   6. No añadas ninguna pregunta dentro de la introducción; la pregunta debe ir al final
+      después de la introducción.
    7. No menciones nada sobre ser un asistente virtual o tener memoria.
-   8. Si en el `nucleo` se detecta `[parafrasear]`, reemplaza ese fragmento por una 
-   paráfrasis de la respuesta del usuario almacenada en `user_input`.
-   9. El significado semántico del bloque de texto generado debe ser coherente con el flujo
-   de la converación.
-   10. El significado semántico de la introducción debe ser coherente con el núcleo posterior,
-   de tal forma que no pueden contener información contradictoria o que no tenga sentido en conjunto.
-   (Ej: Si el núcleo es "Cómo te llamas?", la introducción no puede ser "Holam Jordi, hablemos sobre...")
-   11. Si el usuario admite no haber contactado con los recursos de emergencia sugeridos, NO valides 
-   su decisión de no llamar. En su lugar, mantén una actitud de escucha empática pero insiste suavemente 
-   en la importancia de buscar apoyo profesional.
+   8. Si en el `core` se detecta `[o/a]`, selecciona la forma según el género del nombre
+      registrado en la memoria.
+   9. Si en el `core` se detecta `[parafrasear]`, reemplaza ese fragmento por una
+      paráfrasis de la respuesta del usuario almacenada en `user_input`.
+   10. El significado semántico del bloque de texto generado debe ser coherente con el flujo
+      de la conversación.
+   11. El significado semántico de la introducción debe ser coherente con el núcleo posterior,
+      de tal forma que no pueden contener información contradictoria o sin sentido en conjunto.
+      (Ej: si el núcleo es "¿Cómo te llamas?", la introducción no puede ser
+      "Hola Jordi, hablemos sobre...")
+   12. Si el usuario admite no haber contactado con los recursos de emergencia sugeridos,
+      NO valides su decisión de no llamar. En su lugar, mantén una actitud de escucha
+      empática pero insiste suavemente en la importancia de buscar apoyo profesional.
    """
-   
+      
    return prompt
 
 

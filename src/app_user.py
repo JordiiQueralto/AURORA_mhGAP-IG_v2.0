@@ -157,7 +157,7 @@ def mark_read():
 
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():
-    """Ejecuta run_farewell (guarda resumen de sesión) y limpia el contexto
+    """Ejecuta _run_farewell (guarda resumen de sesión) y limpia el contexto
     de sesión en BD. Se llama al hacer logout desde el front."""
     data = request.json or {}
     telephone = data.get('telephone')

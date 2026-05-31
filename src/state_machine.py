@@ -3,23 +3,23 @@ import re
 import unicodedata
 import time
 
-def strip_accents(user_input: str) -> str:
+def _strip_accents(user_input: str) -> str:
     return ''.join(
         c for c in unicodedata.normalize('NFD', user_input)
         if unicodedata.category(c) != 'Mn'
     )
 
 
-def normalize_text(user_input: str) -> str:
+def _normalize_text(user_input: str) -> str:
     user_input = user_input.lower().strip()
-    user_input = strip_accents(user_input)
+    user_input = _strip_accents(user_input)
     user_input = re.sub(r'[“”"\'`´]', '', user_input)
     user_input = re.sub(r'[\(\)\[\]\{\},;:¡!¿?\.\-_/]+', ' ', user_input)
-    n_user_input = re.sub(r'\s+', ' ', user_input).strip()
+    n_user_input = " ".join(user_input.split())
     return n_user_input
 
   
-def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
+def _pattern_search(user_input: str, patterns: list[str]) -> list[str]:
     """"""
     match = []
     for pattern in patterns:
@@ -28,7 +28,7 @@ def pattern_search(user_input: str, patterns: list[str]) -> list[str]:
     return match
 
 
-def variant_search(n_user_input: str) -> str:
+def _variant_search(n_user_input: str) -> str:
     
     PATTERNS_AMBIGUITY: list[str] = [
         r"\bno se\b",
@@ -98,7 +98,7 @@ def variant_search(n_user_input: str) -> str:
     ]
     
     # 1 - Ambiguity
-    match_ambiguity = pattern_search(n_user_input, PATTERNS_AMBIGUITY)
+    match_ambiguity = _pattern_search(n_user_input, PATTERNS_AMBIGUITY)
     if match_ambiguity:
         variant = "ambiguity"
         
@@ -106,7 +106,7 @@ def variant_search(n_user_input: str) -> str:
     
     else:
         # 2 - Evasion
-        match_evasion = pattern_search(n_user_input, PATTERNS_EVASION)
+        match_evasion = _pattern_search(n_user_input, PATTERNS_EVASION)
         if match_evasion:
             variant = "evasion"
             
@@ -114,7 +114,7 @@ def variant_search(n_user_input: str) -> str:
         
         else:
             # 3 - Direct refusal
-            match_refusal = pattern_search(n_user_input, PATTERNS_DIRECT_REFUSAL)
+            match_refusal = _pattern_search(n_user_input, PATTERNS_DIRECT_REFUSAL)
             if match_refusal:
                 variant = "refusal"
                 
@@ -122,7 +122,7 @@ def variant_search(n_user_input: str) -> str:
             
             else:
                 # 4 - Hostility
-                match_hostility = pattern_search(n_user_input, PATTERNS_HOSTILITY)
+                match_hostility = _pattern_search(n_user_input, PATTERNS_HOSTILITY)
                 if match_hostility:
                     variant = "hostility"
                     
@@ -136,8 +136,8 @@ def variant_search(n_user_input: str) -> str:
     
 
 def StateMachine(telephone, phase, state, user_input):
-    
-    n_user_input = normalize_text(user_input)
+
+    n_user_input = _normalize_text(user_input)
     variant = 0
     
     if phase == "PROFILE":
@@ -286,7 +286,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
                      
             # 1 - Reject
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "PROFILE.commitment"
                 value = "Non commited"
@@ -298,7 +298,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
             else:
                 # 2 - Accept
-                match_yes = pattern_search(n_user_input, PATTERNS_YES)
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES)
                 if match_yes:
                     key = "PROFILE.commitment"
                     value = "Fully commited"
@@ -310,7 +310,7 @@ def StateMachine(telephone, phase, state, user_input):
                     
                 else:
                     # 3 - Ambiguous
-                    match_ambiguous = pattern_search(n_user_input, PATTERNS_AMBIGUOUS) 
+                    match_ambiguous = _pattern_search(n_user_input, PATTERNS_AMBIGUOUS) 
                     if match_ambiguous:
                         key = "PROFILE.commitment"
                         value = "Partially commited"
@@ -387,7 +387,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
                         
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1_A1_depressed_mood"
                 value = False
@@ -399,7 +399,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Confirmation
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1_A1_depressed_mood"
                     value = True
@@ -411,7 +411,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Variant activation
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1A.1"
                     return (phase, state, variant)
             
@@ -462,7 +462,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
                         
              # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1_A2_anhedonia"
                 value = False
@@ -484,7 +484,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Confirmation
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1_A2_anhedonia"
                     value = True
@@ -496,7 +496,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Variant activation
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1A.2"
                     return (phase, state, variant)
             
@@ -544,7 +544,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sueño sin alteraciones relevantes)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_1_sleep_alteration"
                 value = False
@@ -556,7 +556,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Alteración detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_1_sleep_alteration"
                     value = True
@@ -568,7 +568,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase = "DEP_EVAL"
                     state = "1B.1"
                     return (phase, state, variant)
@@ -624,7 +624,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Apetito/Peso estable)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_2_appetite_weight_change"
                 value = False
@@ -636,7 +636,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Cambio detectado)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_2_appetite_weight_change"
                     value = True
@@ -648,7 +648,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1B.2"
                     return (phase, state, variant)
                        
@@ -711,7 +711,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Energía normal o cansancio puntual)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_3_fatigue_energy_loss"
                 value = False
@@ -723,7 +723,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Fatiga detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_3_fatigue_energy_loss"
                     value = True
@@ -735,7 +735,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1B.3"
                     return (phase, state, variant)
             
@@ -791,7 +791,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Concentración y toma de decisiones normales)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_4_concentration_decision_issues"
                 value = False
@@ -803,7 +803,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Problemas cognitivos detectados)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_4_concentration_decision_issues"
                     value = True
@@ -815,7 +815,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1B.4"
                     return (phase, state, variant)
         
@@ -874,7 +874,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Autoestima preservada)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_5_low_selfworth_guilt"
                 value = False
@@ -886,7 +886,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Baja autoestima / culpa detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_5_low_selfworth_guilt"
                     value = True
@@ -898,7 +898,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1B.5"
                     return (phase, state, variant)
             
@@ -954,7 +954,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin desesperanza grave ni ideación suicida)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1B_6_hopelessness_suicidal_ideation"
                 value = False
@@ -982,7 +982,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Desesperanza / ideación detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1B_6_hopelessness_suicidal_ideation"
                     value = True
@@ -1010,7 +1010,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1B.6"
                     return (phase, state, variant)
             
@@ -1068,7 +1068,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.1C_functional_impairment"
                 value = False
@@ -1082,7 +1082,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Deterioro funcional detectado)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.1C_functional_impairment"
                     value = True
@@ -1097,7 +1097,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "1C"
                     return (phase, state, variant)
             
@@ -1152,7 +1152,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (No toma medicación)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2A_1_on_medication"
                 value = False
@@ -1164,7 +1164,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Toma medicación/tratamiento)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2A_1_on_medication"
                     value = True
@@ -1176,7 +1176,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2A.1"
                     return (phase, state, variant)
         
@@ -1224,7 +1224,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin patologías físicas detectadas)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2A_2_physical_conditions"
                 value = False
@@ -1236,7 +1236,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Condición física presente)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2A_2_physical_conditions"
                     value = True
@@ -1248,7 +1248,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2A.2"
                     return (phase, state, variant)
         
@@ -1308,7 +1308,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Ánimo estable o fluctuaciones normales)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_1_mania_episode"
                 value = False
@@ -1320,7 +1320,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Indicios de episodio maníaco/hipomaníaco)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_1_mania_episode"
                     value = True
@@ -1332,7 +1332,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.1"
                     return (phase, state, variant)
             
@@ -1384,7 +1384,7 @@ def StateMachine(telephone, phase, state, user_input):
 
             
             # 1 - Negación (O insomnio clásico donde sí hay cansancio)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_2_decreased_sleep_need"
                 value = False
@@ -1396,7 +1396,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Menos necesidad de sueño detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_2_decreased_sleep_need"
                     value = True
@@ -1408,7 +1408,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.2"
                     return (phase, state, variant)
             
@@ -1456,7 +1456,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Actividad normal o solo estar ocupado)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_3_excessive_activity"
                 value = False
@@ -1468,7 +1468,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Actividad excesiva detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_3_excessive_activity"
                     value = True
@@ -1480,7 +1480,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.3"
                     return (phase, state, variant)
             
@@ -1537,7 +1537,7 @@ def StateMachine(telephone, phase, state, user_input):
 
             
             # 1 - Negación (Conducta controlada)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_4_impulsive_decisions"
                 value = False
@@ -1549,7 +1549,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Impulsividad detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_4_impulsive_decisions"
                     value = True
@@ -1561,7 +1561,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.4"
                     return (phase, state, variant)
             
@@ -1620,7 +1620,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Conducta social habitual o controlada)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_5_social_disinhibition"
                 value = False
@@ -1633,7 +1633,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Desinhibición detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_5_social_disinhibition"
                     value = True
@@ -1645,7 +1645,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.5"
                     return (phase, state, variant)
         
@@ -1700,7 +1700,7 @@ def StateMachine(telephone, phase, state, user_input):
 
             
             # 1 - Negación (Atención preservada o distracción normal)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_6_distractibility"
                 value = False
@@ -1712,7 +1712,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Distractibilidad detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_6_distractibility"
                     value = True
@@ -1724,7 +1724,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.6"
                     return (phase, state, variant)
         
@@ -1779,7 +1779,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Autoestima normal o metas realistas)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2B_7_grandiosity"
                 value = False
@@ -1809,7 +1809,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Grandiosidad detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2B_7_grandiosity"
                     value = True
@@ -1839,7 +1839,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2B.7"
                     return (phase, state, variant)
             
@@ -1881,7 +1881,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Nadie ha fallecido o la pérdida fue hace mucho tiempo)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2C_recent_bereavement"
                 value = False
@@ -1893,7 +1893,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Pérdida reciente detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2C_recent_bereavement"
                     value = True
@@ -1905,7 +1905,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2C"
                     return (phase, state, variant)
             
@@ -1964,7 +1964,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin ideación detectada)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2D_1_suicidal_ideation"
                 value = False
@@ -1976,7 +1976,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Ideación detectada - ACTIVAR PROTOCOLO RIESGO)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2D_1_suicidal_ideation"
                     value = True
@@ -1988,7 +1988,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2D.1"
                     return (phase, state, variant)
             
@@ -2046,7 +2046,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Siente que merece ayuda o bienestar)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2D_2_unworthiness"
                 value = False
@@ -2058,7 +2058,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Indignidad detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2D_2_unworthiness"
                     value = True
@@ -2070,7 +2070,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2D.2"
                     return (phase, state, variant)
             
@@ -2121,7 +2121,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin síntomas psicóticos)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2D_3_psychotic_symptoms"
                 value = False
@@ -2133,7 +2133,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Presencia de alucinaciones)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2D_3_psychotic_symptoms"
                     value = True
@@ -2145,7 +2145,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2D.3"
                     return (phase, state, variant)
             
@@ -2200,7 +2200,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Mantiene vida social o soledad no patológica)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2D_4_social_withdrawal"
                 value = False
@@ -2212,7 +2212,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Aislamiento detectado)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2D_4_social_withdrawal"
                     value = True
@@ -2224,7 +2224,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2D.4"
                     return (phase, state, variant)
         
@@ -2273,7 +2273,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Funcionalidad preservada)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2D_5_functional_impairment"
                 value = False
@@ -2298,7 +2298,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Afectación funcional detectada)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2D_5_functional_impairment"
                     value = True
@@ -2310,7 +2310,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2D.5"
                     return (phase, state, variant)
         
@@ -2359,7 +2359,7 @@ def StateMachine(telephone, phase, state, user_input):
                 r"\bno\b"
             ]
             # 1 - Negación (Sin antecedentes profesionales confirmados)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2E_1_prior_diagnosis"
                 value = False
@@ -2371,7 +2371,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Antecedentes confirmados)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2E_1_prior_diagnosis"
                     value = True
@@ -2383,7 +2383,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2E.1"
                     return (phase, state, variant)
         
@@ -2434,7 +2434,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin antecedentes de medicación psiquiátrica)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2E_2_prior_medication"
                 value = False
@@ -2446,7 +2446,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Antecedentes de medicación detectados)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2E_2_prior_medication"
                     value = True
@@ -2458,7 +2458,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2E.2"
                     return (phase, state, variant)
         
@@ -2504,7 +2504,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Sin antecedentes de ingreso psiquiátrico)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.2E_3_prior_hospitalization"
                 value = False
@@ -2530,7 +2530,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Antecedentes de ingreso detectados)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.2E_3_prior_hospitalization"
                     value = True
@@ -2542,7 +2542,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "2E.3"
                     return (phase, state, variant)
         
@@ -2597,7 +2597,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Abstemio o bebedor social ocasional)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.3A_concurrent_alcohol"
                 value = False
@@ -2609,7 +2609,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Consumo de alcohol habitual o problemático)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.3A_concurrent_alcohol"
                     value = True
@@ -2621,7 +2621,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "3A"
                     return (phase, state, variant)
         
@@ -2677,7 +2677,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (No consume o consumo pasado finalizado)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "DEP_EVAL.3B_concurrent_substances"
                 value = False
@@ -2689,7 +2689,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Consumo actual detectado)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "DEP_EVAL.3B_concurrent_substances"
                     value = True
@@ -2701,7 +2701,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "DEP_EVAL", "3B"
                     return (phase, state, variant)
             
@@ -2782,7 +2782,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.1_self_harm"
                 value = False
@@ -2793,7 +2793,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Self harm detected
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "SUI_EVAL.1_self_harm"
                     value = True
@@ -2807,7 +2807,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Variant activation
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase = "SUI_EVAL", "1"
                     return (phase, state, variant)
         
@@ -2955,7 +2955,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.2_A_active_ideation"
                 value = "no"
@@ -2966,7 +2966,7 @@ def StateMachine(telephone, phase, state, user_input):
         
             else:
                 # 2 - Concrete plans
-                match_plan = pattern_search(n_user_input, PATTERNS_CONCRETE_PLANS)
+                match_plan = _pattern_search(n_user_input, PATTERNS_CONCRETE_PLANS)
                 if match_plan:
                     key = "SUI_EVAL.2_A_active_ideation"
                     value = "concrete_plan"
@@ -2979,7 +2979,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Ideation
-                    match_ideation = pattern_search(n_user_input, PATTERNS_IDEATION)
+                    match_ideation = _pattern_search(n_user_input, PATTERNS_IDEATION)
                     if match_ideation:
                         key = "SUI_EVAL.2_A_active_ideation"
                         value = "ideation"
@@ -2992,7 +2992,7 @@ def StateMachine(telephone, phase, state, user_input):
                     
                     # 4 - Variant activation
                     else:
-                        variant = variant_search(n_user_input)
+                        variant = _variant_search(n_user_input)
                         phase, state = "SUI_EVAL", "2A"
                         return (phase, state, variant)
                 
@@ -3098,7 +3098,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.2_B1_last_month_ideation"
                 value = "no"
@@ -3109,7 +3109,7 @@ def StateMachine(telephone, phase, state, user_input):
         
             else:
                 # 2 - Concrete plans
-                match_plan = pattern_search(n_user_input, PATTERNS_PLAN)
+                match_plan = _pattern_search(n_user_input, PATTERNS_PLAN)
                 if match_plan:
                     key = "SUI_EVAL.2_B1_last_month_ideation"
                     value = "concrete_plan"
@@ -3123,7 +3123,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Ideation
-                    match_ideation = pattern_search(n_user_input, PATTERNS_IDEATION)
+                    match_ideation = _pattern_search(n_user_input, PATTERNS_IDEATION)
                     if match_ideation:
                         key = "SUI_EVAL.2_B1_last_month_ideation"
                         value = "ideation"
@@ -3137,7 +3137,7 @@ def StateMachine(telephone, phase, state, user_input):
                     
                     # 4 - Variant activation
                     else:
-                        variant = variant_search(n_user_input)
+                        variant = _variant_search(n_user_input)
                         phase, state = "SUI_EVAL", "2B.1"
                         return (phase, state, variant)
         
@@ -3267,7 +3267,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.2_B2_last_year_self_harm"
                 value = False
@@ -3278,7 +3278,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Self harm detected
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "SUI_EVAL.2_B2_last_year_self_harm"
                     value = True
@@ -3292,7 +3292,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Variant activation
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "SUI_EVAL", "2B.2"
                     return (phase, state, variant)
     
@@ -3441,9 +3441,9 @@ def StateMachine(telephone, phase, state, user_input):
             }
     
             # 1 - Negation (prioridad máxima, como en tu ejemplo)
-            match_no = pattern_search(n_user_input, PATTERNS_TREATMENT_NO)
+            match_no = _pattern_search(n_user_input, PATTERNS_TREATMENT_NO)
             if match_no and not any([
-                pattern_search(n_user_input, p) 
+                _pattern_search(n_user_input, p) 
                 for p in CATEGORY_PATTERNS.values()
             ]):
                 key = "SUI_EVAL.3_MNS_disorder.existence"
@@ -3455,10 +3455,10 @@ def StateMachine(telephone, phase, state, user_input):
 
             else:
                 # 2 - YES + extraer categorías
-                match_yes = pattern_search(n_user_input, PATTERNS_TREATMENT_YES)
+                match_yes = _pattern_search(n_user_input, PATTERNS_TREATMENT_YES)
                 
                 if (match_yes or any([
-                pattern_search(n_user_input, p) 
+                _pattern_search(n_user_input, p) 
                 for p in CATEGORY_PATTERNS.values()])):
                     key = "SUI_EVAL.3_MNS_disorder.existence"
                     value = True
@@ -3466,7 +3466,7 @@ def StateMachine(telephone, phase, state, user_input):
                     
                     # Guardar cada categoría detectada
                     for category, patterns in CATEGORY_PATTERNS.items():
-                        if pattern_search(n_user_input, patterns):
+                        if _pattern_search(n_user_input, patterns):
                             key = f"SUI_EVAL.3_MNS_disorder.{category}"
                             value = True
                             db.add_user_info(telephone, key, value)
@@ -3476,7 +3476,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 # 3 - Variant activation
                 else:
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "SUI_EVAL", "3"
                     return (phase, state, variant)
                 
@@ -3600,7 +3600,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.4_chronic_pain"
                 value = False
@@ -3611,7 +3611,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Self harm detected
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "SUI_EVAL.4_chronic_pain"
                     value = True
@@ -3622,7 +3622,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - Variant activation
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "SUI_EVAL", "4"
                     return (phase, state, variant)
                 
@@ -3705,7 +3705,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negación (Impacto no significativo)
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "SUI_EVAL.5_functional_impact"
                 value = False
@@ -3719,7 +3719,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Afirmación (Impacto detectado)
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "SUI_EVAL.5_functional_impact"
                     value = True
@@ -3730,7 +3730,7 @@ def StateMachine(telephone, phase, state, user_input):
                 
                 else:
                     # 3 - No entiende / Respuesta ambigua
-                    variant = variant_search(n_user_input)
+                    variant = _variant_search(n_user_input)
                     phase, state = "SUI_EVAL", "5"
                     return (phase, state, variant)
         
@@ -3756,7 +3756,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Negation
-            match_no = pattern_search(n_user_input, PATTERNS_NO) 
+            match_no = _pattern_search(n_user_input, PATTERNS_NO) 
             if match_no:
                 key = "ctx.emergency_followup"
                 value = False
@@ -3767,7 +3767,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Contact
-                match_yes = pattern_search(n_user_input, PATTERNS_YES) 
+                match_yes = _pattern_search(n_user_input, PATTERNS_YES) 
                 if match_yes:
                     key = "ctx.emergency_followup"
                     value = True
@@ -3802,7 +3802,7 @@ def StateMachine(telephone, phase, state, user_input):
             ]
             
             # 1 - Decision
-            match_decision = pattern_search(n_user_input, DECISION_PATTERNS) 
+            match_decision = _pattern_search(n_user_input, DECISION_PATTERNS) 
             if match_decision:
                 key = f"ctx.non_contact_reason"
                 value = "personal_decision"
@@ -3813,7 +3813,7 @@ def StateMachine(telephone, phase, state, user_input):
             
             else:
                 # 2 - Difficulty
-                match_diff = pattern_search(n_user_input, DIFFICULTY_PATTERNS) 
+                match_diff = _pattern_search(n_user_input, DIFFICULTY_PATTERNS) 
                 if match_diff:
                     key = "ctx.non_contact_reason"
                     value = "difficulty"
@@ -3851,7 +3851,6 @@ def StateMachine(telephone, phase, state, user_input):
             return (phase, state, variant)
             
                          
-
 def security_control(phase, state, variant, user_input):
     
     PATTERNS_EMERGENCY: list[str] = [
@@ -3961,7 +3960,7 @@ def security_control(phase, state, variant, user_input):
     
     n_user_input = normalize_text(user_input)
     
-    match_emergency = pattern_search(n_user_input, PATTERNS_EMERGENCY) 
+    match_emergency = _pattern_search(n_user_input, PATTERNS_EMERGENCY) 
     
     # En caso de detectar un trigger pasa a evaluacion de suicidio
     if match_emergency:
