@@ -71,7 +71,7 @@ The system acts as a **virtual telephone helpline** for people in situations of 
 │  + safety    │ │  tion + output)  │ └──────────┬─────────────────┘
 │  control)    │ └────────┬─────────┘            │
 └──────────────┘          │                      ▼
-       ▲                  ▼              ┌───────────────────────┐
+       │                  ▼              ┌───────────────────────┐
        │         ┌──────────────────┐    │       MongoDB         │
        │         │ prompt_builder   │    │    CHATBOT_mhGAP      │
        │         │ (prompt          │    │  ├─ users             │
@@ -83,12 +83,12 @@ The system acts as a **virtual telephone helpline** for people in situations of 
        │         │     llm.py       │
        │         │  Gemini 2.5 Flash│
        │         └──────────────────┘
-       │
-┌──────┴───────────┐
-│phrase_dictionary  │
-│(fixed mhGAP       │
-│ clinical questions│
-└───────────────────┘
+       ▼
+┌────────────────────┐
+│phrase_dictionary   │
+│(fixed mhGAP        │
+│ clinical questions)│
+└────────────────────┘
 ```
 
 ### Flow of a typical request (`POST /api/message`)
@@ -162,8 +162,7 @@ pip install flask flask-cors pymongo google-genai fpdf python-dotenv
 
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
-cd chatbot
+git clone https://github.com/JordiiQueralto/AURORA_mhGAP-IG_v2.0.git
 
 # 2. Install dependencies
 pip install flask flask-cors pymongo google-genai fpdf python-dotenv
@@ -182,13 +181,11 @@ Create a `.env` file in the project root:
 
 ```env
 GOOGLE_API_KEY=your_gemini_api_key
-JWT_SECRET=a_secret_key_for_jwt_tokens
 ```
 
 | Variable | Description |
 |---|---|
-| `GOOGLE_API_KEY` | Google Gemini API key (model `gemini-2.5-flash`) |
-| `JWT_SECRET` | Secret for signing the specialist dashboard's JWT tokens |
+| `GOOGLE_API_KEY` | Google Gemini API key (model `gemini-2.5-flash`) | |
 
 ---
 
@@ -462,18 +459,18 @@ Start (POST /api/start)
   │                        ▼                    ▼              ▼            ▼
   │                    EMERGENCY           ASSISTANCE        TALK       MISENSE
   │                        │                    │              │         (close)
-  │                   SUI_EVAL             DEP_EVAL          CHAT
+  │                   SUI_EVAL             DEP_EVAL           CHAT
   │                   (5 questions)          │                  │
-  │                        │           Phase 1: A+B criteria  │
+  │                        │           Phase 1: Basic signs     │
   │                        │           Phase 2: Differential Dx │
   │                        │           Phase 3: Substances      │
-  │                        │                │                  │
+  │                        │                │                   │
   │                   SUI_PROTOCOLS    DEP_PROTOCOLS      Re-evaluation
   │                   ├─ State 1:      (psychoeducation)    every 5 msgs
-  │                   │  Call 112                              │
-  │                   ├─ State 2:                              ▼
-  │                   │  Call 024                        USE_CASE_EVAL
-  │                   └─ State 3:                        (may reclassify)
+  │                   │  Call 112                               │
+  │                   ├─ State 2:                               ▼
+  │                   │  Call 024                          USE_CASE_EVAL
+  │                   └─ State 3:                         (may reclassify)
   │                      Psychoeducation
   │                        │
   │                     FAREWELL ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
@@ -482,7 +479,7 @@ Start (POST /api/start)
   ├─ Existing user → RESUMING → Resumes from checkpoint
   │
   └─ User with a previous EMERGENCY → FOLLOWUP
-                                       (post-emergency check)
+                                     (post-emergency check)
 ```
 
 ---
@@ -596,14 +593,11 @@ Reports are downloaded directly from the medical dashboard (`GET /api/doctor/pat
 
 ## Security and privacy
 
-- Specialist passwords are stored **hashed** (SHA-256; migrating to bcrypt/argon2 is recommended in production).
-- Medical dashboard authentication uses random **session tokens** of 64 hex characters.
-- Patient data is only visible to specialists from the **same medical center** (`centerName`).
+- The conversation with AURORA only starts after the user provides informed consent, compliant with the GDPR, LOPDGDD, and the EU AI Act.
 - Sharing data with the hospital requires the user's **explicit consent** (`shareWithHospital: true`).
 - Notifications to family members require additional consent (`allowContactFamily: true`).
 - Emergency protocols follow the guidelines of the **WHO mhGAP v2.0 Intervention Guide**.
-- PDF reports are generated in temporary files and deleted immediately after sending.
-- CORS is configured to accept requests from `file://` (local development) and `localhost`.
+- Patient data is only visible to specialists from the **same medical center** (`centerName`).
 
 ---
 
@@ -635,8 +629,7 @@ python src/seed_medical_centers.py
 
 - **State in the database, not in memory**: all session context (`ctx`) is persisted per request in MongoDB, which enables horizontal scalability and resilience to server restarts.
 - **Fixed questions + LLM wrapping**: the clinical questions are hardcoded verbatim in `phrase_dictionary.py` (guaranteeing fidelity to mhGAP), and the LLM only adds empathetic connectors around them.
-- **Regex for response classification**: the state machine uses extensive regex patterns (not the LLM) to classify user responses within the clinical protocols, ensuring determinism and traceability.
+- **REGEX for response classification**: the state machine uses extensive regex patterns (not the LLM) to classify user responses within the clinical protocols, ensuring determinism and traceability.
 - **Intentional delays**: the `time.sleep()` calls in `services_user.py` simulate a natural conversation cadence — they should not be removed.
-- **Bilingual psychoeducational images**: the visual material is available in Spanish and Catalan, with separate versions for the user and the family.
 </content>
 </invoke>
