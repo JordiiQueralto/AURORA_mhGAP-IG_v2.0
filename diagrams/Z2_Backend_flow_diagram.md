@@ -300,6 +300,7 @@ Detailed view of the `use_case_class()` function within `generate_output.py`. Th
 The classification is delegated to the LLM with **temperature 0.0** — the lowest setting available — to ensure the output is deterministic and reproducible. Unlike empathic generation, this is a pure classification task where creativity would be harmful: the same input should always yield the same label, and the label must come from a closed vocabulary of four values. The result is then matched against a four-way switch that sets the next phase and state.
 
 ```mermaid
+
 flowchart TD
 
     START(( )):::circle
@@ -332,8 +333,9 @@ flowchart TD
 
     SWITCH -->|"EMERGENCY"| EM --> JUNCTION
     SWITCH -->|"TALK"| TK --> JUNCTION
+    SWITCH -->|"MISUSE"| MS --> JUNCTION
     SWITCH -->|"ASSISTANCE"| AS --> JUNCTION 
-    SWITCH -->|"else"| MS --> JUNCTION
+    
 
     MONGO -.-> CTX
     AS -.->|"checkpoint.phase\ncheckpoint.state"| MONGO
@@ -382,6 +384,7 @@ flowchart TD
     BRANCH_UC[["<b>Branch A:\nUSE CASE classification</b>"]]:::external
 
     subgraph BRANCH_CH["<b>Branch B: Free conversation TALK</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]
+        D_K30{"k == 30 ?"}:::decision
         TALK["<b>generate_output.py</b><br/>───────────<br/>talk_mode()"]:::module
         LLM_TK{{"temp = 1.0"}}:::llm
         KCHAT{"k is multiple \nof 5 ?"}:::decision
@@ -405,9 +408,12 @@ flowchart TD
     D_UC -->|True| BRANCH_UC
     D_UC -->|False| D_CH
 
+    D_CH -->|True| D_K30
+    D_K30 -->|True| FW
+    D_K30 -->|False| KCHAT
+
     KCHAT -->|True| BRANCH_UC
     D_CH -->|False| D_FW
-    D_CH -->|True| KCHAT
 
     KCHAT -->|False| TALK
     TALK --> LLM_TK -->|"bot_output\nk += 1"| JUNCTION

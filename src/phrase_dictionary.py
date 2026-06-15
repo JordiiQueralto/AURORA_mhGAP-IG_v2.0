@@ -4,19 +4,19 @@ def bot_output_info(phase, state):
         
         "PROFILE": {
             "name": {
-                "nucleo": """¿Cómo te llamas?"""
+                "core_es": """¿Cómo te llamas?"""
                 },
             "age": {
-                "nucleo": """¿Qué edad tienes?"""
+                "core_es": """¿Qué edad tienes?"""
                 },
             "reason": {
-                "nucleo": """¿Cuál es el motivo de la llamada?"""
+                "core_es": """¿Cuál es el motivo de la llamada?"""
                 },
             "expectation": {
-                "nucleo": """¿Qué expectativas tienes sobre esta conversación?"""
+                "core_es": """¿Qué expectativas tienes sobre esta conversación?"""
                 },
             "commitment": {
-                "nucleo": """Ahora voy a hacerte preguntas para poder entender mejor como te
+                "core_es": """Ahora voy a hacerte preguntas para poder entender mejor como te
                 sientes para poder ayudarte. Para ello, necessito que te comprometas a responder
                 sinceramente a mis preguntas. ¿Trato hecho?"""
             }
@@ -24,140 +24,140 @@ def bot_output_info(phase, state):
         
         "DEP_EVAL": {
             "1A.1": {
-                "nucleo": """Durante un periodo mínimo de dos semanas, ¿te has sentido triste, 
+                "core_es": """Durante un periodo mínimo de dos semanas, ¿te has sentido triste, 
                 vacío o sin ánimo la mayor parte del día, casi todos los días?"""
             },
             "1A.2": {
-                "nucleo": """Durante ese mismo periodo, ¿has perdido el interés o el placer en 
+                "core_es": """Durante ese mismo periodo, ¿has perdido el interés o el placer en 
                 actividades que antes disfrutaba, como hobbies, relaciones o trabajo?"""
             },
             "1B.1": {
-                "nucleo": """¿Has notado cambios persistentes durante al menos dos semanas en aspectos 
+                "core_es": """¿Has notado cambios persistentes durante al menos dos semanas en aspectos 
                 como pueden ser la dificultad para conciliar el sueño o por el contrario dormir demasiado?"""
             },
             "1B.2": {
-                "nucleo": """¿Qué me dices pero sobre cambios significativos del apetito o del peso?"""
+                "core_es": """¿Qué me dices pero sobre cambios significativos del apetito o del peso?"""
             },
             "1B.3": {
-                "nucleo": """¿Has notado fatiga o pérdida de energía durante al menos dos semanas?"""
+                "core_es": """¿Has notado fatiga o pérdida de energía durante al menos dos semanas?"""
             },
             "1B.4": {
-                "nucleo": """¿Has notado  problemas para concentrarte o tomar decisiones?"""
+                "core_es": """¿Has notado  problemas para concentrarte o tomar decisiones?"""
             },
             "1B.5": {
-                "nucleo": """¿En este tiempo has sentido que no estás a la altura de las cosas 
+                "core_es": """¿En este tiempo has sentido que no estás a la altura de las cosas 
                 o que a veces te cuesta ver tus propios méritos?"""
             },
             "1B.6": {
-                "nucleo": """"En estas últimas semanas, ¿has sentido que ya no hay salida o que la 
+                "core_es": """"En estas últimas semanas, ¿has sentido que ya no hay salida o que la 
                 vida se te hace demasiado pesada como para seguir adelante?" """
             },
             "1C": {
-                "nucleo": """¿Hay algo de esto que está afectando tu capacidad de llevar tu vida 
+                "core_es": """¿Hay algo de esto que está afectando tu capacidad de llevar tu vida 
                 del día a día, como trabajar, estudiar, relacionarte con otros o cuidarte?"""
             },
             "2A.1": {
-                "nucleo": """¿Estás recibiendo tratamiento o tomando algún tipo de medicación?"""
+                "core_es": """¿Estás recibiendo tratamiento o tomando algún tipo de medicación?"""
             },
             "2A.2": {
-                "nucleo": """¿Tu médico te ha comentado algo sobre tiroides, anemia o sobre nutrición?"""
+                "core_es": """¿Tu médico te ha comentado algo sobre tiroides, anemia o sobre nutrición?"""
             },
             "2B.1": {
-                "nucleo": """¿Has experimentado un estado de ánimo anormalmente elevado, eufórico o 
+                "core_es": """¿Has experimentado un estado de ánimo anormalmente elevado, eufórico o 
                 muy irritable durante como mínimo una semana?"""
             },
             "2B.2": {
-                "nucleo": """¿Has notado que necesitas dormir mucho menos de lo habitual sin
+                "core_es": """¿Has notado que necesitas dormir mucho menos de lo habitual sin
                 sientirte cansad(o|a)?"""
             },
             "2B.3": {
-                "nucleo": """¿Te has sentido con más energía de lo normal, con una actividad 
+                "core_es": """¿Te has sentido con más energía de lo normal, con una actividad 
                 excesiva difícil de controlar?"""
             },
             "2B.4": {
-                "nucleo": """¿Has tomado decisiones impulsivas sin pensar en las consecuencias, 
+                "core_es": """¿Has tomado decisiones impulsivas sin pensar en las consecuencias, 
                 como por ejemplo, gastos excesivos o tomar decisiones importantes sin reflexionar?"""
             },
             "2B.5": {
-                "nucleo": """¿Has sentido últimamente que dices o haces cosas que antes te habrían 
+                "core_es": """¿Has sentido últimamente que dices o haces cosas que antes te habrían 
                 dado vergüenza o que otros consideran fuera de lugar?"""
             },
             "2B.6": {
-                "nucleo": """¿Te resulta difícil mantener el hilo de una conversación o terminar 
+                "core_es": """¿Te resulta difícil mantener el hilo de una conversación o terminar 
                 una tarea porque cualquier ruido o pensamiento te desconcentra?"""
             },
             "2B.7": {
-                "nucleo": """¿Tienes la sensación de que estás destinado a lograr algo grandioso 
+                "core_es": """¿Tienes la sensación de que estás destinado a lograr algo grandioso 
                 o que tus capacidades están muy por encima de las de tus conocidos o amigos?"""
             },
             "2C": {
-                "nucleo": """¿Has pasado por el fallecimiento de un familiar o alguien muy 
+                "core_es": """¿Has pasado por el fallecimiento de un familiar o alguien muy 
                 cercano en los últimos seis meses?"""
             },
             "2D.1": {
-                "nucleo": """¿Has sentido últimamente que la vida no vale la pena o que 
+                "core_es": """¿Has sentido últimamente que la vida no vale la pena o que 
                 estarías mejor si no estuvieras aquí?"""
             },
             "2D.2": {
-                "nucleo": """¿Crees que mereces las cosas buenas que te pasan o que la 
+                "core_es": """¿Crees que mereces las cosas buenas que te pasan o que la 
                 gente te ayude?"""
             },
             "2D.3": {
-                "nucleo": """¿Has escuchado voces, ruidos o visto cosas que otros parecen 
+                "core_es": """¿Has escuchado voces, ruidos o visto cosas que otros parecen 
                 no notar?"""
             },
             "2D.4": {
-                "nucleo": """¿Has notado que pasas mucho más tiempo solo de lo habitual o 
+                "core_es": """¿Has notado que pasas mucho más tiempo solo de lo habitual o 
                 que estas ignorando invitaciones o mensajes que antes sí respondías?"""
             },
             "2D.5": {
-                "nucleo": """¿Te está costando más de lo normal levantarte para ir a trabajar 
+                "core_es": """¿Te está costando más de lo normal levantarte para ir a trabajar 
                 o estudiar?"""
             },
             "2E.1": {
-                "nucleo": """¿Alguna vez un médico, psicólogo o psiquiatra te ha diagnosticado 
+                "core_es": """¿Alguna vez un médico, psicólogo o psiquiatra te ha diagnosticado 
                 depresión o algún trastorno del estado de ánimo?"""
             },
             "2E.2": {
-                "nucleo": """¿Has tomado en el pasado medicación para dormir, para los nervios 
+                "core_es": """¿Has tomado en el pasado medicación para dormir, para los nervios 
                 o antidepresivos?"""
             },
             "2E.3": {
-                "nucleo": """¿Alguna vez has tenido que ser ingresado en un centro de salud 
+                "core_es": """¿Alguna vez has tenido que ser ingresado en un centro de salud 
                 debido a cómo te sentías emocionalmente?"""
             },
             "3A": {
-                "nucleo": """¿Tomas alcohol de forma habitual?"""
+                "core_es": """¿Tomas alcohol de forma habitual?"""
             },
             "3B": {
-                "nucleo": """¿Tomas algún otro tipo de sustancia estupefaciente?"""
+                "core_es": """¿Tomas algún otro tipo de sustancia estupefaciente?"""
             },
         },
         
         "SUI_EVAL": {
             "1": {
-                "nucleo": """En este momento, o recientemente, ¿te has hecho daño físico de alguna 
+                "core_es": """En este momento, o recientemente, ¿te has hecho daño físico de alguna 
                 forma, como heridas, haber tomado algo que te pudiera hacer mal, o algo similar?"""},
             "2A": {
-                "nucleo": """¿Tienes planes o pensamientos de hacerte daño o de quitarte la 
+                "core_es": """¿Tienes planes o pensamientos de hacerte daño o de quitarte la 
                 vida actualmente?"""},
             "2B.1": {
-                "nucleo": """¿Has tenido pensamientos o un plan de autolesión el último mes?
+                "core_es": """¿Has tenido pensamientos o un plan de autolesión el último mes?
                 """},
             "2B.2": {
-                "nucleo": """En el último año, ¿has llegado a autolesionarte físicamente con la 
+                "core_es": """En el último año, ¿has llegado a autolesionarte físicamente con la 
                 intención de hacerte daño o de quitarte la vida?"""},
             "3": {
-                "nucleo": """“¿Has estado recibiendo tratamiento o atención por algún problema 
+                "core_es": """“¿Has estado recibiendo tratamiento o atención por algún problema 
                 de salud mental, como depresión, ansiedad, o algo relacionado con el consumo de 
                 alcohol u otras sustancias?
                 """},
             "4": {
-                "nucleo": """¿Tienes algún dolor físico que lleve semanas o meses sin 
+                "core_es": """¿Tienes algún dolor físico que lleve semanas o meses sin 
                 mejorar y que afecte tu día a día?
                 """},
             "5": {
-                "nucleo": """¿Sientes que tus emociones o tu estado de ánimo están afectando tu 
+                "core_es": """¿Sientes que tus emociones o tu estado de ánimo están afectando tu 
                 capacidad de hacer las cosas del día a día, como trabajar, estudiar, 
                 relacionarte con otros, o cuidarte?”
                 """}
@@ -165,41 +165,42 @@ def bot_output_info(phase, state):
         
         "SUI_PROTOCOLS": {
             "1": {
-                "nucleo": """ Te dejo un número donde podran ayudarte mejor. Porfavor llama 
+                "core_es": """ Te dejo un número donde podran ayudarte mejor. Porfavor llama 
                 ahora y cuando te repondan diles tu dirección exacta y explícales el tipo de 
                 lesión que te has hecho.
                 """},
             "2": {
-                "nucleo": """ Aquí tienes una guía de ayuda y esperanza. Te animo a conectarte 
+                "core_es": """ Aquí tienes una guía de ayuda y esperanza. Te animo a conectarte 
                 con tu red de apoyo o acudir al centro de salud más cercano. 
                 """},
             "3": {
-                "nucleo": """
+                "core_es": """ Aquí tienes una guía de ayuda y esperanza. Te animo a conectarte 
+                con tu red de apoyo o acudir al centro de salud más cercano. 
                 """}
         },
         
         "FOLLOWUP": {
         "emergency_followup": {
-            "nucleo": """¿Lograste contactar con el número que te proporcioné anteriormente o 
+            "core_es": """¿Lograste contactar con el número que te proporcioné anteriormente o 
             has buscado algún tipo de ayuda?"""
         },
         "non_contact_reason": {
-            "nucleo": """¿Tuviste alguna dificultad para comunicarte con ellos o simplemente 
+            "core_es": """¿Tuviste alguna dificultad para comunicarte con ellos o simplemente 
             decidiste no hacerlo?"""
         },
         "second_try": {
-            "nucleo": """De verdad te recomiendo llamar. ¿Qué crees que te está frenando para 
+            "core_es": """De verdad te recomiendo llamar. ¿Qué crees que te está frenando para 
             dar el paso de hablar con ellos?"""
             },
         "post_help": {
-            "nucleo": """Después de hablar con el servicio de ayuda, ¿te sientes un poco mejor?"""
+            "core_es": """Después de hablar con el servicio de ayuda, ¿te sientes un poco mejor?"""
         },
         "family": {
-            "nucleo": """¿Hay alguien contigo en este momento o tienes a alguien a quien puedas 
+            "core_es": """¿Hay alguien contigo en este momento o tienes a alguien a quien puedas 
             llamar para que te acompañe mientras te sientes mejor?"""
         },
         "continuity_plan": {
-            "nucleo": """¿Te proporcionaron algún paso a seguir o cita de seguimiento? Es 
+            "core_es": """¿Te proporcionaron algún paso a seguir o cita de seguimiento? Es 
             muy importante seguir esas indicaciones."""
         }
     }
@@ -209,13 +210,13 @@ def bot_output_info(phase, state):
     phase_data = dict.get(phase, {})
     state_data = phase_data.get(state, {})
     
-    # Then we extract the context and nucleo
-    raw_nucleo = state_data.get("nucleo", "Sin núcleo disponible")
+    # Then we extract the context and core
+    raw_core = state_data.get("core_es", "Sin núcleo disponible")
     
-    # Clean up the context and nucleo by removing extra whitespace
-    nucleo = " ".join(raw_nucleo.split())
+    # Clean up the context and core by removing extra whitespace
+    core = " ".join(raw_core.split())
     
-    return nucleo
+    return core
 
 
 def variant_dict(phase, state, variant):
@@ -987,6 +988,6 @@ def variant_dict(phase, state, variant):
     state_data = phase_data.get(state, {})
     raw_variant = state_data.get(variant, "Sin variante disponible")
     
-    # Clean up the context and nucleo by removing extra whitespace
+    # Clean up the context and core by removing extra whitespace
     variant = " ".join(raw_variant.split())
     return variant

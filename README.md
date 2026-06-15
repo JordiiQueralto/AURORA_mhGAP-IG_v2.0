@@ -1,81 +1,81 @@
-# Chatbot de Prevención en Salud Mental — mhGAP v2.0
+# Mental Health Prevention Chatbot — mhGAP v2.0
 
-Asistente conversacional de apoyo en salud mental y prevención del suicidio, basado en la **Guía de Intervención mhGAP v2.0** de la Organización Mundial de la Salud (OMS). El sistema combina una máquina de estados clínica con un modelo de lenguaje (Gemini 2.5 Flash) para ofrecer una experiencia empática, estructurada y clínicamente rigurosa, junto con un panel separado para especialistas médicos.
+Conversational assistant for mental health support and suicide prevention, based on the **mhGAP v2.0 Intervention Guide** of the World Health Organization (WHO). The system combines a clinical state machine with a language model (Gemini 2.5 Flash) to deliver an empathetic, structured, and clinically rigorous experience, together with a separate dashboard for medical specialists.
 
-> **Aviso importante:** Este sistema es una herramienta de apoyo y triaje. No sustituye la atención profesional de salud mental.
-
----
-
-## Tabla de contenidos
-
-- [Descripción general](#descripción-general)
-- [Arquitectura del sistema](#arquitectura-del-sistema)
-- [Estructura del repositorio](#estructura-del-repositorio)
-- [Requisitos previos](#requisitos-previos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Ejecución](#ejecución)
-- [API de usuario](#api-de-usuario-app_userpy---puerto-5000)
-- [API de especialistas](#api-de-especialistas-app_specialistpy---puerto-5001)
-- [Modelo de datos (MongoDB)](#modelo-de-datos-mongodb)
-- [Flujo de conversación](#flujo-de-conversación)
-- [Máquina de estados clínica](#máquina-de-estados-clínica)
-- [Uso del LLM](#uso-del-llm)
-- [Panel de especialistas](#panel-de-especialistas)
-- [Generación de informes PDF](#generación-de-informes-pdf)
-- [Seguridad y privacidad](#seguridad-y-privacidad)
-- [Países disponibles](#países-disponibles)
+> **Important notice:** This system is a support and triage tool. It does not replace professional mental health care.
 
 ---
 
-## Descripción general
+## Table of contents
 
-El sistema actúa como una **línea de apoyo telefónico virtual** para personas en situación de riesgo psicológico. Sus capacidades principales son:
-
-- **Triaje automático**: clasifica al usuario mediante el LLM en `EMERGENCY`, `ASSISTANCE`, `TALK` o `MISENSE`.
-- **Protocolo de suicidio (SUI)**: detecta ideación suicida y autolesión, y activa protocolos de emergencia con derivación al 112 o al 024.
-- **Protocolo de depresión (DEP)**: evalúa síntomas depresivos y maníacos con preguntas estructuradas extraídas de la guía mhGAP, incluyendo cribado diferencial de trastorno bipolar.
-- **Modo conversacional libre (TALK)**: acompañamiento empático sin evaluación clínica, con reevaluación automática del caso de uso cada 5 mensajes.
-- **Control de seguridad transversal**: durante las fases `DEP_EVAL` y `CHAT`, un módulo de detección por regex analiza cada mensaje buscando señales de riesgo inminente y puede interrumpir el flujo para redirigir a los protocolos de emergencia.
-- **Seguimiento post-emergencia (FOLLOWUP)**: en sesiones posteriores a una emergencia, el sistema verifica si el usuario contactó con los servicios de ayuda y registra el resultado.
-- **Círculo de apoyo**: permite al usuario registrar contactos de confianza y un centro médico de referencia, y les envía notificaciones automáticas al activarse un protocolo de emergencia.
-- **Panel médico**: los especialistas pueden consultar pacientes de su centro, añadir notas clínicas, revisar sesiones históricas, visualizar estadísticas y generar informes PDF.
-- **Memoria persistente**: cada sesión se resume automáticamente por el LLM y queda almacenada en MongoDB, permitiendo al chatbot personalizar las bienvenidas y mantener continuidad entre sesiones.
+- [Overview](#overview)
+- [System architecture](#system-architecture)
+- [Repository structure](#repository-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the project](#running-the-project)
+- [User API](#user-api-app_userpy---port-5000)
+- [Specialist API](#specialist-api-app_specialistpy---port-5001)
+- [Data model (MongoDB)](#data-model-mongodb)
+- [Conversation flow](#conversation-flow)
+- [Clinical state machine](#clinical-state-machine)
+- [LLM usage](#llm-usage)
+- [Specialist dashboard](#specialist-dashboard)
+- [PDF report generation](#pdf-report-generation)
+- [Security and privacy](#security-and-privacy)
+- [Available countries](#available-countries)
 
 ---
 
-## Arquitectura del sistema
+## Overview
+
+The system acts as a **virtual telephone helpline** for people in situations of psychological risk. Its main capabilities are:
+
+- **Automatic triage**: classifies the user via the LLM into `EMERGENCY`, `ASSISTANCE`, `TALK`, or `MISENSE`.
+- **Suicide protocol (SUI)**: detects suicidal ideation and self-harm, and activates emergency protocols with referral to 112 or 024.
+- **Depression protocol (DEP)**: assesses depressive and manic symptoms with structured questions drawn from the mhGAP guide, including differential screening for bipolar disorder.
+- **Free conversation mode (TALK)**: empathetic companionship without clinical assessment, with automatic re-evaluation of the use case every 5 messages.
+- **Cross-cutting safety control**: during the `DEP_EVAL` and `CHAT` phases, a regex-based detection module analyzes every message looking for signs of imminent risk and can interrupt the flow to redirect to the emergency protocols.
+- **Post-emergency follow-up (FOLLOWUP)**: in sessions following an emergency, the system checks whether the user contacted the support services and records the outcome.
+- **Support circle**: lets the user register trusted contacts and a reference medical center, and sends them automatic notifications when an emergency protocol is activated.
+- **Medical dashboard**: specialists can consult patients from their center, add clinical notes, review historical sessions, view statistics, and generate PDF reports.
+- **Persistent memory**: each session is automatically summarized by the LLM and stored in MongoDB, allowing the chatbot to personalize greetings and maintain continuity across sessions.
+
+---
+
+## System architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │                          FRONTEND                                │
-│   chat.html (usuario)              doctor_dashboard.html (médico)│
+│   chat.html (user)                 doctor_dashboard.html (doctor)│
 └──────────┬──────────────────────────────────┬────────────────────┘
            │ HTTP REST                        │ HTTP REST
            ▼                                  ▼
 ┌────────────────────────┐      ┌──────────────────────────────┐
 │  app_user.py           │      │  app_specialist.py           │
-│  Puerto 5000           │      │  Puerto 5001                 │
+│  Port 5000             │      │  Port 5001                   │
 └──────────┬─────────────┘      └──────────────┬───────────────┘
            │                                   │
            ▼                                   ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │              services_user.py  /  services_specialist.py         │
-│                    Lógica de negocio principal                    │
+│                       Core business logic                        │
 └──────┬────────────────┬──────────────────┬───────────────────────┘
        │                │                  │
        ▼                ▼                  ▼
 ┌──────────────┐ ┌──────────────────┐ ┌────────────────────────────┐
 │ state_machine│ │ generate_output  │ │         db.py              │
-│ (FSM clínica │ │ (orquestación    │ │    (MongoDB CRUD)          │
-│  + control   │ │  LLM + salida)   │ └──────────┬─────────────────┘
-│  seguridad)  │ └────────┬─────────┘            │
+│ (clinical FSM│ │ (LLM orchestra-  │ │    (MongoDB CRUD)          │
+│  + safety    │ │  tion + output)  │ └──────────┬─────────────────┘
+│  control)    │ └────────┬─────────┘            │
 └──────────────┘          │                      ▼
        ▲                  ▼              ┌───────────────────────┐
        │         ┌──────────────────┐    │       MongoDB         │
        │         │ prompt_builder   │    │    CHATBOT_mhGAP      │
-       │         │ (construcción    │    │  ├─ users             │
-       │         │  de prompts)     │    │  ├─ specialists       │
+       │         │ (prompt          │    │  ├─ users             │
+       │         │  construction)   │    │  ├─ specialists       │
        │         └────────┬─────────┘    │  ├─ medicalCenters    │
        │                  │              │  └─ notifications     │
        │                  ▼              └───────────────────────┘
@@ -86,70 +86,71 @@ El sistema actúa como una **línea de apoyo telefónico virtual** para personas
        │
 ┌──────┴───────────┐
 │phrase_dictionary  │
-│(preguntas clínicas│
-│ mhGAP fijas)      │
+│(fixed mhGAP       │
+│ clinical questions│
 └───────────────────┘
 ```
 
-### Flujo de una petición típica (`POST /api/message`)
+### Flow of a typical request (`POST /api/message`)
 
-1. `app_user.py` recibe el mensaje y lo pasa a `services_user.process_message()`.
-2. Se recupera el contexto completo de la sesión desde MongoDB (fase, estado, contadores, último output del bot).
-3. Se guarda el input del usuario emparejado con la salida previa del bot en el historial de conversación.
-4. `state_machine.StateMachine()` evalúa la respuesta con bancos de patrones regex y devuelve `(new_phase, new_state, variant)`.
-5. `security_control()` se ejecuta como override durante `DEP_EVAL` y `CHAT` para detectar riesgo inminente.
-6. `generate_output` construye el prompt y llama al LLM para generar la respuesta natural.
-7. Se persiste el nuevo estado de vuelta a MongoDB y se devuelve la respuesta JSON al frontend.
+1. `app_user.py` receives the message and passes it to `services_user.process_message()`.
+2. The full session context is retrieved from MongoDB (phase, state, counters, last bot output).
+3. The user input is saved, paired with the bot's previous output, in the conversation history.
+4. `state_machine.StateMachine()` evaluates the response with regex pattern banks and returns `(new_phase, new_state, variant)`.
+5. `security_control()` runs as an override during `DEP_EVAL` and `CHAT` to detect imminent risk.
+6. `generate_output` builds the prompt and calls the LLM to generate the natural response.
+7. The new state is persisted back to MongoDB and the JSON response is returned to the frontend.
 
 ---
 
-## Estructura del repositorio
+## Repository structure
 
 ```
 chatbot/
 ├── src/
-│   ├── app_user.py              # Flask API — endpoints de usuario (puerto 5000)
-│   ├── app_specialist.py        # Flask API — endpoints de especialistas (puerto 5001)
-│   ├── services_user.py         # Orquestador: inicio, procesado de mensajes, sesiones
-│   ├── services_specialist.py   # Orquestador: auth, pacientes, informes, estadísticas
-│   ├── state_machine.py         # FSM clínica (protocolos SUI, DEP, FOLLOWUP, PROFILE)
-│   ├── generate_output.py       # Generación de respuestas (LLM + lógica de salida)
-│   ├── prompt_builder.py        # Construcción de prompts para el LLM
-│   ├── llm.py                   # Cliente Gemini (Google GenAI SDK)
-│   ├── db.py                    # Capa de acceso a datos MongoDB
-│   ├── phrase_dictionary.py     # Diccionario de frases clínicas estructuradas (mhGAP)
-│   ├── reportPDF.py             # Generación de informes PDF (fpdf)
-│   └── seed_medical_centers.py  # Script de carga inicial de centros médicos
+│   ├── app_user.py              # Flask API — user endpoints (port 5000)
+│   ├── app_specialist.py        # Flask API — specialist endpoints (port 5001)
+│   ├── services_user.py         # Orchestrator: start-up, message processing, sessions
+│   ├── services_specialist.py   # Orchestrator: auth, patients, reports, statistics
+│   ├── state_machine.py         # Clinical FSM (SUI, DEP, FOLLOWUP, PROFILE protocols)
+│   ├── generate_output.py       # Response generation (LLM + output logic)
+│   ├── prompt_builder.py        # Prompt construction for the LLM
+│   ├── llm.py                   # Gemini client (Google GenAI SDK)
+│   ├── db.py                    # MongoDB data access layer
+│   ├── phrase_dictionary.py     # Dictionary of structured clinical phrases (mhGAP)
+│   ├── reportPDF.py             # PDF report generation (fpdf)
+│   └── seed_medical_centers.py  # Initial medical-center seeding script
 │
 ├── app/
 │   ├── USER/
-│   │   └── chat.html            # Interfaz de usuario (chat)
+│   │   └── chat.html            # User interface (chat)
 │   └── SPECIALIST/
-│       └── doctor_dashboard.html # Panel de control del especialista
+│       └── doctor_dashboard.html # Specialist control panel
 │
 ├── images/
 │   ├── logo.png
-│   ├── Basic/                   # Imágenes informativas generales
+│   ├── Basic/                   # General informational images
 │   ├── SUI/
-│   │   ├── Emergency/           # Material para familiares en emergencia
-│   │   └── Psicoeducation/      # Guías psicoeducativas (usuario y familia, ES/CAT)
+│   │   ├── Emergency/           # Material for family members during an emergency
+│   │   └── Psicoeducation/      # Psychoeducational guides (user and family, ES/CAT)
 │   └── DEP/
-│       └── Psicoeducation/      # Material psicoeducativo sobre depresión
+│       └── Psicoeducation/      # Psychoeducational material on depression
 │
-├── diagrams/                    # Diagramas Mermaid de arquitectura y flujo
-├── .env                         # Variables de entorno (no subir a repositorio)
-└── README.md                    # Este archivo
+├── diagrams/                    # Mermaid diagrams of architecture and flow
+├── .env                         # Environment variables (do not commit to the repository)
+├── CLAUDE.md                    # Instructions for Claude Code
+└── README.md                    # This file
 ```
 
 ---
 
-## Requisitos previos
+## Prerequisites
 
 - **Python** 3.10+
-- **MongoDB** 6.0+ ejecutándose en `localhost:27017`
-- Cuenta en [Google AI Studio](https://aistudio.google.com/) con acceso a la API de Gemini
+- **MongoDB** 6.0+ running on `localhost:27017`
+- An account on [Google AI Studio](https://aistudio.google.com/) with access to the Gemini API
 
-### Dependencias Python
+### Python dependencies
 
 ```bash
 pip install flask flask-cors pymongo google-genai fpdf python-dotenv
@@ -157,78 +158,79 @@ pip install flask flask-cors pymongo google-genai fpdf python-dotenv
 
 ---
 
-## Instalación
+## Installation
 
 ```bash
-# 1. Clonar el repositorio
-git clone <url-del-repositorio>
+# 1. Clone the repository
+git clone <repository-url>
 cd chatbot
 
-# 2. Instalar dependencias
+# 2. Install dependencies
 pip install flask flask-cors pymongo google-genai fpdf python-dotenv
 
-# 3. Crear el archivo de variables de entorno (ver sección Configuración)
+# 3. Create the environment-variables file (see the Configuration section)
 
-# 4. Cargar los centros médicos en la base de datos (primera vez)
+# 4. Load the medical centers into the database (first time only)
 python src/seed_medical_centers.py
 ```
 
 ---
 
-## Configuración
+## Configuration
 
-Crea un archivo `.env` en la raíz del proyecto:
+Create a `.env` file in the project root:
 
 ```env
-GOOGLE_API_KEY=tu_api_key_de_gemini
-JWT_SECRET=una_clave_secreta_para_tokens_jwt
+GOOGLE_API_KEY=your_gemini_api_key
+JWT_SECRET=a_secret_key_for_jwt_tokens
 ```
 
-| Variable | Descripción |
+| Variable | Description |
 |---|---|
-| `GOOGLE_API_KEY` | Clave de API de Google Gemini (modelo `gemini-2.5-flash`) |
-| `JWT_SECRET` | Secreto para firmar los tokens JWT del panel de especialistas |
+| `GOOGLE_API_KEY` | Google Gemini API key (model `gemini-2.5-flash`) |
+| `JWT_SECRET` | Secret for signing the specialist dashboard's JWT tokens |
 
 ---
 
-## Ejecución
+## Running the project
 
-Arranca los dos servidores Flask en terminales separadas:
+Start the two Flask servers in separate terminals:
 
 ```bash
-# Terminal 1 — API de usuario (puerto 5000)
+# Terminal 1 — user API (port 5000)
 python src/app_user.py
 
-# Terminal 2 — API de especialistas (puerto 5001)
+# Terminal 2 — specialist API (port 5001)
 python src/app_specialist.py
 ```
 
-Luego abre los frontends directamente en el navegador:
+Then open the frontends directly in the browser:
 
-- **Chat de usuario**: `app/USER/chat.html`
-- **Panel médico**: `app/SPECIALIST/doctor_dashboard.html`
+- **User chat**: `app/USER/chat.html`
+- **Medical dashboard**: `app/SPECIALIST/doctor_dashboard.html`
 
 ---
 
-## API de usuario (`app_user.py` — Puerto 5000)
+## User API (`app_user.py` — Port 5000)
 
 Base URL: `http://localhost:5000`
 
-| Método | Endpoint | Descripción |
+| Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/verify` | Registra o verifica al usuario por teléfono |
-| `POST` | `/api/start` | Inicia una nueva sesión de conversación |
-| `POST` | `/api/message` | Procesa un mensaje del usuario y devuelve la respuesta del bot |
-| `POST` | `/api/reset` | Cierra la sesión activa, genera resumen/valoración y limpia contexto |
-| `GET` | `/api/circle?telephone=...` | Obtiene los datos del círculo de apoyo del usuario |
-| `POST` | `/api/circle` | Guarda o actualiza el círculo de apoyo |
-| `GET` | `/api/notifications?telephone=...` | Notificaciones no leídas para un familiar |
-| `POST` | `/api/notifications/read` | Marca las notificaciones como leídas |
-| `GET` | `/api/medical-centers` | Lista todos los países con centros médicos disponibles |
-| `GET` | `/api/medical-centers/<code>?q=...` | Centros de un país (filtrado opcional por nombre o ciudad) |
-| `GET` | `/images/<path>` | Sirve imágenes psicoeducativas y de emergencia |
+| `POST` | `/api/verify` | Registers or verifies the user by phone number |
+| `POST` | `/api/start` | Starts a new conversation session |
+| `POST` | `/api/message` | Processes a user message and returns the bot's response |
+| `POST` | `/api/reset` | Closes the active session, generates summary/valoration, and clears context |
+| `GET` | `/api/circle?telephone=...` | Retrieves the user's support-circle data |
+| `POST` | `/api/circle` | Saves or updates the support circle |
+| `GET` | `/api/notifications?telephone=...` | Unread notifications for a family member |
+| `POST` | `/api/notifications/read` | Marks notifications as read |
+| `POST` | `/api/user/delete` | Permanently deletes the user document |
+| `GET` | `/api/medical-centers` | Lists all countries with available medical centers |
+| `GET` | `/api/medical-centers/<code>?q=...` | Centers of a country (optional filter by name or city) |
+| `GET` | `/images/<path>` | Serves psychoeducational and emergency images |
 
-### Respuesta de `/api/message`
+### Response of `/api/message`
 
 ```json
 {
@@ -240,36 +242,37 @@ Base URL: `http://localhost:5000`
 }
 ```
 
-| Campo | Descripción |
+| Field | Description |
 |---|---|
-| `bot_message` | Respuesta textual del bot |
-| `image_url` | URL de imagen psicoeducativa (o `null`) |
-| `ended` | `true` si la sesión ha finalizado |
-| `emergency_112` | `true` → activar aviso de llamada al 112 (emergencias) |
-| `emergency_024` | `true` → activar aviso de la línea de atención a la conducta suicida (024) |
+| `bot_message` | The bot's textual response |
+| `image_url` | URL of a psychoeducational image (or `null`) |
+| `ended` | `true` if the session has finished |
+| `emergency_112` | `true` → trigger the 112 (emergency) call notice |
+| `emergency_024` | `true` → trigger the suicidal-behavior helpline notice (024) |
 
 ---
 
-## API de especialistas (`app_specialist.py` — Puerto 5001)
+## Specialist API (`app_specialist.py` — Port 5001)
 
 Base URL: `http://localhost:5001`
 
-Los endpoints protegidos requieren la cabecera `Authorization: Bearer <token>`.
+Protected endpoints require the header `Authorization: Bearer <token>`.
 
-| Método | Endpoint | Auth | Descripción |
+| Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| `POST` | `/api/doctor/register` | No | Registro de nuevo especialista |
-| `POST` | `/api/doctor/login` | No | Login, devuelve token JWT |
-| `PUT` | `/api/doctor/profile` | Sí | Actualizar datos del perfil |
-| `GET` | `/api/doctor/patients` | Sí | Pacientes del centro del especialista |
-| `PUT` | `/api/doctor/patients/<id>/notes` | Sí | Guardar nota clínica sobre un paciente |
-| `GET` | `/api/doctor/patients/<id>/sessions` | Sí | Historial de sesiones del paciente |
-| `GET` | `/api/doctor/patients/<id>/report` | Sí | Generar y descargar informe PDF |
-| `GET` | `/api/doctor/stats` | Sí | Estadísticas del centro (riesgo, sesiones, valoraciones, cribado) |
-| `GET` | `/api/doctor/countries` | No | Países disponibles |
-| `GET` | `/api/medical-centers/<code>` | No | Centros de un país |
+| `POST` | `/api/doctor/register` | No | Register a new specialist |
+| `POST` | `/api/doctor/login` | No | Login, returns a JWT token |
+| `PUT` | `/api/doctor/profile` | Yes | Update profile data |
+| `GET` | `/api/doctor/patients` | Yes | Patients from the specialist's center |
+| `PUT` | `/api/doctor/patients/<id>/notes` | Yes | Save a clinical note about a patient |
+| `GET` | `/api/doctor/patients/<id>/sessions` | Yes | Patient's session history |
+| `GET` | `/api/doctor/patients/<id>/report` | Yes | Generate and download a PDF report |
+| `GET` | `/api/doctor/stats` | Yes | Center statistics (risk, sessions, valorations, screening) |
+| `GET` | `/api/doctor/stats/debug` | Yes | Dump of each center user's `SCREENING` field (data diagnostics) |
+| `GET` | `/api/doctor/countries` | No | Available countries |
+| `GET` | `/api/medical-centers/<code>` | No | Centers of a country |
 
-### Registro de especialista (`POST /api/doctor/register`)
+### Specialist registration (`POST /api/doctor/register`)
 
 ```json
 {
@@ -285,26 +288,26 @@ Los endpoints protegidos requieren la cabecera `Authorization: Bearer <token>`.
 }
 ```
 
-### Estadísticas del centro (`GET /api/doctor/stats`)
+### Center statistics (`GET /api/doctor/stats`)
 
-Devuelve datos para los gráficos del dashboard:
+Returns the data for the dashboard charts:
 
-| Campo | Descripción |
+| Field | Description |
 |---|---|
-| `riskDistribution` | Distribución de niveles de riesgo (estable, bajo, medio, alto) |
-| `sessionsByDay` | Sesiones por día en los últimos 30 días |
-| `valorationDist` | Distribución de valoraciones (buena, regular, mala) |
-| `suiDist` | Distribución de cribado de suicidio |
-| `depDist` | Distribución de cribado de depresión |
-| `emergencyStats` | Total de emergencias, seguimientos y outcomes |
+| `riskDistribution` | Distribution of risk levels (stable, low, medium, high) |
+| `sessionsByDay` | Sessions per day over the last 30 days |
+| `valorationDist` | Distribution of valorations (good, fair, poor) |
+| `suiDist` | Distribution of suicide screening |
+| `depDist` | Distribution of depression screening |
+| `emergencyStats` | Total emergencies, follow-ups, and outcomes |
 
 ---
 
-## Modelo de datos (MongoDB)
+## Data model (MongoDB)
 
-Base de datos: `CHATBOT_mhGAP`
+Database: `CHATBOT_mhGAP`
 
-### Colección `users`
+### Collection `users`
 
 ```json
 {
@@ -318,7 +321,7 @@ Base de datos: `CHATBOT_mhGAP`
     "commitment": "Fully commited"
   },
   "CIRCLE": {
-    "contacts": [{ "name": "Ana", "phone": "+34600000000", "relation": "madre" }],
+    "contacts": [{ "name": "Ana", "phone": "+34600000000", "relation": "mother" }],
     "medicalCenter": { "name": "CAP Florida", "city": "L'Hospitalet de Llobregat" },
     "privacy": { "shareWithHospital": true, "allowContactFamily": true }
   },
@@ -365,7 +368,7 @@ Base de datos: `CHATBOT_mhGAP`
     "session_path": "...", "j": 5, "K": 0, "variant": 0
   },
   "2024-06-01 10:30:00_session": {
-    "summary": "El usuario mostró síntomas de...",
+    "summary": "The user showed symptoms of...",
     "valoration": "REGULAR",
     "risk_level": "MODERADO",
     "conversation_history": {
@@ -376,31 +379,31 @@ Base de datos: `CHATBOT_mhGAP`
     }
   },
   "doctorNotes": {
-    "28-5678": { "note": "Paciente estable...", "updatedAt": "2024-06-05 09:00:00" }
+    "28-5678": { "note": "Stable patient...", "updatedAt": "2024-06-05 09:00:00" }
   }
 }
 ```
 
-**Claves principales:**
+**Key fields:**
 
-| Clave | Descripción |
+| Key | Description |
 |---|---|
-| `ctx` | Contexto de sesión activa: fase, estado, contador de turnos, último output |
-| `checkpoint` | Punto de reanudación para evaluaciones interrumpidas |
-| `DEP_EVAL` | Resultados estructurados de la evaluación de depresión |
-| `SUI_EVAL` | Resultados de la evaluación de riesgo suicida |
-| `SCREENING` | Cribado final: `depression`, `bipolar` u `others` |
-| `EMERGENCY` | Array de instancias de emergencia registradas |
-| `FOLLOWUP` | Historial de seguimiento post-emergencia |
-| `<timestamp>_session` | Sesión cerrada con resumen, valoración y nivel de riesgo |
-| `doctorNotes` | Notas clínicas del especialista (indexadas por número de colegiado) |
+| `ctx` | Active session context: phase, state, turn counter, last output |
+| `checkpoint` | Resumption point for interrupted evaluations |
+| `DEP_EVAL` | Structured results of the depression assessment |
+| `SUI_EVAL` | Results of the suicide-risk assessment |
+| `SCREENING` | Final screening: `depression`, `bipolar`, or `others` |
+| `EMERGENCY` | Array of recorded emergency instances |
+| `FOLLOWUP` | Post-emergency follow-up history |
+| `<timestamp>_session` | Closed session with summary, valoration, and risk level |
+| `doctorNotes` | Specialist's clinical notes (indexed by collegiate number) |
 
-### Colección `specialists`
+### Collection `specialists`
 
 ```json
 {
   "collegiateNumber": "28-5678",
-  "email": "medico@hospital.es",
+  "email": "doctor@hospital.es",
   "passwordHash": "...",
   "firstName": "Joan",
   "lastName": "García",
@@ -413,7 +416,7 @@ Base de datos: `CHATBOT_mhGAP`
 }
 ```
 
-### Colección `medicalCenters`
+### Collection `medicalCenters`
 
 ```json
 {
@@ -425,9 +428,9 @@ Base de datos: `CHATBOT_mhGAP`
 }
 ```
 
-### Colección `notifications`
+### Collection `notifications`
 
-Notificaciones push para familiares cuando se activa un protocolo de emergencia:
+Push notifications for family members when an emergency protocol is activated:
 
 ```json
 {
@@ -442,194 +445,198 @@ Notificaciones push para familiares cuando se activa un protocolo de emergencia:
 
 ---
 
-## Flujo de conversación
+## Conversation flow
 
 ```
-Inicio (POST /api/start)
+Start (POST /api/start)
   │
-  ├─ Usuario nuevo → PRESENTATION (aceptación de términos)
+  ├─ New user → PRESENTATION (terms acceptance)
   │                      │
-  │                      └─ "Sí, acepto" → PRESENTATION_ASKED → PROFILE
+  │                      └─ "Yes, I accept" → PRESENTATION_ASKED → PROFILE
   │                                             │
-  │                           Recoge: nombre, edad, motivo, expectativa, compromiso
+  │                           Collects: name, age, reason, expectation, commitment
   │                                             │
   │                                      USE_CASE_EVAL ─────────────────────┐
   │                                             │                           │
   │                        ┌────────────────────┼──────────────┬────────────┤
   │                        ▼                    ▼              ▼            ▼
   │                    EMERGENCY           ASSISTANCE        TALK       MISENSE
-  │                        │                    │              │         (cierre)
+  │                        │                    │              │         (close)
   │                   SUI_EVAL             DEP_EVAL          CHAT
-  │                   (5 preguntas)         │                  │
-  │                        │           Fase 1: Criterios A+B  │
-  │                        │           Fase 2: Dx diferencial  │
-  │                        │           Fase 3: Sustancias      │
+  │                   (5 questions)          │                  │
+  │                        │           Phase 1: A+B criteria  │
+  │                        │           Phase 2: Differential Dx │
+  │                        │           Phase 3: Substances      │
   │                        │                │                  │
-  │                   SUI_PROTOCOLS    DEP_PROTOCOLS      Reevaluación
-  │                   ├─ Estado 1:     (psicoeducación)    cada 5 msgs
-  │                   │  Llamar 112                            │
-  │                   ├─ Estado 2:                             ▼
-  │                   │  Llamar 024                      USE_CASE_EVAL
-  │                   └─ Estado 3:                       (puede reclasificar)
-  │                      Psicoeducación
+  │                   SUI_PROTOCOLS    DEP_PROTOCOLS      Re-evaluation
+  │                   ├─ State 1:      (psychoeducation)    every 5 msgs
+  │                   │  Call 112                              │
+  │                   ├─ State 2:                              ▼
+  │                   │  Call 024                        USE_CASE_EVAL
+  │                   └─ State 3:                        (may reclassify)
+  │                      Psychoeducation
   │                        │
   │                     FAREWELL ← ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
-  │                  (resumen + valoración + nivel de riesgo)
+  │                  (summary + valoration + risk level)
   │
-  ├─ Usuario existente → RESUMING → Reanuda desde checkpoint
+  ├─ Existing user → RESUMING → Resumes from checkpoint
   │
-  └─ Usuario con EMERGENCY previo → FOLLOWUP
-                                     (verificación post-emergencia)
+  └─ User with a previous EMERGENCY → FOLLOWUP
+                                       (post-emergency check)
 ```
 
 ---
 
-## Máquina de estados clínica
+## Clinical state machine
 
-La máquina de estados (`state_machine.py`) gestiona cada fase de evaluación clínica. Cada estado evalúa la respuesta del usuario contra **bancos de patrones regex** (afirmación, negación, ambigüedad) y produce una transición.
+The state machine (`state_machine.py`) manages each clinical-evaluation phase. Each state evaluates the user's response against **regex pattern banks** (affirmation, negation, ambiguity) and produces a transition.
 
-### Fases del protocolo de depresión (`DEP_EVAL`)
+### Depression-protocol phases (`DEP_EVAL`)
 
-| Estado | Pregunta clínica (mhGAP) | Variable evaluada |
+| State | Clinical question (mhGAP) | Evaluated variable |
 |---|---|---|
-| 1A.1 | Estado de ánimo persistentemente bajo | `1_A1_depressed_mood` |
-| 1A.2 | Pérdida de interés/placer (anhedonia) | `1_A2_anhedonia` |
-| 1B.1 | Alteraciones del sueño | `1B_1_sleep_alteration` |
-| 1B.2 | Cambios de apetito/peso | `1B_2_appetite_weight_change` |
-| 1B.3 | Fatiga/pérdida de energía | `1B_3_fatigue_energy_loss` |
-| 1B.4 | Dificultad de concentración/decisiones | `1B_4_concentration_decision_issues` |
-| 1B.5 | Baja autoestima/culpabilidad excesiva | `1B_5_low_selfworth_guilt` |
-| 1B.6 | Desesperanza/ideación suicida | `1B_6_hopelessness_suicidal_ideation` |
-| 1C | Deterioro funcional | `1C_functional_impairment` |
-| 2A.1–2A.2 | Medicación y condiciones físicas | Diagnóstico diferencial |
-| 2B.1–2B.7 | Episodios maníacos/hipomaníacos | Cribado bipolar |
-| 2C | Duelo reciente | Factor contextual |
-| 2D.1–2D.5 | Síntomas psicóticos y funcionalidad | Severidad |
-| 2E.1–2E.3 | Historial psiquiátrico previo | Antecedentes |
-| 3A–3B | Consumo de alcohol y sustancias | Factores de riesgo |
+| 1A.1 | Persistently low mood | `1_A1_depressed_mood` |
+| 1A.2 | Loss of interest/pleasure (anhedonia) | `1_A2_anhedonia` |
+| 1B.1 | Sleep disturbances | `1B_1_sleep_alteration` |
+| 1B.2 | Appetite/weight changes | `1B_2_appetite_weight_change` |
+| 1B.3 | Fatigue/loss of energy | `1B_3_fatigue_energy_loss` |
+| 1B.4 | Difficulty concentrating/making decisions | `1B_4_concentration_decision_issues` |
+| 1B.5 | Low self-esteem/excessive guilt | `1B_5_low_selfworth_guilt` |
+| 1B.6 | Hopelessness/suicidal ideation | `1B_6_hopelessness_suicidal_ideation` |
+| 1C | Functional impairment | `1C_functional_impairment` |
+| 2A.1–2A.2 | Medication and physical conditions | Differential diagnosis |
+| 2B.1–2B.7 | Manic/hypomanic episodes | Bipolar screening |
+| 2C | Recent bereavement | Contextual factor |
+| 2D.1–2D.5 | Psychotic symptoms and functioning | Severity |
+| 2E.1–2E.3 | Prior psychiatric history | Background |
+| 3A–3B | Alcohol and substance use | Risk factors |
 
-**Lógica de decisión:**
-- Si ambos criterios A (1A.1, 1A.2) son negativos → sale a `CHAT` (clasificación: `others`).
-- Si al menos un A es positivo, se evalúan los criterios B.
-- Si ≥2 criterios B son positivos (o ≥1 B + desesperanza) → se evalúa deterioro funcional (1C).
-- Si 1C es positivo → clasificación `depression`, continúa a diagnóstico diferencial.
-- El bloque 2B (7 preguntas) evalúa rasgos bipolares; si ≥3 positivos → clasificación `bipolar`.
+**Decision logic:**
+- If both A criteria (1A.1, 1A.2) are negative → exits to `CHAT` (classification: `others`).
+- If at least one A is positive, the B criteria are evaluated.
+- If ≥2 B criteria are positive (or ≥1 B + hopelessness) → functional impairment (1C) is evaluated.
+- If 1C is positive → classification `depression`, continues to differential diagnosis.
+- The 2B block (7 questions) assesses bipolar traits; if ≥3 are positive → classification `bipolar`.
 
-### Fases del protocolo de suicidio (`SUI_EVAL`)
+### Suicide-protocol phases (`SUI_EVAL`)
 
-| Estado | Pregunta clínica | Evaluación |
+| State | Clinical question | Evaluation |
 |---|---|---|
-| 1 | Autolesión actual | `1_self_harm` |
-| 2A | Planes/pensamientos de hacerse daño | Ideación activa |
-| 2B.1 | Pensamientos en el último mes | Ideación reciente |
-| 2B.2 | Autolesión en el último año | Historial |
-| 3 | Tratamiento de salud mental | Antecedentes |
-| 4 | Dolor físico persistente | Factor de riesgo |
-| 5 | Impacto emocional funcional | Severidad |
+| 1 | Current self-harm | `1_self_harm` |
+| 2A | Plans/thoughts of self-harm | Active ideation |
+| 2B.1 | Thoughts in the last month | Recent ideation |
+| 2B.2 | Self-harm in the last year | History |
+| 3 | Mental health treatment | Background |
+| 4 | Persistent physical pain | Risk factor |
+| 5 | Functional emotional impact | Severity |
 
-### Gestión de respuestas no clasificables
+### Handling of unclassifiable responses
 
-Cuando el usuario no responde de forma clasificable, el sistema activa **variantes**:
+When the user does not respond in a classifiable way, the system activates **variants**:
 
-| Variante | Situación | Respuesta del bot |
+| Variant | Situation | Bot's response |
 |---|---|---|
-| `ambiguity` | "No sé", "quizás" | Reformula la pregunta con otras palabras |
-| `evasion` | "Cambia de tema" | Reconoce la incomodidad, reintenta suavemente |
-| `refusal` | "No quiero contestar" | Respeta la negativa, ofrece alternativas |
-| `hostility` | Insultos al bot | Desescala con empatía |
-| `non_class` | Respuesta fuera de patrón | Repite la pregunta de forma más directa |
+| `ambiguity` | "I don't know", "maybe" | Rephrases the question in other words |
+| `evasion` | "Change the subject" | Acknowledges the discomfort, gently retries |
+| `refusal` | "I don't want to answer" | Respects the refusal, offers alternatives |
+| `hostility` | Insults toward the bot | De-escalates with empathy |
+| `non_class` | Out-of-pattern response | Repeats the question more directly |
 
 ---
 
-## Uso del LLM
+## LLM usage
 
-El LLM (Gemini 2.5 Flash vía `llm.py`) se utiliza en dos modos diferenciados:
+The LLM (Gemini 2.5 Flash via `llm.py`) is used in two distinct modes:
 
-### Modo clasificación (temperature = 0.0)
+### Classification mode (temperature = 0.0)
 
-Respuestas deterministas para decisiones clínicas:
-- **Detección de caso de uso**: clasifica la conversación en `EMERGENCY` / `ASSISTANCE` / `TALK` / `MISENSE`.
-- **Valoración de sesión**: genera `BUENA`, `REGULAR` o `MALA`.
-- **Nivel de riesgo de crisis**: determina `ESTABLE`, `BAJO`, `MODERADO` o `ALTO`.
+Deterministic responses for clinical decisions:
+- **Use-case detection**: classifies the conversation into `EMERGENCY` / `ASSISTANCE` / `TALK` / `MISENSE`.
+- **Session valoration**: generates `BUENA`, `REGULAR`, or `MALA`.
+- **Crisis risk level**: determines `ESTABLE`, `BAJO`, `MODERADO`, or `ALTO`.
 
-### Modo generación natural (temperature = 1.0)
+### Natural-generation mode (temperature = 1.0)
 
-Respuestas variadas y empáticas:
-- **Envoltorio de preguntas clínicas**: el LLM recibe el "núcleo" fijo de la pregunta (extraído de `phrase_dictionary.py`) y lo envuelve con conectores naturales y empáticos, manteniendo el rigor clínico.
-- **Bienvenida personalizada**: usa la memoria del usuario (nombre, resumen de la última sesión) para generar un saludo contextualizado.
-- **Modo TALK**: conversación libre donde el LLM recibe las últimas 8 interacciones como contexto.
-- **Resumen de sesión**: sintetiza la conversación completa al cerrar la sesión.
-
----
-
-## Panel de especialistas
-
-El dashboard (`doctor_dashboard.html`) ofrece:
-
-- **Registro / Login** con número de colegiado, email y contraseña.
-- **Perfil editable**: datos personales, especialidad y género.
-- **Lista de pacientes** del mismo centro médico que han dado consentimiento (`shareWithHospital: true`).
-- **Historial de sesiones** por paciente: resumen, valoración (BUENA / REGULAR / MALA) y nivel de riesgo (ESTABLE / BAJO / MODERADO / ALTO).
-- **Notas clínicas**: el médico puede añadir y editar anotaciones privadas por paciente (indexadas por número de colegiado).
-- **Estadísticas del centro**: gráficos de distribución de riesgo, sesiones por día, valoraciones, cribado SUI/DEP y estadísticas de emergencia.
-- **Informe PDF**: descarga un informe completo basado en la guía mhGAP.
+Varied, empathetic responses:
+- **Wrapping of clinical questions**: the LLM receives the fixed "core" of the question (extracted from `phrase_dictionary.py`) and wraps it with natural, empathetic connectors while preserving clinical rigor.
+- **Personalized welcome**: uses the user's memory (name, summary of the last session) to generate a contextualized greeting.
+- **TALK mode**: free conversation where the LLM receives the last 8 interactions as context.
+- **Session summary**: synthesizes the full conversation when the session is closed.
 
 ---
 
-## Generación de informes PDF
+## Specialist dashboard
 
-El módulo `reportPDF.py` genera informes estructurados (vía `fpdf`) que incluyen:
+The dashboard (`doctor_dashboard.html`) offers:
 
-- Datos identificativos del paciente (nombre, teléfono, edad).
-- Resultados de la evaluación de suicidio (`SUI_EVAL`) con interpretación de cada indicador.
-- Resultados de la evaluación de depresión (`DEP_EVAL`) y diagnóstico diferencial.
-- Historial de sesiones con resúmenes y valoraciones.
-- Notas clínicas del especialista.
-- Emergencias registradas y seguimientos.
-
-Los informes se descargan directamente desde el panel médico (`GET /api/doctor/patients/<id>/report`) y se generan en un fichero temporal que se elimina tras el envío.
-
----
-
-## Seguridad y privacidad
-
-- Las contraseñas de especialistas se almacenan **hasheadas** (SHA-256; en producción se recomienda migrar a bcrypt/argon2).
-- La autenticación del panel médico usa **tokens de sesión** aleatorios de 64 caracteres hex.
-- Los datos de pacientes solo son visibles para especialistas del **mismo centro médico** (`centerName`).
-- El compartir datos con el hospital requiere **consentimiento explícito** del usuario (`shareWithHospital: true`).
-- Las notificaciones a familiares requieren consentimiento adicional (`allowContactFamily: true`).
-- Los protocolos de emergencia siguen las directrices de la **Guía mhGAP v2.0 de la OMS**.
-- Los informes PDF se generan en ficheros temporales y se eliminan inmediatamente tras el envío.
-- CORS está configurado para aceptar peticiones desde `file://` (desarrollo local) y `localhost`.
+- **Registration / Login** with collegiate number, email, and password.
+- **Editable profile**: personal data, specialty, and gender.
+- **Patient list** from the same medical center who have given consent (`shareWithHospital: true`).
+- **Session history** per patient: summary, valoration (BUENA / REGULAR / MALA), and risk level (ESTABLE / BAJO / MODERADO / ALTO).
+- **Clinical notes**: the doctor can add and edit private notes per patient (indexed by collegiate number).
+- **Center statistics**: charts for risk distribution, sessions per day, valorations, SUI/DEP screening, and emergency statistics.
+- **PDF report**: downloads a complete report based on the mhGAP guide.
 
 ---
 
-## Países disponibles
+## PDF report generation
 
-El sistema incluye centros médicos para:
+The `reportPDF.py` module generates structured reports (via `fpdf`) that include:
 
-| País | Código | Centros |
+- Patient identification data (name, phone, age).
+- Suicide-assessment results (`SUI_EVAL`) with an interpretation of each indicator.
+- Depression-assessment results (`DEP_EVAL`) and differential diagnosis.
+- Session history with summaries and valorations.
+- The specialist's clinical notes.
+- Recorded emergencies and follow-ups.
+
+Reports are downloaded directly from the medical dashboard (`GET /api/doctor/patients/<id>/report`) and are generated in a temporary file that is deleted after the response is sent.
+
+---
+
+## Security and privacy
+
+- Specialist passwords are stored **hashed** (SHA-256; migrating to bcrypt/argon2 is recommended in production).
+- Medical dashboard authentication uses random **session tokens** of 64 hex characters.
+- Patient data is only visible to specialists from the **same medical center** (`centerName`).
+- Sharing data with the hospital requires the user's **explicit consent** (`shareWithHospital: true`).
+- Notifications to family members require additional consent (`allowContactFamily: true`).
+- Emergency protocols follow the guidelines of the **WHO mhGAP v2.0 Intervention Guide**.
+- PDF reports are generated in temporary files and deleted immediately after sending.
+- CORS is configured to accept requests from `file://` (local development) and `localhost`.
+
+---
+
+## Available countries
+
+The system includes medical centers for:
+
+Each country also includes an `Otro / No aparece en la lista` ("Other / Not in the list") option for users whose center is not catalogued.
+
+| Country | Code | Centers |
 |---|---|---|
-| España | ES | 44 centros (Barcelona, Madrid, Valencia, Sevilla, Bilbao...) |
-| Argentina | AR | 10 centros (Buenos Aires, Rosario, Córdoba, Mendoza) |
-| Costa Rica | CR | 27 centros (San José, Alajuela, Cartago, Heredia...) |
-| México | MX | 8 centros (CDMX, Monterrey, Guadalajara, Puebla, Tijuana) |
-| Colombia | CO | 6 centros (Bogotá, Medellín, Cali, Barranquilla) |
-| Chile | CL | 5 centros (Santiago, Pudahuel, Valparaíso, Concepción) |
-| Perú | PE | 5 centros (Lima, Arequipa, Cusco) |
+| Spain | ES | 52 centers (Barcelona, L'Hospitalet, Madrid, Valencia, Seville, Bilbao...) |
+| Argentina | AR | 10 centers (Buenos Aires, Rosario, Córdoba, Mendoza) |
+| Costa Rica | CR | 28 centers (San José, Alajuela, Cartago, Heredia...) |
+| Mexico | MX | 8 centers (Mexico City, Monterrey, Guadalajara, Puebla, Tijuana) |
+| Colombia | CO | 6 centers (Bogotá, Medellín, Cali, Barranquilla) |
+| Chile | CL | 5 centers (Santiago, Pudahuel, Valparaíso, Concepción) |
+| Peru | PE | 5 centers (Lima, Arequipa, Cusco) |
 
-Para añadir nuevos países o centros, edita `src/seed_medical_centers.py` y ejecuta:
+To add new countries or centers, edit the `MEDICAL_CENTERS_DATA` list in `src/seed_medical_centers.py` and run the script again. **Note:** the script resets the `medicalCenters` collection on every run (it always performs a `drop` before inserting):
 
 ```bash
-python src/seed_medical_centers.py --drop
+python src/seed_medical_centers.py
 ```
 
 ---
 
-## Decisiones de diseño relevantes
+## Relevant design decisions
 
-- **Estado en base de datos, no en memoria**: todo el contexto de sesión (`ctx`) se persiste por petición en MongoDB, lo que permite escalabilidad horizontal y resistencia a reinicios del servidor.
-- **Preguntas fijas + envoltorio LLM**: las preguntas clínicas están codificadas literalmente en `phrase_dictionary.py` (garantizando fidelidad a mhGAP), y el LLM solo añade conectores empáticos alrededor.
-- **Regex para clasificación de respuestas**: la máquina de estados usa patrones regex extensivos (no el LLM) para clasificar las respuestas del usuario en los protocolos clínicos, garantizando determinismo y trazabilidad.
-- **Retardos intencionales**: las llamadas a `time.sleep()` en `services_user.py` simulan una cadencia natural de conversación — no deben eliminarse.
-- **Imágenes psicoeducativas bilingües**: el material visual está disponible en castellano y catalán, con versiones separadas para el usuario y para la familia.
+- **State in the database, not in memory**: all session context (`ctx`) is persisted per request in MongoDB, which enables horizontal scalability and resilience to server restarts.
+- **Fixed questions + LLM wrapping**: the clinical questions are hardcoded verbatim in `phrase_dictionary.py` (guaranteeing fidelity to mhGAP), and the LLM only adds empathetic connectors around them.
+- **Regex for response classification**: the state machine uses extensive regex patterns (not the LLM) to classify user responses within the clinical protocols, ensuring determinism and traceability.
+- **Intentional delays**: the `time.sleep()` calls in `services_user.py` simulate a natural conversation cadence — they should not be removed.
+- **Bilingual psychoeducational images**: the visual material is available in Spanish and Catalan, with separate versions for the user and the family.
+</content>
+</invoke>

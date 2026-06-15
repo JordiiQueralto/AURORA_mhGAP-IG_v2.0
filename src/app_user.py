@@ -155,6 +155,19 @@ def mark_read():
     services_user.mark_notifications_read(telephone)
     return jsonify({"status": "ok"})
 
+@app.route('/api/user/delete', methods=['POST'])
+def delete_user():
+    """Elimina permanentemente el documento del usuario de la BD."""
+    data = request.json or {}
+    telephone = data.get('telephone')
+    if not telephone:
+        return jsonify({"error": "telephone requerido"}), 400
+
+    deleted = services_user.delete_user(telephone)
+    if deleted:
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "Usuario no encontrado"}), 404
+
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():
     """Ejecuta _run_farewell (guarda resumen de sesión) y limpia el contexto

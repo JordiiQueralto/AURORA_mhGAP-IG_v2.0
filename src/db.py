@@ -166,11 +166,24 @@ def add_to_list(telephone, key, list_item):
     users.update_one({"telephone": telephone}, {"$push": {key: list_item}})
     return
 
+
 def delete_user_info(telephone, key):
     """Elimina físicamente una clave del documento del usuario."""
     # $unset elimina el campo por completo
     users.update_one({"telephone": telephone}, {"$unset": {key: ""}})
     return
+
+
+def delete_user(telephone: str) -> bool:
+    """Elimina el documento completo de un usuario de la colección users.
+    Devuelve True si se eliminó, False si no existía."""
+    result = users.delete_one({"telephone": telephone})
+    if result.deleted_count:
+        print(f"\n[Usuario {telephone} eliminado correctamente.]\n")
+        return True
+    print(f"\n[No se encontró ningún usuario con el teléfono: {telephone}]\n")
+    return False
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SPECIALISTS

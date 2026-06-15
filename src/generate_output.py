@@ -1,6 +1,7 @@
 import prompt_builder
 import llm
 import db
+import textwrap
 
 def welcome(status, memory) -> str:
     """Generates the welcome message for the user, depending on whether they 
@@ -15,17 +16,24 @@ def welcome(status, memory) -> str:
     
     if status == "rejected":
         bot_output = """
-        Hola. Soy un asistente de apoyo en salud mental. Estoy aquí 
-        para escucharte y acompañarte, pero quiero que sepas desde el principio 
-        que no soy un profesional médico. No puedo darte diagnósticos ni recetarte 
-        nada. Lo que sí puedo hacer es estar contigo, ayudarte a entender cómo te 
-        sientes, y si lo necesitas, conectarte con alguien que pueda ayudarte mejor. 
-        Guardaré las cosas más importantes y si en algún momento creo que puedes 
-        estar en riesgo, te lo diré y buscaremos ayuda juntos. ¿Estás de acuerdo?
-        En caso afirmativo, di: "Sí, acepto"."""
+        Hola! Me llamo Aurora y soy un asistente virtual de apoyo en salud mental basado en inteligencia artificial. No soy una persona ni un profesional sanitario: soy un sistema conversacional automatizado desarrollado como prototipo de investigación.
+
+        Antes de empezar, necesito que entiendas bien cómo funciono y qué implica usar este servicio:
+
+        Qué puedo hacer por ti: Escucharte, ayudarte a entender cómo te sientes y, si lo necesitas, orientarte hacia recursos profesionales de ayuda. Mi lógica se basa en la guía clínica mhGAP de la Organización Mundial de la Salud, pero mis respuestas no sustituyen en ningún caso un diagnóstico médico ni una valoración profesional.
+
+        Cómo detecto situaciones de riesgo: Utilizo patrones de lenguaje para identificar posibles señales de alerta. Si en algún momento detecto que puedes estar en peligro, te proporcionaré los recursos de emergencia adecuados (como el 112 o el 024) directamente en pantalla. La decisión de contactar con ellos será siempre tuya.
+
+        Tus datos: Todo lo que me cuentes se almacenará de forma segura para poder ofrecerte un mejor seguimiento. Estos datos incluyen información relativa a tu salud emocional, que solo se utilizarán con la finalidad de este servicio y nunca se compartirán con terceros sin tu consentimiento explícito. Más adelante, en la sección "Mi Círculo", podrás decidir de forma independiente si deseas activar las notificaciones a familiares de confianza o compartir información con tu centro sanitario de referencia.
+
+        Tu derecho a retirarte: Puedes eliminar tu cuenta en cualquier momento, lo que borrará de forma inmediata y definitiva toda la información almacenada.
+
+        Requisito de edad: Este servicio está dirigido exclusivamente a mayores de 18 años.
+
+        Si lo has entendido y estás de acuerdo, escribe: "Sí, acepto"."""
         
         # Fix the format
-        bot_output = " ".join(bot_output.split())
+        bot_output = textwrap.dedent(bot_output).strip()
         
     else:
         # Existing user

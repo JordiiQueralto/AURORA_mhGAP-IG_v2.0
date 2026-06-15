@@ -1,0 +1,161 @@
+<svg width="100%" viewBox="0 0 715 800" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Global conceptual architecture — layered functional block diagram</title>
+  <desc>Four functional layers: entry and flow management, clinical logic, support and psychoeducation, and infrastructure.</desc>
+
+  <defs>
+    <marker id="arrBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="rgb(83,74,183)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="rgb(115,114,108)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="rgb(211,47,47)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrDkBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="rgb(13,71,161)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="rgb(27,94,32)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <!-- ════ LAYER 1 — Entry & Flow Management ════ -->
+  <rect x="30" y="30" width="545" height="215" rx="12" fill="rgb(241,239,232)" stroke="rgb(95,94,90)" stroke-width="0.5"/>
+  <text x="44" y="46" fill="rgb(95,94,90)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">Entry and flow management layer</text>
+
+  <!-- M1: User Onboarding -->
+  <rect x="50" y="56" width="505" height="44" rx="6" fill="rgb(241,239,232)" stroke="rgb(95,94,90)" stroke-width="0.5"/>
+  <text x="302" y="72" text-anchor="middle" fill="rgb(68,68,65)" font-size="14" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">User onboarding and informed consent</text>
+  <text x="302" y="89" text-anchor="middle" fill="rgb(95,94,90)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">Presentation · demographics · age check · informed consent</text>
+
+  <!-- M1 → M2 -->
+  <line x1="302" y1="100" x2="302" y2="120" stroke="rgb(115,114,108)" stroke-width="1.5" marker-end="url(#arrGray)"/>
+
+  <!-- M2: Use Case Classification & Session Routing -->
+  <rect x="50" y="122" width="505" height="95" rx="6" fill="rgb(238,237,254)" stroke="rgb(83,74,183)" stroke-width="1.5"/>
+  <text x="302" y="151" text-anchor="middle" fill="rgb(60,52,137)" font-size="14" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Use case classification and session routing</text>
+  <text x="310" y="169" text-anchor="middle" fill="rgb(83,74,183)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">LLM triage · EMERGENCY / ASSISTANCE / TALK / MISUSE</text>
+  <text x="302" y="187" text-anchor="middle" fill="rgb(83,74,183)" font-size="11" font-style="italic" dominant-baseline="central" font-family="system-ui,sans-serif">Central contextual router</text>
+
+  <!-- ── Connectors M2 → Layer 2 ── -->
+  <!-- ASSISTANCE → M4 -->
+  <line x1="137" y1="217" x2="137" y2="290" stroke="rgb(83,74,183)" stroke-width="1.3" marker-end="url(#arrBlue)"/>
+  <text x="74" y="257" fill="rgb(83,74,183)" font-size="10" font-family="system-ui,sans-serif">ASSISTANCE</text>
+
+  <!-- EMERGENCY → M4 -->
+  <line x1="185" y1="217" x2="185" y2="290" stroke="rgb(83,74,183)" stroke-width="1.3" marker-end="url(#arrBlue)"/>
+  <text x="194" y="257" fill="rgb(83,74,183)" font-size="10" font-family="system-ui,sans-serif">EMERGENCY</text>
+
+  <!-- TALK → M3 (left-side routing) -->
+  <path d="M50 169 L22 169 L22 515 L50 515" fill="none" stroke="rgb(13,71,161)" stroke-width="1.3" marker-end="url(#arrDkBlue)"/>
+  <text x="9" y="378" fill="rgb(13,71,161)" font-size="10" text-anchor="middle" font-family="system-ui,sans-serif" transform="rotate(-90,9,370)">TALK</text>
+
+  <!-- ════ LAYER 2 — Clinical Logic ════ -->
+  <rect x="30" y="265" width="545" height="165" rx="12" fill="rgb(238,237,254)" stroke="rgb(83,74,183)" stroke-width="0.5"/>
+  <text x="44" y="280" fill="rgb(83,74,183)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">Clinical logic layer</text>
+
+  <!-- M4: Clinical Screening -->
+  <rect x="50" y="290" width="175" height="100" rx="6" fill="rgb(238,237,254)" stroke="rgb(83,74,183)" stroke-width="0.5"/>
+  <text x="137" y="320" text-anchor="middle" fill="rgb(60,52,137)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Clinical screening</text>
+  <text x="137" y="339" text-anchor="middle" fill="rgb(83,74,183)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">FSM · mhGAP-IG v2.0</text>
+  <text x="137" y="356" text-anchor="middle" fill="rgb(83,74,183)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">SUI &amp; DEP workflows</text>
+
+  <!-- M5: Pattern Monitoring (REGEX) & SUI Escalation -->
+  <rect x="240" y="290" width="148" height="100" rx="6" fill="rgb(255,205,210)" stroke="rgb(211,47,47)" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="314" y="323" text-anchor="middle" fill="rgb(211,47,47)" font-size="12" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Pattern monitoring</text>
+  <text x="314" y="343" text-anchor="middle" fill="rgb(211,47,47)" font-size="12" font-weight="600" dominant-baseline="central" font-family="system-ui,sans-serif">(REGEX)</text>
+  <text x="314" y="360" text-anchor="middle" fill="rgb(211,47,47)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">&amp; SUI escalation</text>
+
+  <!-- M7: Active Follow-up Protocol -->
+  <rect x="403" y="290" width="152" height="100" rx="6" fill="rgb(238,237,254)" stroke="rgb(83,74,183)" stroke-width="0.5"/>
+  <text x="479" y="318" text-anchor="middle" fill="rgb(60,52,137)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Active follow-up</text>
+  <text x="479" y="336" text-anchor="middle" fill="rgb(60,52,137)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">mechanism</text>
+  <text x="479" y="356" text-anchor="middle" fill="rgb(83,74,183)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">Post-referral check</text>
+
+  <!-- M4 ↔ M5 bidirectional -->
+  <line x1="225" y1="325" x2="240" y2="325" stroke="rgb(83,74,183)" stroke-width="1.2" marker-end="url(#arrBlue)"/>
+  <line x1="240" y1="342" x2="225" y2="342" stroke="rgb(211,47,47)" stroke-width="1.2" marker-end="url(#arrRed)"/>
+  <!-- M7 → M5 -->
+  <line x1="403" y1="345" x2="388" y2="345" stroke="rgb(83,74,183)" stroke-width="1.2" marker-end="url(#arrBlue)"/>
+
+  <!-- M5 → Referral Screen (crisis protocol, exits top-center of M5) -->
+  <path d="M314 290 L314 278 L650 278 L650 293" fill="none" stroke="rgb(211,47,47)" stroke-width="1.3" stroke-dasharray="5 3" marker-end="url(#arrRed)"/>
+  <text x="480" y="274" text-anchor="middle" fill="rgb(211,47,47)" font-size="10" font-family="system-ui,sans-serif">crisis protocol</text>
+
+  <!-- ── Connectors Layer 2 → Layer 3 ── -->
+  <!-- M4 → M6 (lila) -->
+  <line x1="137" y1="390" x2="137" y2="474" stroke="rgb(83,74,183)" stroke-width="1.3" marker-end="url(#arrBlue)"/>
+  <!-- M7 → M6 (lila) -->
+  <path d="M479 390 L479 440 L437 440 L437 474" fill="none" stroke="rgb(83,74,183)" stroke-width="1.3" marker-end="url(#arrBlue)"/>
+
+  <!-- ════ LAYER 3 — Support & Psychoeducation ════ -->
+  <rect x="30" y="450" width="545" height="130" rx="12" fill="rgb(227,242,253)" stroke="rgb(13,71,161)" stroke-width="0.5"/>
+  <text x="44" y="464" fill="rgb(13,71,161)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">Support and psychoeducation layer</text>
+
+  <!-- M3: Free Conversation -->
+  <rect x="50" y="474" width="255" height="82" rx="6" fill="rgb(227,242,253)" stroke="rgb(13,71,161)" stroke-width="0.5"/>
+  <text x="177" y="500" text-anchor="middle" fill="rgb(13,71,161)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Free conversation</text>
+  <text x="177" y="526" text-anchor="middle" fill="rgb(13,71,161)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">Re-routing on emotional deviation</text>
+
+  <!-- M6: Psychoeducation -->
+  <rect x="320" y="474" width="235" height="82" rx="6" fill="rgb(227,242,253)" stroke="rgb(13,71,161)" stroke-width="0.5"/>
+  <text x="437" y="500" text-anchor="middle" fill="rgb(13,71,161)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Psychoeducation</text>
+  <text x="437" y="518" text-anchor="middle" fill="rgb(13,71,161)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">Level 0 · self-management</text>
+  <text x="437" y="535" text-anchor="middle" fill="rgb(13,71,161)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">infographics</text>
+
+  <!-- ════ LAYER 4 — Infrastructure ════ -->
+  <rect x="30" y="600" width="545" height="112" rx="12" fill="rgb(232,245,233)" stroke="rgb(27,94,32)" stroke-width="0.5"/>
+  <text x="44" y="615" fill="rgb(27,94,32)" font-size="12" dominant-baseline="central" font-family="system-ui,sans-serif">Infrastructure layer</text>
+
+  <!-- Database block -->
+  <rect x="50" y="625" width="255" height="70" rx="6" fill="rgb(232,245,233)" stroke="rgb(27,94,32)" stroke-width="0.5"/>
+  <text x="177" y="650" text-anchor="middle" fill="rgb(27,94,32)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Database</text>
+  <text x="177" y="668" text-anchor="middle" fill="rgb(27,94,32)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">MongoDB · conversation history</text>
+
+  <!-- Database → Dashboard -->
+  <line x1="305" y1="660" x2="320" y2="660" stroke="rgb(27,94,32)" stroke-width="1.2" marker-end="url(#arrGreen)"/>
+
+  <!-- Medical Specialist Panel block -->
+  <rect x="320" y="625" width="235" height="70" rx="6" fill="rgb(232,245,233)" stroke="rgb(27,94,32)" stroke-width="0.5"/>
+  <text x="437" y="650" text-anchor="middle" fill="rgb(27,94,32)" font-size="13" font-weight="500" dominant-baseline="central" font-family="system-ui,sans-serif">Medical specialist panel</text>
+  <text x="437" y="668" text-anchor="middle" fill="rgb(27,94,32)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">Clinical dashboard · PDF reports</text>
+
+  <!-- ════ EXTERNAL: Referral Screen ════ -->
+  <rect x="598" y="293" width="105" height="90" rx="8" fill="rgb(255,183,77)" stroke="rgb(183,28,28)" stroke-width="1.5"/>
+  <text x="650" y="318" text-anchor="middle" fill="rgb(100,10,10)" font-size="12" font-weight="600" dominant-baseline="central" font-family="system-ui,sans-serif">REFERRAL</text>
+  <text x="650" y="335" text-anchor="middle" fill="rgb(100,10,10)" font-size="12" font-weight="600" dominant-baseline="central" font-family="system-ui,sans-serif">SCREEN</text>
+  <text x="650" y="352" text-anchor="middle" fill="rgb(100,10,10)" font-size="11" dominant-baseline="central" font-family="system-ui,sans-serif">112 / 024</text>
+  <text x="650" y="367" text-anchor="middle" fill="rgb(100,10,10)" font-size="10" dominant-baseline="central" font-family="system-ui,sans-serif">routing</text>
+
+  <!-- Referral Screen → M7 -->
+  <path d="M598 360 L580 360 L580 340 L555 340" fill="none" stroke="rgb(175,0,0)" stroke-width="1.3" marker-end="url(#arrRed)"/>
+  <text x="577" y="322" text-anchor="middle" fill="rgb(175,0,0)" font-size="10" font-family="system-ui,sans-serif">next</text>
+  <text x="577" y="332" text-anchor="middle" fill="rgb(175,0,0)" font-size="10" font-family="system-ui,sans-serif">session</text>
+
+  <!-- ── Bidirectional arrows: Infrastructure ↔ each layer ── -->
+  <!-- Infra ↔ Layer 3 -->
+  <polyline points="575 540 585 540 585 648 575 648" stroke="rgb(27,94,32)" stroke-width="1.3" stroke-dasharray="5 3" fill="none" marker-start="url(#arrGreen)" marker-end="url(#arrGreen)"/>
+  <!-- Infra ↔ Layer 2 -->
+  <polyline points="575 405 600 405 600 665 575 665" stroke="rgb(27,94,32)" stroke-width="1.3" stroke-dasharray="5 3" fill="none" marker-start="url(#arrGreen)" marker-end="url(#arrGreen)"/>
+  <!-- Infra ↔ Layer 1 -->
+  <polyline points="30 56 2 56 2 680 30 680" stroke="rgb(27,94,32)" stroke-width="1.3" stroke-dasharray="5 3" fill="none" marker-start="url(#arrGreen)" marker-end="url(#arrGreen)"/>
+
+  <!-- ══ TOP-LAYER ARROWS (drawn last for correct z-order) ══ -->
+  <!-- M3 → M5 (Free Conversation → Pattern Monitoring, straight vertical) -->
+  <path d="M280 474 L280 390" fill="none" stroke="rgb(13,71,161)" stroke-width="1.3" marker-end="url(#arrDkBlue)"/>
+
+  <!-- ════ LEGEND ════ -->
+  <rect x="30" y="730" width="12" height="12" rx="2" fill="rgb(175,169,236)" stroke="rgb(83,74,183)" stroke-width="0.5"/>
+  <text x="48" y="741" fill="rgb(61,61,58)" font-size="12" font-family="system-ui,sans-serif">Clinical &amp; routing blocks</text>
+
+  <rect x="220" y="730" width="12" height="12" rx="2" fill="rgb(227,242,253)" stroke="rgb(13,71,161)" stroke-width="0.5"/>
+  <text x="238" y="741" fill="rgb(61,61,58)" font-size="12" font-family="system-ui,sans-serif">Support &amp; psychoeducation blocks</text>
+
+  <rect x="30" y="752" width="12" height="12" rx="2" fill="rgb(232,245,233)" stroke="rgb(27,94,32)" stroke-width="0.5"/>
+  <text x="48" y="763" fill="rgb(61,61,58)" font-size="12" font-family="system-ui,sans-serif">Infrastructure blocks</text>
+
+  <rect x="220" y="752" width="12" height="12" rx="2" fill="rgb(255,205,210)" stroke="rgb(211,47,47)" stroke-width="1" stroke-dasharray="4 2"/>
+  <text x="238" y="763" fill="rgb(61,61,58)" font-size="12" font-family="system-ui,sans-serif">Transversal safety block</text>
+
+</svg>

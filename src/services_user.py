@@ -76,7 +76,7 @@ def start_conversation(telephone):
     db.add_user_info(telephone, f"{session_path}.risk_level", "")
     db.add_user_info(telephone, f"{session_path}.conversation_history", {})
 
-    time.sleep(4)
+    time.sleep(5)
     bot_output = generate_output.welcome(status, memory)
 
     # Identificamos dónde estamos para la siguiente iteración
@@ -508,6 +508,15 @@ def get_notifications(telephone):
 def mark_notifications_read(telephone):
     telephone = str(telephone).replace(" ", "")
     db.mark_notifications_read(telephone)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# delete_user  –  Elimina el documento completo del usuario de la BD
+# ─────────────────────────────────────────────────────────────────────────────
+def delete_user(telephone: str) -> bool:
+    """Elimina permanentemente al usuario de la colección users.
+    Devuelve True si se eliminó, False si no existía."""
+    telephone = str(telephone).replace(" ", "")
+    return db.delete_user(telephone)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # reset_session  –  Borra el contexto de sesión activa para un usuario

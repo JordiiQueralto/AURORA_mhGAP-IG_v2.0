@@ -1,4 +1,5 @@
 ```mermaid
+
 flowchart TD
 
     START(( )):::circle
@@ -31,8 +32,9 @@ flowchart TD
 
     SWITCH -->|"EMERGENCY"| EM --> JUNCTION
     SWITCH -->|"TALK"| TK --> JUNCTION
+    SWITCH -->|"MISUSE"| MS --> JUNCTION
     SWITCH -->|"ASSISTANCE"| AS --> JUNCTION 
-    SWITCH -->|"else"| MS --> JUNCTION
+    
 
     MONGO -.-> CTX
     AS -.->|"checkpoint.phase\ncheckpoint.state"| MONGO

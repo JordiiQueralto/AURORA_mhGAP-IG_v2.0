@@ -3911,7 +3911,7 @@ def security_control(phase, state, variant, user_input):
                 r"\bvoy a cortarme las venas\b",
                 r"\btengo un cuchillo preparado\b",
                 r"\bvoy a ingerir (veneno|lejia|algo toxico)\b",
-                r"\btengo el método listo\b",
+                r"\btengo el metodo listo\b",
                 r"\bvoy a hacerlo con pastillas y alcohol\b",
                 r"\bmi plan es\b",
                 r"\blo voy a hacer (este fin de semana|manana|hoy)\b",
@@ -3958,7 +3958,7 @@ def security_control(phase, state, variant, user_input):
     
              # 1 - Negation
     
-    n_user_input = normalize_text(user_input)
+    n_user_input = _normalize_text(user_input)
     
     match_emergency = _pattern_search(n_user_input, PATTERNS_EMERGENCY) 
     

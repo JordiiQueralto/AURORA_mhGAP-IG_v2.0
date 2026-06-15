@@ -57,6 +57,9 @@ def generate_report(user_id_str, output_path=None):
         pdf.data_row("Nombre", user_doc.get("name", "No consta"))
         pdf.data_row("Teléfono", user_doc.get("telephone", "No consta"))
         pdf.data_row("Edad", user_doc.get("age (years)", "No consta"))
+        circle = user_doc.get("CIRCLE", {})
+        privacy = circle.get("privacy", {})
+        pdf.data_row("Número de Seguridad Social", privacy.get("socialSecurityNumber", "No consta"))
         pdf.ln(5)
 
         # Sección: Evaluación de Suicidio (SUI_EVAL)
@@ -368,6 +371,49 @@ def generate_report(user_id_str, output_path=None):
             
             pdf.ln(5)
         
+        # Sección: Seguimiento post-derivación/emergencia
+        pdf.add_page()
+        followup = user_doc.get("FOLLOWUP", {})
+        pdf.section_title("Seguimiento post-derivación / emergencia")
+
+        if not followup:
+            pdf.set_font("Arial", "I", 10)
+            pdf.cell(0, 10, "No hay datos de seguimiento registrados.", 0, 1)
+            pdf.ln(2)
+        else:
+            last_check = followup.get("last_check", "No consta")
+            pdf.data_row("Fecha del último seguimiento", str(last_check))
+
+            history = followup.get("history", [])
+            if history:
+                pdf.ln(3)
+                pdf.set_font("Arial", "B", 10)
+                pdf.cell(0, 8, "Historial de sesiones de seguimiento:", 0, 1)
+                for i, session in enumerate(history, 1):
+                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 9)
+                    pdf.cell(0, 7, f"  Sesion {i}:", 0, 1)
+                    pdf.data_row("    Fecha de la emergencia", str(session.get("emergency_date", "No consta")))
+                    pdf.data_row("    Fecha del seguimiento", str(session.get("followup_date", "No consta")))
+                    outcome = session.get("outcome")
+                    if isinstance(outcome, bool):
+                        outcome_text = "Si" if outcome else "No"
+                    elif str(outcome).lower() in ("yes", "si", "true", "1"):
+                        outcome_text = "Si"
+                    elif str(outcome).lower() in ("no", "false", "0"):
+                        outcome_text = "No"
+                    else:
+                        outcome_text = str(outcome) if outcome is not None else "No consta"
+                    pdf.data_row("    Contacto con el numero proporcionado", outcome_text)
+                    reason = session.get("reason")
+                    if reason is not None:
+                        reason_map = {
+                            "personal_decision": "Decision personal (decidio no llamar)",
+                            "difficulty": "Dificultades de contacto (linea saturada u otros problemas tecnicos)",
+                        }
+                        pdf.data_row("    Motivo de no contacto", reason_map.get(reason, str(reason)))
+            pdf.ln(5)
+
                 # --- Disclaimer / Descargo de responsabilidad ---
         pdf.ln(10)
         pdf.set_font("Arial", "I", 8)

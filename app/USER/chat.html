@@ -91,6 +91,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 /* Screen 3 — Menu */
 #s-menu{flex-direction:column;background:var(--bg-app)}
 .menu-body{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px}
+.menu-body::-webkit-scrollbar{width:0;height:0}
 .menu-hero{background:linear-gradient(135deg,#0d2920,#0a1f2e);border-radius:18px;padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:4px}
 .menu-hero-txt h2{font-family:var(--f1);font-size:19px;font-style:italic;color:var(--c0);margin-bottom:4px}
 .menu-hero-txt p{font-size:12.5px;color:var(--c1);line-height:1.5}
@@ -394,6 +395,23 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
 .circle-country-btn:hover{border-color:#4da6dc}
 .dropdown-wrap{position:relative}
 
+/* ── Eliminar cuenta ───────────────────────────────────────────────────── */
+.btn-delete-account{width:100%;background:transparent;color:var(--danger);border:1px solid #f15c6d40;border-radius:14px;padding:12px;font-family:var(--f0);font-size:14px;font-weight:500;cursor:pointer;transition:background var(--dur),border-color var(--dur)}
+.btn-delete-account:hover{background:#f15c6d14;border-color:#f15c6d80}
+
+/* ── Modal de confirmación ─────────────────────────────────────────────── */
+#confirm-modal{display:none;position:absolute;inset:0;z-index:7000;align-items:center;justify-content:center;background:#00000080;border-radius:40px}
+#confirm-modal.open{display:flex}
+.confirm-box{background:#1a1f24;border:1px solid #f15c6d40;border-radius:20px;padding:24px 22px;width:310px;display:flex;flex-direction:column;gap:14px;animation:fadeUp .22s ease both}
+.confirm-title{font-family:var(--f1);font-size:19px;font-style:italic;color:var(--c0);text-align:center}
+.confirm-body{font-size:13px;color:var(--c1);text-align:center;line-height:1.6}
+.confirm-actions{display:flex;gap:10px}
+.confirm-cancel{flex:1;background:#2a3942;color:var(--c1);border:none;border-radius:12px;padding:12px;font-family:var(--f0);font-size:14px;cursor:pointer;transition:background var(--dur)}
+.confirm-cancel:hover{background:#374852}
+.confirm-delete{flex:1;background:#c0283a;color:#fff;border:none;border-radius:12px;padding:12px;font-family:var(--f0);font-size:14px;font-weight:500;cursor:pointer;transition:background var(--dur)}
+.confirm-delete:hover{background:#e03048}
+.confirm-delete:disabled{background:#5a2030;cursor:not-allowed}
+
 /* ── Welcome overlay (nuevo usuario) ───────────────────────────────────── */
 #welcome-overlay{
   position:absolute;inset:0;z-index:6000;
@@ -587,8 +605,8 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
     <button class="menu-card mc-chat" onclick="openChat()">
       <div class="card-icon">💬</div>
       <div class="card-body">
-        <div class="card-title">Hablar con el asistente</div>
-        <div class="card-desc">Conversación privada de apoyo emocional con nuestro asistente.</div>
+        <div class="card-title">Hablar con Aurora</div>
+        <div class="card-desc">Conversación con asistente de IA.</div>
       </div>
       <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
@@ -620,6 +638,7 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
       <svg class="card-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
   </div>
+    <button class="btn-delete-account" onclick="openDeleteModal()">Eliminar cuenta</button>
   <div class="menu-footer">En caso de peligro inmediato llama al <strong>112</strong> · Gratuito y confidencial</div>
 </div>
 
@@ -1082,6 +1101,21 @@ html,body{height:100%;background:var(--bg-outer);display:flex;align-items:center
   </div>
   <div class="notif-body" id="notif-list">
     <div class="notif-empty"><span>🔔</span>Sin notificaciones nuevas</div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: CONFIRMAR ELIMINACIÓN DE CUENTA ════════ -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-title">¿Eliminar tu cuenta?</div>
+    <div class="confirm-body">
+      Esta acción es <strong style="color:var(--danger)">permanente e irreversible</strong>.<br/>
+      Se borrarán todos tus datos, historial de conversaciones y configuración.
+    </div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="confirm-delete" id="confirm-delete-btn" onclick="confirmDeleteAccount()">Eliminar</button>
+    </div>
   </div>
 </div>
 
@@ -2127,6 +2161,33 @@ function selectContactCountry(c){
 }
 function filterContactCountries(q){
   buildCountryList('contact-country-list', selectContactCountry, q);
+}
+
+// ── Eliminar cuenta ─────────────────────────────────────────────────────────
+function openDeleteModal(){
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeDeleteModal(){
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+async function confirmDeleteAccount(){
+  const btn = document.getElementById('confirm-delete-btn');
+  btn.disabled = true;
+  btn.textContent = 'Eliminando…';
+  try {
+    const r = await fetch(API+'/api/user/delete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({telephone})
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    closeDeleteModal();
+    logout();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Eliminar';
+    alert('No se pudo eliminar la cuenta. Inténtalo de nuevo.');
+  }
 }
 
 // Close dropdowns on outside click
