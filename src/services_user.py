@@ -16,7 +16,7 @@ _CTX_STATE         = "state"
 
 
 def _ctx_get(telephone, key, default=None):
-    """Lee un valor de contexto de la BD."""
+    """Reads a context value from the database."""
     try:
         info = db.get_user_info(telephone, "ctx", key)
         return info if info is not None else default
@@ -24,7 +24,7 @@ def _ctx_get(telephone, key, default=None):
         return default
 
 def _ctx_set(telephone, key, value):
-    """Escribe un valor de contexto en la BD dentro del objeto ctx."""
+    """Writes a context value to the database under the ctx object."""
     db.add_user_info(telephone, f"ctx.{key}", value)
 
 
@@ -33,9 +33,9 @@ def _ctx_set(telephone, key, value):
 # ─────────────────────────────────────────────────────────────────────────────
 def init_user(telephone):
     """
-    Registra o verifica al usuario en la BD en el momento del login.
-    Garantiza que el documento existe antes de cualquier otra operación.
-    Devuelve True si es usuario nuevo, False si ya existía.
+    Registers or verifies the user in the database at login time.
+    Ensures the document exists before any other operation.
+    Returns True if the user is new, False if they already existed.
     """
     telephone = str(telephone).replace(" ", "")
     is_new = db.is_new(telephone)
@@ -63,6 +63,7 @@ def init_user(telephone):
 # start_conversation  –  llamado UNA vez al abrir el chat
 # ─────────────────────────────────────────────────────────────────────────────
 def start_conversation(telephone):
+    """Initializes a new session: creates the session path, sets initial context in the DB, and returns the first bot message."""
     telephone = str(telephone).replace(" ", "")
     memory = db.user_memory(telephone)
     status = db.user_status(telephone)
@@ -100,6 +101,7 @@ def start_conversation(telephone):
 # process_message  –  llamado en cada mensaje del usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def process_message(telephone, user_input):
+    """Processes a user message, advances the clinical state machine, and returns (bot_message, image_path, is_ended, emergency_112, emergency_024)."""
     telephone = str(telephone).replace(" ", "")
     n_user_input = state_machine._normalize_text(user_input)
 
@@ -317,8 +319,9 @@ def process_message(telephone, user_input):
 # ─────────────────────────────────────────────────────────────────────────────
 # _generate_response  –  Maneja lógicad e transición compleja y Prompt del LLM
 # ─────────────────────────────────────────────────────────────────────────────
-def _generate_response(telephone, new_phase, new_state, new_variant, user_input, 
+def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
                        last_bot, memory, session_path, k):
+    """Handles complex phase transitions and LLM prompt generation. Returns (bot_output, image_path, is_ended, new_phase, new_state, new_variant, k)."""
     is_ended = False
     image_path = None
 
@@ -391,9 +394,7 @@ def _generate_response(telephone, new_phase, new_state, new_variant, user_input,
 # save_circle_data  –  Guardar info de contactos en la DB
 # ─────────────────────────────────────────────────────────────────────────────
 def save_circle_data(telephone, circle_data):
-    """
-    Guarda la información de 'Mi círculo' en el perfil del usuario en la BD.
-    """
+    """Saves the 'My Circle' information (contacts, medical center, privacy) to the user's profile in the database."""
     telephone = str(telephone).replace(" ", "")
     
     # Extraemos las distintas partes
@@ -420,9 +421,7 @@ def save_circle_data(telephone, circle_data):
 # get_circle_data  –  Recuperar la info de contactos guardada en la DB
 # ─────────────────────────────────────────────────────────────────────────────
 def get_circle_data(telephone):
-    """
-    Recupera la información de 'Mi círculo' del perfil del usuario en la BD.
-    """
+    """Retrieves the 'My Circle' information from the user's profile in the database."""
     telephone = str(telephone).replace(" ", "")
     contacts = db.get_user_info(telephone, "CIRCLE", "contacts") or {}
     medicalCenter = db.get_user_info(telephone, "CIRCLE", "medicalCenter") or {}
@@ -440,8 +439,7 @@ def get_circle_data(telephone):
 # _run_farewell  –  Tareas de cierre de sesión
 # ─────────────────────────────────────────────────────────────────────────────
 def _run_farewell(telephone):
-    """Guarda resumen, valoración y nivel de riesgo de crisis de la sesión en 
-    MongoDB al terminar."""
+    """Saves the session summary, valoration, and crisis risk level to MongoDB at session end."""
     try:
         session_path = _ctx_get(telephone, _CTX_SESSION_PATH, "")
         if session_path:
@@ -499,6 +497,7 @@ def _run_farewell(telephone):
 # get_notifications  –  Recupera las notificaciones para un usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def get_notifications(telephone):
+    """Retrieves all unread notifications for the given telephone number."""
     telephone = str(telephone).replace(" ", "")
     return db.get_notifications(telephone)
 
@@ -506,6 +505,7 @@ def get_notifications(telephone):
 # mark_notifications_read  –  Marca las notificaciones como leídas para un usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def mark_notifications_read(telephone):
+    """Marks all unread notifications for the given telephone number as read."""
     telephone = str(telephone).replace(" ", "")
     db.mark_notifications_read(telephone)
 
@@ -513,8 +513,7 @@ def mark_notifications_read(telephone):
 # delete_user  –  Elimina el documento completo del usuario de la BD
 # ─────────────────────────────────────────────────────────────────────────────
 def delete_user(telephone: str) -> bool:
-    """Elimina permanentemente al usuario de la colección users.
-    Devuelve True si se eliminó, False si no existía."""
+    """Permanently deletes the user from the users collection. Returns True if deleted, False if not found."""
     telephone = str(telephone).replace(" ", "")
     return db.delete_user(telephone)
 
@@ -522,10 +521,7 @@ def delete_user(telephone: str) -> bool:
 # reset_session  –  Borra el contexto de sesión activa para un usuario
 # ─────────────────────────────────────────────────────────────────────────────
 def reset_session(telephone):
-    """Resetea el contexto ctx en la BD para que la próxima llamada a
-    start_conversation arranque limpia (útil al hacer logout desde el front).
-    Antes de limpiar el contexto, ejecuta _run_farewell para guardar el
-    resumen y valoración de la sesión."""
+    """Resets the ctx context in the database so the next call to start_conversation starts clean (used on logout from the frontend). Runs _run_farewell first to save the session summary and valoration."""
     telephone = str(telephone).replace(" ", "")
     # Guardar resumen de sesión antes de borrar el contexto
     _run_farewell(telephone)

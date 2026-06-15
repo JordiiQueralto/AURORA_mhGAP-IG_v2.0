@@ -16,24 +16,25 @@ import reportPDF
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
-    """SHA-256 simple. Para producción usa bcrypt o argon2."""
+    """Simple SHA-256 hash. Use bcrypt or argon2 in production."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def _generate_token() -> str:
-    """Token de sesión aleatorio (64 hex chars)."""
+    """Generates a random session token (64 hex characters)."""
     return secrets.token_hex(32)
 
 
 def _validate_email(email: str) -> bool:
+    """Returns True if the email matches a basic RFC-like pattern."""
     pattern = r'^[\w\.\+\-]+@[\w\-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email))
 
 
 def _specialist_to_session(doc: dict) -> dict:
     """
-    Convierte un documento de MongoDB en el objeto SESSION que usa el frontend.
-    El frontend espera: token, specialist_id, nombre, apellidos, fechaNacimiento,
+    Converts a MongoDB document into the SESSION object used by the frontend.
+    The frontend expects: token, specialist_id, nombre, apellidos, fechaNacimiento,
     numeroColegiado, email, telefono, countryCode, centerName, centerCity.
     """
     return {
@@ -130,8 +131,8 @@ def handle_registration(data: dict) -> dict:
 
 def handle_login(email: str, password: str) -> dict:
     """
-    Verifica credenciales y devuelve el objeto de sesión.
-    Lanza ValueError si las credenciales son incorrectas.
+    Verifies credentials and returns the session object.
+    Raises ValueError if the credentials are incorrect.
     """
     email = email.strip().lower()
     doc   = db.get_specialist_by_email(email)
@@ -159,7 +160,7 @@ def handle_login(email: str, password: str) -> dict:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def save_profile_update(coll_number: str, profile_data: dict) -> None:
-    """Guarda los campos de perfil editables del especialista."""
+    """Saves the specialist's editable profile fields."""
     coll_number = str(coll_number).strip()
     db.update_specialist_profile(coll_number, profile_data)
 
@@ -171,8 +172,8 @@ def save_profile_update(coll_number: str, profile_data: dict) -> None:
 
 def _normalize_risk(risk_raw: str) -> str:
     """
-    Normaliza el valor risk_level guardado por el LLM en la BD.
-    Acepta mayusculas, minusculas, con/sin tilde y variantes en ingles.
+    Normalizes the risk_level value stored by the LLM in the database.
+    Accepts uppercase, lowercase, accented/unaccented, and English variants.
     """
     v = (risk_raw or "").lower().strip()
     # Eliminar tildes para comparacion robusta
@@ -191,17 +192,17 @@ def _normalize_risk(risk_raw: str) -> str:
 
 def get_patients_for_specialist(center_name: str) -> list:
     """
-    Devuelve la lista de usuarios del mismo centro medico que el especialista,
-    formateada para el frontend. Solo incluye usuarios con shareWithHospital=True.
+    Returns the list of users from the same medical center as the specialist,
+    formatted for the frontend. Only includes users with shareWithHospital=True.
 
-    Estructura real del documento usuario en MongoDB (segun services_user.py):
+    Actual user document structure in MongoDB (per services_user.py):
       - telephone                          str
       - name                               str
-      - CIRCLE.medicalCenter.name          str  ← usado para filtrar
-      - CIRCLE.privacy.shareWithHospital   bool ← usado para filtrar
-      - EMERGENCY                          list de objetos de emergencia
+      - CIRCLE.medicalCenter.name          str  ← used for filtering
+      - CIRCLE.privacy.shareWithHospital   bool ← used for filtering
+      - EMERGENCY                          list of emergency objects
       - checkpoint.phase / .state          str
-      - "<YYYY-MM-DD HH:MM:SS>_session"   dict con .summary, .valoration,
+      - "<YYYY-MM-DD HH:MM:SS>_session"   dict with .summary, .valoration,
                                            .conversation_history
     """
     raw_users = db.get_users_by_center(center_name)
@@ -292,9 +293,9 @@ def get_patients_for_specialist(center_name: str) -> list:
 
 def get_patient_sessions(user_id: str) -> list:
     """
-    Devuelve el historial completo de sesiones de un usuario por su _id.
-    Cada sesion incluye: date, datetime, summary, valoration, status.
-    Ordenadas de mas reciente a mas antigua.
+    Returns the full session history for a user by their _id.
+    Each session includes: date, datetime, summary, valoration, status.
+    Ordered from most recent to oldest.
     """
     from bson import ObjectId
     user = db.users.find_one({"_id": ObjectId(user_id)})
@@ -331,11 +332,11 @@ def get_patient_sessions(user_id: str) -> list:
 
 def generate_patient_report(user_id: str, output_path: str = None) -> None:
     """
-    Genera un informe PDF con los datos del usuario.
-    - output_path: ruta donde guardar el PDF.
-      Si es None, reportPDF lo guarda en la carpeta Descargas del sistema.
-      Si se indica (p.ej. un fichero temporal), se usa esa ruta para que
-      Flask pueda devolverlo directamente al navegador del médico.
+    Generates a PDF report with the user's data.
+    - output_path: path where the PDF will be saved.
+      If None, reportPDF saves it to the system Downloads folder.
+      If provided (e.g. a temporary file), that path is used so
+      Flask can return it directly to the doctor's browser.
     """
     reportPDF.generate_report(user_id, output_path=output_path)
     return
@@ -343,9 +344,9 @@ def generate_patient_report(user_id: str, output_path: str = None) -> None:
 
 def get_risk_distribution(center_name: str) -> dict:
     """
-    Calcula la distribución de niveles de riesgo de todos los usuarios
-    del centro, leyendo el risk_level de la ultima sesion de cada uno.
-    Devuelve: { "estable": N, "bajo": N, "medio": N, "alto": N }
+    Calculates the risk level distribution for all users in the center,
+    reading the risk_level from each user's most recent session.
+    Returns: { "estable": N, "bajo": N, "medio": N, "alto": N }
     """
     raw_users = db.get_users_by_center(center_name)
     distribution = {"estable": 0, "bajo": 0, "medio": 0, "alto": 0}
@@ -364,10 +365,10 @@ def get_risk_distribution(center_name: str) -> dict:
 
 def get_sessions_by_day(center_name: str, days: int = 30) -> dict:
     """
-    Cuenta cuantas sesiones hubo cada dia en los ultimos `days` dias,
-    para todos los usuarios del centro.
-    Un mismo usuario puede contribuir con varias sesiones en el mismo dia.
-    Devuelve: { "YYYY-MM-DD": count, ... } ordenado cronologicamente.
+    Counts how many sessions occurred each day over the last `days` days,
+    for all users in the center.
+    A single user can contribute multiple sessions on the same day.
+    Returns: { "YYYY-MM-DD": count, ... } sorted chronologically.
     """
     import datetime as _dt
     raw_users = db.get_users_by_center(center_name)
@@ -398,9 +399,9 @@ def get_sessions_by_day(center_name: str, days: int = 30) -> dict:
 
 def get_valoration_distribution(center_name: str) -> dict:
     """
-    Cuenta cuantas sesiones tienen cada tipo de valoracion,
-    de forma acumulativa (un usuario puede contribuir varias veces).
-    Devuelve: { "buena": N, "regular": N, "mala": N, "sin_valorar": N }
+    Counts how many sessions have each valoration type, cumulatively
+    (a single user can contribute multiple times).
+    Returns: { "buena": N, "regular": N, "mala": N, "sin_valorar": N }
     """
     raw_users = db.get_users_by_center(center_name)
     dist = {"buena": 0, "regular": 0, "mala": 0, "sin_valorar": 0}
@@ -428,16 +429,16 @@ def get_valoration_distribution(center_name: str) -> dict:
 
 def get_screening_distribution(center_name: str) -> dict:
     """
-    Lee el campo SCREENING de cada usuario del centro y cuenta cuantos
-    tienen cada resultado.
+    Reads the SCREENING field from each center user and counts how many
+    have each result.
 
-    Estructura en BD:
+    Database structure:
       SCREENING: {
         SUI: "self_harm" | "concrete_plan" | "ideation" | "improbable" | "others"
         DEP: "depression" | "bipolar" | "others"
       }
 
-    Devuelve:
+    Returns:
       {
         "sui": { "self_harm":0, "concrete_plan":0, "ideation":0, "improbable":0, "others":0 },
         "dep": { "depression":0, "bipolar":0, "others":0 }
@@ -484,13 +485,13 @@ def get_screening_distribution(center_name: str) -> dict:
 
 def get_emergency_followup_stats(center_name: str) -> dict:
     """
-    Recorre todos los usuarios del centro y cuenta:
-      - total_emergencies:  entradas en el array EMERGENCY
-      - total_followups:    entradas en FOLLOWUP.history
-      - outcome_no_help:    followups con outcome=True  ("no ha buscado ayuda")
-      - outcome_help:       followups con outcome=False ("ha buscado ayuda")
+    Iterates over all center users and counts:
+      - total_emergencies:  entries in the EMERGENCY array
+      - total_followups:    entries in FOLLOWUP.history
+      - outcome_no_help:    followups with outcome=True  ("did not seek help")
+      - outcome_help:       followups with outcome=False ("did seek help")
 
-    Estructura en BD:
+    Database structure:
       EMERGENCY: [ { session_id, trigger_hour, protocol_applied, referal }, ... ]
       FOLLOWUP: {
         history: [ { emergency_date, followup_date, outcome: bool, reason }, ... ],
@@ -534,7 +535,7 @@ def get_emergency_followup_stats(center_name: str) -> dict:
     }
 
 def save_patient_note(user_id: str, specialist_coll: str, note: str) -> None:
-    """Guarda una nota clínica del especialista sobre un usuario por su _id."""
+    """Saves a specialist's clinical note for a user identified by their _id."""
     from bson import ObjectId
     # Buscamos el teléfono a partir del _id
     user = db.users.find_one({"_id": ObjectId(user_id)}, {"telephone": 1})
@@ -549,8 +550,8 @@ def save_patient_note(user_id: str, specialist_coll: str, note: str) -> None:
 
 def validate_token(token: str) -> dict | None:
     """
-    Valida el token de sesión.
-    Devuelve el documento del especialista o None si no es válido.
+    Validates the session token.
+    Returns the specialist document or None if the token is invalid.
     """
     if not token:
         return None
@@ -562,7 +563,7 @@ def validate_token(token: str) -> dict | None:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _mask_phone(phone: str) -> str:
-    """Enmascara el número dejando solo los primeros 3 y último dígito."""
+    """Masks the phone number, keeping only the first 3 and the last digit."""
     digits = re.sub(r'\D', '', phone)
     if len(digits) >= 7:
         return f"+{digits[:2]} {digits[2]}** ***-{digits[-1]}"
@@ -571,8 +572,8 @@ def _mask_phone(phone: str) -> str:
 
 def _anonymize_name(name: str) -> str:
     """
-    Muestra solo la inicial del nombre + apellido para privacidad.
-    ej: 'María García López' → 'M. García'
+    Shows only the first initial plus surname for privacy.
+    e.g. 'María García López' → 'M. García'
     """
     parts = name.strip().split()
     if len(parts) >= 2:

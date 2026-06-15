@@ -46,7 +46,7 @@ def welcome(status, memory) -> str:
         
 
 def use_case_class(conversation_history) -> str:
-    
+    """Classifies the conversation into EMERGENCY, ASSISTANCE, TALK, or MISENSE. Defaults to ASSISTANCE if the LLM response is unrecognized."""
     prompt = prompt_builder.use_case_prompt(conversation_history)
     use_case = llm.send_prompt(prompt, 0.0)
     

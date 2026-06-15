@@ -1,5 +1,5 @@
 def bot_output_info(phase, state):
-    
+    """Returns the fixed clinical question (core text) for the given phase and state."""
     dict = {
         
         "PROFILE": {
@@ -220,7 +220,7 @@ def bot_output_info(phase, state):
 
 
 def variant_dict(phase, state, variant):
-    
+    """Returns the alternate phrasing for the given phase, state, and behavioral variant (e.g. ambiguity, evasion, refusal)."""
     variant_dict = {
         
         "PROFILE": {

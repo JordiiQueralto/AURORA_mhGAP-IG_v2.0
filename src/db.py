@@ -17,7 +17,7 @@ specialists = db["specialists"]
 # ══════════════════════════════════════════════════════════════════════════════
 
 def is_new(telephone: str) -> bool:
-    """True si el usuario NO existe todavía."""
+    """Returns True if the user does not exist yet."""
     user = users.find_one({"telephone": telephone})
     if user:
         print("\n[Usuario encontrado en la base de datos.]\n")
@@ -27,6 +27,7 @@ def is_new(telephone: str) -> bool:
 
 
 def create_user(telephone, is_new_user):
+    """Creates a new user document in the database if is_new_user is True. Silently ignores duplicate key errors."""
     users.create_index("telephone", unique=True)
     try:
         if is_new_user:
@@ -37,15 +38,18 @@ def create_user(telephone, is_new_user):
 
 
 def add_user_info(telephone, key, value):
+    """Sets or updates a field in the user's document using dot-notation keys."""
     users.update_one({"telephone": telephone}, {"$set": {key: value}})
 
 
 def get_user_name(telephone, key="name"):
+    """Returns the user's name field, or None if the user does not exist."""
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     return user.get("name") if user else None
 
 
 def get_user_info(telephone, key1, key2=None):
+    """Returns a top-level or nested field from the user's document. Pass key2 to retrieve a sub-key of a dict field."""
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     if not user: return None
     
@@ -59,11 +63,13 @@ def get_user_info(telephone, key1, key2=None):
 
 
 def user_status(telephone: str) -> str:
+    """Returns the user's terms-of-service acceptance status ('accepted' or 'rejected')."""
     user = users.find_one({"telephone": telephone})
     return user.get("USER_TERMS", {}).get("status")
 
 
 def conversation_history(telephone):
+    """Returns all session conversation histories for a user, grouped by session key."""
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     if not user:
         return {}
@@ -81,11 +87,13 @@ def conversation_history(telephone):
 
 
 def save_flow(telephone, phase, state):
+    """Persists the current phase and state as a checkpoint for session resumption."""
     add_user_info(telephone, "checkpoint.phase", phase)
     add_user_info(telephone, "checkpoint.state", state)
 
 
 def resume_conversation(telephone):
+    """Returns (phase, state) from the user's last saved checkpoint."""
     user = users.find_one({"telephone": telephone}, {"_id": 0})
     if not user:
         return (None, None)
@@ -95,6 +103,7 @@ def resume_conversation(telephone):
 
 
 def user_keys(telephone):
+    """Returns a list of all top-level keys in the user's document."""
     user = users.find_one({"telephone": telephone})
     if user:
         return list(user.keys())
@@ -102,6 +111,7 @@ def user_keys(telephone):
 
 
 def last_session_key(telephone):
+    """Returns the most recent session key (format 'YYYY-MM-DD HH:MM:SS_session'), or None if none exist."""
     key_list = user_keys(telephone)
     if isinstance(key_list, str):
         return None
@@ -110,6 +120,7 @@ def last_session_key(telephone):
 
 
 def user_memory(telephone, keys_list=["name", "age", "PROFILE"]):
+    """Returns a projected user document with name, age, PROFILE, and the latest session summary."""
     projection = {key: 1 for key in keys_list}
     last_session = last_session_key(telephone)
     if last_session:
@@ -120,6 +131,7 @@ def user_memory(telephone, keys_list=["name", "age", "PROFILE"]):
 
 
 def add_emergency_instance(telephone, session_path, protocol, referal):
+    """Appends a new emergency record to the user's EMERGENCY array in the database."""
     hora_activacion = datetime.datetime.now().strftime("%H:%M:%S")
     new_emergency = {
         "session_id":        session_path,
@@ -135,6 +147,7 @@ def add_emergency_instance(telephone, session_path, protocol, referal):
 
 
 def save_notification(to_telephone, from_telephone, from_name, image_path_family):
+    """Inserts a new unread notification into the notifications collection."""
     notification = {
         "to_telephone":      to_telephone,
         "from_telephone":    from_telephone,
@@ -147,6 +160,7 @@ def save_notification(to_telephone, from_telephone, from_name, image_path_family
 
 
 def get_notifications(telephone):
+    """Returns all unread notifications addressed to the given telephone number."""
     docs = db["notifications"].find(
         {"to_telephone": telephone, "read": False},
         {"_id": 0}
@@ -155,6 +169,7 @@ def get_notifications(telephone):
 
 
 def mark_notifications_read(telephone):
+    """Marks all unread notifications for the given telephone number as read."""
     db["notifications"].update_many(
         {"to_telephone": telephone, "read": False},
         {"$set": {"read": True}}
@@ -162,21 +177,21 @@ def mark_notifications_read(telephone):
 
 
 def add_to_list(telephone, key, list_item):
+    """Appends an item to an array field in the user's document."""
     # $push añade el objeto al final del array
     users.update_one({"telephone": telephone}, {"$push": {key: list_item}})
     return
 
 
 def delete_user_info(telephone, key):
-    """Elimina físicamente una clave del documento del usuario."""
+    """Permanently removes a key from the user's document."""
     # $unset elimina el campo por completo
     users.update_one({"telephone": telephone}, {"$unset": {key: ""}})
     return
 
 
 def delete_user(telephone: str) -> bool:
-    """Elimina el documento completo de un usuario de la colección users.
-    Devuelve True si se eliminó, False si no existía."""
+    """Permanently deletes a user's document from the users collection. Returns True if deleted, False if not found."""
     result = users.delete_one({"telephone": telephone})
     if result.deleted_count:
         print(f"\n[Usuario {telephone} eliminado correctamente.]\n")
@@ -190,13 +205,13 @@ def delete_user(telephone: str) -> bool:
 # ══════════════════════════════════════════════════════════════════════════════
 
 def _ensure_specialist_indexes():
-    """Crea índices únicos la primera vez (idempotente)."""
+    """Creates unique indexes on the specialists collection (idempotent)."""
     specialists.create_index("collegiateNumber", unique=True)
     specialists.create_index("email", unique=True)
 
 
 def is_registered(coll_number: str) -> bool:
-    """True si el especialista YA existe en la BD."""
+    """Returns True if the specialist already exists in the database."""
     specialist = specialists.find_one({"collegiateNumber": coll_number})
     if specialist:
         print("\n[Especialista encontrado en la base de datos.]\n")
@@ -206,16 +221,16 @@ def is_registered(coll_number: str) -> bool:
 
 
 def email_exists(email: str) -> bool:
-    """Comprueba si el email ya está registrado."""
+    """Returns True if the email is already registered."""
     return specialists.find_one({"email": email.lower()}) is not None
 
 
 def register_specialist(register_data: dict) -> None:
     """
-    Inserta un nuevo especialista.
-    register_data debe incluir al menos: collegiateNumber, email, passwordHash,
+    Inserts a new specialist.
+    register_data must include at least: collegiateNumber, email, passwordHash,
     firstName, lastName, birthDate, countryCode, centerName, centerCity.
-    Lanza DuplicateKeyError si el número o email ya existen.
+    Raises DuplicateKeyError if the collegiate number or email already exist.
     """
     _ensure_specialist_indexes()
     register_data.setdefault("createdAt", datetime.datetime.utcnow())
@@ -225,12 +240,12 @@ def register_specialist(register_data: dict) -> None:
 
 
 def get_specialist_by_email(email: str) -> dict | None:
-    """Devuelve el documento completo del especialista por email."""
+    """Returns the full specialist document by email."""
     return specialists.find_one({"email": email.lower()})
 
 
 def get_specialist_by_id(specialist_id: str) -> dict | None:
-    """Devuelve el documento completo por _id (str)."""
+    """Returns the full specialist document by _id (str)."""
     from bson import ObjectId
     try:
         return specialists.find_one({"_id": ObjectId(specialist_id)})
@@ -240,8 +255,8 @@ def get_specialist_by_id(specialist_id: str) -> dict | None:
 
 def update_specialist_profile(coll_number: str, profile_data: dict) -> None:
     """
-    Actualiza los campos de perfil del especialista.
-    Usa $set con el prefijo 'profile.' para no machacar otros campos.
+    Updates the specialist's profile fields.
+    Uses $set with the 'profile.' prefix to avoid overwriting other fields.
     """
     update_fields = {f"profile.{k}": v for k, v in profile_data.items()}
     # También actualiza los campos raíz editables directamente
@@ -259,8 +274,8 @@ def update_specialist_profile(coll_number: str, profile_data: dict) -> None:
 
 def save_doctor_note(user_telephone: str, specialist_coll: str, note: str) -> None:
     """
-    Guarda/actualiza una nota clínica del especialista sobre un usuario.
-    Se almacena dentro del documento del usuario bajo 'doctorNotes'.
+    Saves or updates a specialist's clinical note for a user.
+    Stored inside the user's document under 'doctorNotes'.
     """
     users.update_one(
         {"telephone": user_telephone},
@@ -275,9 +290,9 @@ def save_doctor_note(user_telephone: str, specialist_coll: str, note: str) -> No
 
 def get_users_by_center(center_name: str) -> list:
     """
-    Devuelve usuarios que pertenecen al mismo centro que el médico.
-    Solo incluye usuarios que han dado consentimiento (shareWithHospital=True).
-    El nombre viene de la misma coleccion medicalCenters, garantizando coincidencia exacta.
+    Returns users belonging to the same center as the doctor.
+    Only includes users who have given consent (shareWithHospital=True).
+    The name comes from the medicalCenters collection, ensuring an exact match.
     """
     # Sin proyeccion: necesitamos las claves "_session" que son dinamicas
     # (formato "YYYY-MM-DD HH:MM:SS_session") y no se pueden listar de antemano.

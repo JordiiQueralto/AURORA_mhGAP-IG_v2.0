@@ -48,10 +48,7 @@ CORS(app, resources={r"/api/*": {"origins": [
 # ──────────────────────────────────────────────────────────────────────────────
 
 def require_auth(f):
-    """
-    Decorador que valida el token Bearer en la cabecera Authorization.
-    Si es válido, inyecta el documento del especialista como kwarg 'specialist'.
-    """
+    """Decorator that validates the Bearer token in the Authorization header. If valid, injects the specialist document as the 'specialist' kwarg."""
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get("Authorization", "")
@@ -70,9 +67,9 @@ def require_auth(f):
 @app.route("/api/doctor/register", methods=["POST"])
 def register():
     """
-    Registra un nuevo especialista.
+    Registers a new specialist.
 
-    Body JSON esperado:
+    Expected JSON body:
     {
       "collegiateNumber": "28-5678",
       "firstName":        "María",
@@ -106,10 +103,10 @@ def register():
 @app.route("/api/doctor/login", methods=["POST"])
 def login():
     """
-    Login de especialista.
+    Specialist login.
 
     Body JSON: { "email": "...", "password": "..." }
-    Devuelve el objeto SESSION que el frontend almacena en la variable SESSION.
+    Returns the SESSION object that the frontend stores in the SESSION variable.
     """
     data     = request.json or {}
     email    = data.get("email", "").strip()
@@ -136,10 +133,10 @@ def login():
 @require_auth
 def update_profile(specialist):
     """
-    Actualiza los campos de perfil editables del especialista.
-    Requiere Authorization: Bearer <token>
+    Updates the specialist's editable profile fields.
+    Requires Authorization: Bearer <token>
 
-    Body JSON (todos opcionales, se actualiza lo que llegue):
+    Body JSON (all optional, only provided fields are updated):
     {
       "nombre":          "María",
       "apellidos":       "García López",
@@ -186,8 +183,8 @@ def update_profile(specialist):
 @require_auth
 def get_patients(specialist):
     """
-    Devuelve los usuarios que pertenecen al mismo centro que el especialista.
-    Requiere Authorization: Bearer <token>
+    Returns users belonging to the same medical center as the specialist.
+    Requires Authorization: Bearer <token>
     """
     center_name = specialist.get("centerName", "")
 
@@ -206,10 +203,10 @@ def get_patients(specialist):
 @require_auth
 def save_note(specialist, user_id):
     """
-    Guarda una nota clínica del especialista sobre un usuario.
-    Requiere Authorization: Bearer <token>
+    Saves a specialist's clinical note for a user.
+    Requires Authorization: Bearer <token>
 
-    Body JSON: { "notes": "Texto de la nota clínica..." }
+    Body JSON: { "notes": "Clinical note text..." }
     """
     data = request.json or {}
     note = data.get("notes", "").strip()
@@ -230,11 +227,11 @@ def save_note(specialist, user_id):
 @require_auth
 def get_patient_sessions(specialist, user_id):
     """
-    Devuelve el historial completo de sesiones de un usuario concreto.
-    Requiere Authorization: Bearer <token>
+    Returns the full session history for a specific user.
+    Requires Authorization: Bearer <token>
 
-    Devuelve lista de sesiones con: date, datetime, summary, valoration, status
-    ordenadas de más reciente a más antigua.
+    Returns a list of sessions with: date, datetime, summary, valoration, status
+    ordered from most recent to oldest.
     """
     try:
         sessions = services_specialist.get_patient_sessions(user_id)
@@ -250,11 +247,11 @@ def get_patient_sessions(specialist, user_id):
 @require_auth
 def generate_report(specialist, user_id):
     """
-    Genera el informe PDF del paciente y lo devuelve como descarga directa.
-    Requiere Authorization: Bearer <token>
+    Generates the patient's PDF report and returns it as a direct download.
+    Requires Authorization: Bearer <token>
 
-    El PDF se genera en memoria con un fichero temporal y se elimina tras el envío,
-    por lo que no queda nada escrito en disco del servidor.
+    The PDF is generated via a temporary file that is deleted after the response is sent,
+    so nothing is left on the server's disk.
     """
     import tempfile, os
 
@@ -295,14 +292,14 @@ def generate_report(specialist, user_id):
 @require_auth
 def get_stats(specialist):
     """
-    Devuelve estadísticas reales del centro para los gráficos del dashboard:
+    Returns real statistics for the center to populate dashboard charts:
       - riskDistribution:    { estable, bajo, medio, alto }
-      - sessionsByDay:       { "YYYY-MM-DD": count } ultimos 30 dias
+      - sessionsByDay:       { "YYYY-MM-DD": count } last 30 days
       - valorationDist:      { buena, regular, mala, sin_valorar }
       - suiDist:             { self_harm, concrete_plan, ideation, improbable, others }
       - depDist:             { depression, bipolar, others }
       - emergencyStats:      { total_emergencies, total_followups, outcome_no_help, outcome_help }
-    Requiere Authorization: Bearer <token>
+    Requires Authorization: Bearer <token>
     """
     center_name = specialist.get("centerName", "")
     try:
@@ -328,8 +325,8 @@ def get_stats(specialist):
 @require_auth
 def debug_screening(specialist):
     """
-    Endpoint de debug: devuelve el campo SCREENING de cada usuario del centro
-    tal como está en BD, para diagnosticar problemas de datos.
+    Debug endpoint: returns the SCREENING field of each center user as stored in the database,
+    to help diagnose data issues.
     """
     center_name = specialist.get("centerName", "")
     raw_users = services_specialist.db.get_users_by_center(center_name)
@@ -350,8 +347,8 @@ def debug_screening(specialist):
 @app.route("/api/doctor/countries", methods=["GET"])
 def list_countries():
     """
-    Devuelve la lista de países disponibles en la colección medicalCenters.
-    El frontend usa este endpoint al abrir la pestaña de registro.
+    Returns the list of available countries from the medicalCenters collection.
+    Used by the frontend when opening the registration tab.
     """
     countries = db.medicalCenters.find(
         {},
@@ -363,9 +360,9 @@ def list_countries():
 @app.route("/api/medical-centers/<country_code>", methods=["GET"])
 def get_centers(country_code):
     """
-    Devuelve los centros de un país concreto.
-    Soporta filtro opcional: ?q=<texto>
-    Idéntico al endpoint en app_user.py — el HTML apunta a este servidor (puerto 5001).
+    Returns medical centers for a given country.
+    Supports optional text filter: ?q=<text>
+    Mirrors the endpoint in app_user.py — the HTML points to this server (port 5001).
     """
     doc = db.medicalCenters.find_one(
         {"countryCode": country_code.upper()},

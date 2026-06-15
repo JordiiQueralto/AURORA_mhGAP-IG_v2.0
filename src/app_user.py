@@ -34,6 +34,7 @@ def verify_user():
 # ─────────────────────────────────────────────────────────────────────────────
 @app.route("/api/medical-centers", methods=["GET"])
 def list_countries():
+    """Returns the list of available countries from the medicalCenters collection."""
     countries = db.medicalCenters.find(
         {},
         {"_id": 0, "countryCode": 1, "countryName": 1}
@@ -47,6 +48,7 @@ def list_countries():
 # ─────────────────────────────────────────────────────────────────────────────
 @app.route("/api/medical-centers/<country_code>", methods=["GET"])
 def get_centers(country_code):
+    """Returns medical centers for a given country code. Supports optional text filter via ?q=<text>."""
     doc = db.medicalCenters.find_one(
         {"countryCode": country_code.upper()},
         {"_id": 0}
@@ -67,6 +69,7 @@ def get_centers(country_code):
 
 @app.route('/api/circle', methods=['GET'])
 def get_circle():
+    """Returns the support circle data (contacts, medical center, privacy) for a user."""
     telephone = request.args.get('telephone')
     if not telephone:
         return jsonify({"error": "telephone requerido"}), 400
@@ -76,6 +79,7 @@ def get_circle():
 
 @app.route('/images/<path:filename>')
 def serve_image(filename):
+    """Serves an image file from the images/ directory."""
     # Usar ruta absoluta garantizada, subiendo un nivel si images/ está fuera de backend/
     base_dir = os.path.dirname(os.path.abspath(__file__))
     images_dir = os.path.join(base_dir, '..', 'images')
@@ -83,6 +87,7 @@ def serve_image(filename):
 
 @app.route('/api/start', methods=['POST'])
 def start_chat():
+    """Initializes a new chat session and returns the first bot message."""
     data = request.json
     telephone = data.get('telephone')
     if not telephone:
@@ -101,6 +106,7 @@ def start_chat():
 
 @app.route('/api/message', methods=['POST'])
 def handle_message():
+    """Processes a user message and returns the bot response, optional image URL, and session status flags."""
     data = request.json
     telephone = data.get('telephone')
     user_message = data.get('message')
@@ -122,6 +128,7 @@ def handle_message():
 
 @app.route('/api/circle', methods=['POST'])
 def save_circle():
+    """Saves the user's support circle data (contacts, medical center, privacy settings) to the database."""
     data = request.json
     telephone = data.get('telephone')
     circle_data = data.get('circle_data') # Objeto con contactos, centro médico, etc.
@@ -136,7 +143,7 @@ def save_circle():
 
 @app.route('/api/notifications', methods=['GET'])
 def get_notifications():
-    """El familiar consulta sus notificaciones al abrir la app."""
+    """Retrieves unread notifications for a user (typically a family member checking the app)."""
     telephone = request.args.get('telephone')
     if not telephone:
         return jsonify({"error": "telephone requerido"}), 400
@@ -146,7 +153,7 @@ def get_notifications():
 
 @app.route('/api/notifications/read', methods=['POST'])
 def mark_read():
-    """Marca las notificaciones como leídas cuando el familiar abre la pestaña."""
+    """Marks all notifications as read when the user opens the notifications tab."""
     data = request.json or {}
     telephone = data.get('telephone')
     if not telephone:
@@ -157,7 +164,7 @@ def mark_read():
 
 @app.route('/api/user/delete', methods=['POST'])
 def delete_user():
-    """Elimina permanentemente el documento del usuario de la BD."""
+    """Permanently deletes the user's document from the database."""
     data = request.json or {}
     telephone = data.get('telephone')
     if not telephone:
@@ -170,8 +177,7 @@ def delete_user():
 
 @app.route('/api/reset', methods=['POST'])
 def reset_chat():
-    """Ejecuta _run_farewell (guarda resumen de sesión) y limpia el contexto
-    de sesión en BD. Se llama al hacer logout desde el front."""
+    """Runs _run_farewell (saves session summary) and clears the session context in the database. Called on logout from the frontend."""
     data = request.json or {}
     telephone = data.get('telephone')
     if telephone:

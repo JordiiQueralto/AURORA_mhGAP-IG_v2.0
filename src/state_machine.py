@@ -4,6 +4,7 @@ import unicodedata
 import time
 
 def _strip_accents(user_input: str) -> str:
+    """Removes diacritics (accents) from a string using Unicode NFD decomposition."""
     return ''.join(
         c for c in unicodedata.normalize('NFD', user_input)
         if unicodedata.category(c) != 'Mn'
@@ -11,6 +12,7 @@ def _strip_accents(user_input: str) -> str:
 
 
 def _normalize_text(user_input: str) -> str:
+    """Lowercases, strips accents, removes quotes and punctuation, and collapses whitespace."""
     user_input = user_input.lower().strip()
     user_input = _strip_accents(user_input)
     user_input = re.sub(r'[“”"\'`´]', '', user_input)
@@ -20,7 +22,7 @@ def _normalize_text(user_input: str) -> str:
 
   
 def _pattern_search(user_input: str, patterns: list[str]) -> list[str]:
-    """"""
+    """Returns a list of patterns that match anywhere in user_input (case-insensitive)."""
     match = []
     for pattern in patterns:
         if re.search(pattern, user_input, flags=re.IGNORECASE):
@@ -29,7 +31,7 @@ def _pattern_search(user_input: str, patterns: list[str]) -> list[str]:
 
 
 def _variant_search(n_user_input: str) -> str:
-    
+    """Classifies normalized user input into a behavioral variant: 'ambiguity', 'evasion', 'refusal', 'hostility', or 'non_class'."""
     PATTERNS_AMBIGUITY: list[str] = [
         r"\bno se\b",
         r"\bno estoy segur[ao]\b",
@@ -136,7 +138,7 @@ def _variant_search(n_user_input: str) -> str:
     
 
 def StateMachine(telephone, phase, state, user_input):
-
+    """Applies regex pattern banks to user input to advance the clinical conversation state. Returns (new_phase, new_state, variant)."""
     n_user_input = _normalize_text(user_input)
     variant = 0
     
@@ -3852,7 +3854,7 @@ def StateMachine(telephone, phase, state, user_input):
             
                          
 def security_control(phase, state, variant, user_input):
-    
+    """Overrides the current state if emergency language is detected, redirecting to SUI_EVAL. Returns (phase, state, variant)."""
     PATTERNS_EMERGENCY: list[str] = [
                 # PASTILLAS / SOBREDOSIS
                 r"\btome (muchas )?pastillas\b",
@@ -3977,7 +3979,8 @@ def security_control(phase, state, variant, user_input):
     
 
 def bot_output_image(phase, state) -> str:
-    image_path_user = None 
+    """Returns (image_path_user, image_path_family) for the given phase and state, or (None, None) if no image applies."""
+    image_path_user = None
     image_path_family = None
     
     if phase == "DEP_PROTOCOLS":

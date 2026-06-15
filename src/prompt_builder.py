@@ -33,10 +33,7 @@ def presentation_prompt(memory) -> str:
 
 
 def use_case_prompt(memory: str) -> str:
-   """
-   
-   """
-    
+   """Generates a triage classification prompt for the LLM to categorize the user as EMERGENCY, ASSISTANCE, TALK, or MISUSE."""
    # Usamos triple comilla para mantener el formato y f-string para la memoria
    prompt = f"""
    Actúas como un experto clínico en triaje psicológico para un servicio de prevención del suicidio 

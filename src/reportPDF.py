@@ -7,6 +7,7 @@ from bson.objectid import ObjectId
 # 1. Definición de la estructura del PDF
 class ReportPDF(FPDF):
     def header(self):
+        """Renders the page header with the report title and generation date."""
         # Logo o Título
         self.set_font("Arial", "B", 15)
         self.cell(0, 10, "Informe de Evaluación: Guía de Intervención mhGAP v2.0", 0, 1, "C")
@@ -16,18 +17,21 @@ class ReportPDF(FPDF):
         self.ln(5)
 
     def footer(self):
+        """Renders the page footer with the page number."""
         # Pie de página con número de página
         self.set_y(-15)
         self.set_font("Arial", "I", 8)
         self.cell(0, 10, f"Página {self.page_no()}", 0, 0, "C")
 
     def section_title(self, label):
+        """Renders a shaded section title row."""
         self.set_font("Arial", "B", 12)
         self.set_fill_color(230, 230, 230)
         self.cell(0, 10, label, 0, 1, "L", 1)
         self.ln(4)
 
     def data_row(self, label, value):
+        """Renders a label-value pair row with the label in bold."""
         self.set_font("Arial", "B", 10)
         self.write(10, f"{label}: ")
         self.set_font("Arial", "", 10)
@@ -35,6 +39,7 @@ class ReportPDF(FPDF):
 
 # 2. Función principal
 def generate_report(user_id_str, output_path=None):
+    """Generates a PDF clinical report for a user and saves it to output_path (or the system Downloads folder if None)."""
     try:
         # Configuración de MongoDB
         client = pymongo.MongoClient("mongodb://localhost:27017/")
