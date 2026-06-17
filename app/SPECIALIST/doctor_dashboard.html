@@ -772,7 +772,7 @@ function initCharts(){
   if(ls){suiLabels.forEach((l,i)=>{ls.innerHTML+=`<div class="legend-item"><span class="legend-dot" style="background:${suiColors[i]}"></span>${l}</div>`;});}
 
   // ── Screening DEP ──────────────────────────────────────────────────────────
-  const depLabels=['Posible Episodio Bipolar','Posible Depresión','Otros'];
+  const depLabels=['Posible Depresión','Posible Episodio Bipolar','Otros'];
   const depColors=['#9d9dff','#5b9bd5','#4a5a64'];
   window._depChart=new Chart(document.getElementById('chart-dep'),{type:'doughnut',data:{labels:depLabels,datasets:[{data:[0,0,0],backgroundColor:depColors.map(c=>c+'30'),borderColor:depColors,borderWidth:1.5,hoverBorderWidth:2,hoverBorderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false},tooltip:tip}}});
   const ldep=document.getElementById('legend-dep');
