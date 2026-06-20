@@ -2,6 +2,8 @@
 
 Conversational assistant for mental health support and suicide prevention, based on the **mhGAP v2.0 Intervention Guide** of the World Health Organization (WHO). The system combines a clinical state machine with a language model (Gemini 2.5 Flash) to deliver an empathetic, structured, and clinically rigorous experience, together with a separate dashboard for medical specialists.
 
+> This repository constitutes the result of a Bachelor's Thesis (TFG) for the Biomedical Engineering degree at the University of Barcelona (UB), authored by **Jordi Queraltó Pérez**, under the direction of **Dr. Juan Ignacio Barrios Arce** and the supervision of **Dr. Francisco Montero Barquero**.
+
 > **Important notice:** This system is a support and triage tool. It does not replace professional mental health care.
 
 ---
